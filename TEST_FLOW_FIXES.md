@@ -134,6 +134,7 @@ export class FileMonitor {
 
 ### Recently Fixed Issues
 - ✅ ABI encoding error when deploying destination escrow - Fixed by updating createDstEscrow to accept 2 parameters with safetyDeposit as msg.value
+- ✅ BigInt conversion error in timelocks - Fixed by implementing packTimelocks function to convert timelocks object to packed uint256
 
 ## Usage Instructions
 
@@ -242,6 +243,32 @@ The key changes:
 - Removed srcChainId as a separate parameter (it's already included in dstImmutables)
 - Changed second parameter to srcCancellation timestamp
 - Moved safetyDeposit from parameter array to msg.value in options
+
+### Timelocks Packing Fix
+The contract expects timelocks as a single packed uint256 value, not an object:
+
+1. **Added packTimelocks function**:
+```typescript
+export function packTimelocks(timelocks: Timelocks): bigint {
+  // Convert each timestamp to bigint
+  const srcWithdrawal = BigInt(timelocks.srcWithdrawal);
+  // ... (pack all 6 timestamps into 32-bit slots)
+  const packed = 
+    (srcWithdrawal & 0xffffffffn) |
+    ((srcPublicWithdrawal & 0xffffffffn) << 32n) |
+    // ... etc
+  return packed;
+}
+```
+
+2. **Updated executor to use packed timelocks**:
+```typescript
+const packedTimelocks = packTimelocks(order.immutables.timelocks);
+const dstImmutables = {
+  // ... other fields
+  timelocks: packedTimelocks, // Now a single uint256
+};
+```
 
 ## Recommendations for Future Work
 
