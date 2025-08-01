@@ -1,7 +1,7 @@
 // System-wide constants for the Bridge-Me-Not resolver
 
 // Profitability settings
-export const MIN_PROFIT_BPS = 100; // Minimum 1% profit (100 basis points)
+export const MIN_PROFIT_BPS = 0; // Demo mode: Accept zero profit orders
 export const MAX_SLIPPAGE_BPS = 50; // Maximum 0.5% slippage allowed
 
 // Order limits
