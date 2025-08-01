@@ -130,8 +130,10 @@ export class FileMonitor {
 - ✅ Profitability checks pass in demo mode
 
 ### Known Issues
-- ⚠️ ABI encoding error when deploying destination escrow (parameter count mismatch)
 - ⚠️ Orders accumulate in the data/orders directory (no cleanup)
+
+### Recently Fixed Issues
+- ✅ ABI encoding error when deploying destination escrow - Fixed by updating createDstEscrow to accept 2 parameters with safetyDeposit as msg.value
 
 ## Usage Instructions
 
@@ -212,10 +214,38 @@ deno task resolver:status
 9. **src/types/index.ts**
    - Extended OrderState with optional orderData
 
+## Technical Fix Details
+
+### createDstEscrow Parameter Fix
+The original issue was that the contract expected 2 parameters but the code was passing 3. The fix involved:
+
+1. **Original (incorrect) call**:
+```typescript
+factory.write.createDstEscrow([
+  dstImmutables,
+  srcChainId,
+  order.params.safetyDeposit
+])
+```
+
+2. **Fixed call**:
+```typescript
+factory.write.createDstEscrow([
+  dstImmutables,
+  BigInt(order.immutables.timelocks.srcCancellation)
+], {
+  value: order.params.safetyDeposit
+})
+```
+
+The key changes:
+- Removed srcChainId as a separate parameter (it's already included in dstImmutables)
+- Changed second parameter to srcCancellation timestamp
+- Moved safetyDeposit from parameter array to msg.value in options
+
 ## Recommendations for Future Work
 
-1. **Fix ABI Encoding Issue**: Investigate the parameter mismatch in deployDstEscrow contract call
-2. **Implement Order Cleanup**: Add mechanism to archive or delete processed order files
+1. **Implement Order Cleanup**: Add mechanism to archive or delete processed order files
 3. **Add Order Submission**: Implement proper on-chain order submission via LimitOrderProtocol
 4. **Improve Error Recovery**: Add retry logic for failed transactions
 5. **Add Integration Tests**: Create automated tests for the complete flow
