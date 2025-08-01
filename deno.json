@@ -1,11 +1,11 @@
 {
   "tasks": {
     "dev": "deno run --watch main.ts",
-    "resolver:start": "deno run --allow-net --allow-read --allow-env src/resolver/index.ts",
+    "resolver:start": "deno run --allow-net --allow-read --allow-write --allow-env src/resolver/index.ts",
     "resolver:status": "deno run --allow-net --allow-read src/resolver/status.ts",
-    "alice:create-order": "deno run --allow-net --allow-read --allow-env src/alice/create-order.ts",
+    "alice:create-order": "deno run --allow-net --allow-read --allow-write --allow-env src/alice/create-order.ts",
     "alice:list-orders": "deno run --allow-net --allow-read src/alice/list-orders.ts",
-    "alice:withdraw": "deno run --allow-net --allow-read --allow-env src/alice/withdraw.ts"
+    "alice:withdraw": "deno run --allow-net --allow-read --allow-write --allow-env src/alice/withdraw.ts"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
