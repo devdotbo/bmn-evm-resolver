@@ -20,18 +20,22 @@ import {
  */
 export class OrderMonitor {
   private publicClient: PublicClient;
+  private monitoringClient: PublicClient;
   private escrowFactoryAddress: Address;
   private onOrderCallback: EventCallback<SrcEscrowCreatedEvent>;
   private isRunning = false;
   private lastProcessedBlock: bigint = 0n;
   private pollingInterval?: number;
+  private unwatchFunctions: (() => void)[] = [];
 
   constructor(
     publicClient: PublicClient,
     escrowFactoryAddress: Address,
-    onOrderCallback: EventCallback<SrcEscrowCreatedEvent>
+    onOrderCallback: EventCallback<SrcEscrowCreatedEvent>,
+    monitoringClient?: PublicClient
   ) {
     this.publicClient = publicClient;
+    this.monitoringClient = monitoringClient || publicClient;
     this.escrowFactoryAddress = escrowFactoryAddress;
     this.onOrderCallback = onOrderCallback;
   }
@@ -51,8 +55,15 @@ export class OrderMonitor {
     
     console.log(`Starting order monitor from block ${this.lastProcessedBlock}`);
     
-    // Start polling
-    this.pollForEvents();
+    // If we have a monitoring client (WebSocket), use real-time monitoring
+    if (this.monitoringClient !== this.publicClient) {
+      console.log("Using WebSocket for real-time event monitoring");
+      this.startRealtimeMonitoring();
+    } else {
+      console.log("Using HTTP polling for event monitoring");
+      // Start polling
+      this.pollForEvents();
+    }
   }
 
   /**
@@ -64,7 +75,72 @@ export class OrderMonitor {
       clearInterval(this.pollingInterval);
       this.pollingInterval = undefined;
     }
+    
+    // Clean up WebSocket watchers
+    for (const unwatch of this.unwatchFunctions) {
+      unwatch();
+    }
+    this.unwatchFunctions = [];
+    
     console.log("Order monitor stopped");
+  }
+
+  /**
+   * Start real-time monitoring using WebSocket
+   */
+  private startRealtimeMonitoring(): void {
+    // Watch for SrcEscrowCreated events
+    const unwatch = this.monitoringClient.watchContractEvent({
+      address: this.escrowFactoryAddress,
+      abi: [{
+        type: "event",
+        name: "SrcEscrowCreated",
+        inputs: [
+          { name: "escrow", type: "address", indexed: true },
+          { name: "orderHash", type: "address", indexed: true },
+          { 
+            name: "immutables", 
+            type: "tuple",
+            components: [
+              { name: "orderHash", type: "bytes32" },
+              { name: "hashlock", type: "bytes32" },
+              { name: "maker", type: "address" },
+              { name: "taker", type: "address" },
+              { name: "token", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "safetyDeposit", type: "uint256" },
+              {
+                name: "timelocks",
+                type: "tuple",
+                components: [
+                  { name: "srcWithdrawal", type: "uint256" },
+                  { name: "srcPublicWithdrawal", type: "uint256" },
+                  { name: "srcCancellation", type: "uint256" },
+                  { name: "srcPublicCancellation", type: "uint256" },
+                  { name: "dstWithdrawal", type: "uint256" },
+                  { name: "dstCancellation", type: "uint256" }
+                ]
+              }
+            ]
+          }
+        ]
+      }],
+      onLogs: async (logs) => {
+        for (const log of logs) {
+          await this.processEvent(log);
+        }
+      },
+      onError: (error) => {
+        console.error("WebSocket monitoring error:", error);
+        // Fallback to polling on error
+        if (this.isRunning) {
+          console.log("Falling back to HTTP polling");
+          this.pollForEvents();
+        }
+      }
+    });
+
+    this.unwatchFunctions.push(unwatch);
   }
 
   /**
@@ -233,8 +309,8 @@ export class OrderMonitor {
     callback: (secret: `0x${string}`) => Promise<void>
   ): Promise<void> {
     try {
-      // Watch for EscrowWithdrawal events
-      const unwatch = this.publicClient.watchContractEvent({
+      // Watch for EscrowWithdrawal events using monitoring client for WebSocket
+      const unwatch = this.monitoringClient.watchContractEvent({
         address: escrowAddress,
         abi: [{
           type: "event",
@@ -263,7 +339,7 @@ export class OrderMonitor {
       });
 
       // Store the unwatch function for cleanup
-      // In production, we'd manage this properly
+      this.unwatchFunctions.push(unwatch);
     } catch (error) {
       console.error("Error watching escrow withdrawals:", error);
     }
