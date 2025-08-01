@@ -2,6 +2,7 @@ import {
   createPublicClient, 
   createWalletClient, 
   http, 
+  webSocket,
   type PublicClient, 
   type WalletClient,
   type Chain,
@@ -216,4 +217,16 @@ export async function estimateGas(
   transaction: any
 ): Promise<bigint> {
   return await publicClient.estimateGas(transaction);
+}
+
+/**
+ * Create a monitoring client with WebSocket transport for real-time events
+ * @param chain The chain configuration
+ * @returns Public client with WebSocket transport
+ */
+export function createMonitoringClient(chain: Chain): PublicClient {
+  return createPublicClient({
+    chain,
+    transport: webSocket(),
+  });
 }
