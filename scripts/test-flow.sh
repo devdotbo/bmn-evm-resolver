@@ -26,8 +26,10 @@ if [ ! -f "$PROJECT_ROOT/.env" ]; then
     "$SCRIPT_DIR/setup-env.sh"
 fi
 
-# Source environment variables
+# Source and export environment variables
+set -a  # Export all variables
 source "$PROJECT_ROOT/.env"
+set +a  # Stop exporting
 
 # Function to check if a process is running
 check_process() {
@@ -104,7 +106,7 @@ echo -e "${GREEN}═════════════════════
 echo ""
 
 run_command "Creating order on Chain A" \
-    "deno task alice:create-order -- --amount 100 --token-a TKA --token-b TKB"
+    "deno task alice:create-order --amount 100 --token-a TKA --token-b TKB"
 
 echo -e "${YELLOW}⏳ Waiting for Bob to detect and execute order...${NC}"
 sleep 5
@@ -138,7 +140,7 @@ if [ -z "$ORDER_ID" ]; then
 else
     echo -e "${BLUE}Found order ID: $ORDER_ID${NC}"
     run_command "Alice withdrawing from Chain B" \
-        "deno task alice:withdraw -- --order-id $ORDER_ID"
+        "deno task alice:withdraw --order-id $ORDER_ID"
     
     echo -e "${YELLOW}⏳ Waiting for Bob to detect secret and withdraw...${NC}"
     sleep 5

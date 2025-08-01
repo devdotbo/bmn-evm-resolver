@@ -76,8 +76,10 @@ if [ ! -f "$PROJECT_ROOT/.env" ]; then
     "$SCRIPT_DIR/setup-env.sh"
 fi
 
-# Source environment variables
+# Source and export environment variables
+set -a  # Export all variables
 source "$PROJECT_ROOT/.env"
+set +a  # Stop exporting
 
 # Function to wait for user confirmation
 wait_for_enter() {
@@ -110,7 +112,7 @@ echo ""
 
 cd "$PROJECT_ROOT"
 echo -e "${BLUE}Creating order: $AMOUNT $TOKEN_A → $AMOUNT $TOKEN_B${NC}"
-deno task alice:create-order -- --amount "$AMOUNT" --token-a "$TOKEN_A" --token-b "$TOKEN_B"
+deno task alice:create-order --amount "$AMOUNT" --token-a "$TOKEN_A" --token-b "$TOKEN_B"
 
 # Get the order ID
 ORDER_ID=$(get_latest_order_id)
@@ -175,7 +177,7 @@ echo -e "${GREEN}═════════════════════
 echo ""
 
 echo -e "${BLUE}Withdrawing $AMOUNT $TOKEN_B from Chain B...${NC}"
-deno task alice:withdraw -- --order-id "$ORDER_ID"
+deno task alice:withdraw --order-id "$ORDER_ID"
 
 echo ""
 echo -e "${GREEN}✅ Withdrawal successful!${NC}"
