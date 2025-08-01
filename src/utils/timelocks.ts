@@ -167,3 +167,23 @@ export function getCurrentPhase(timelocks: Timelocks): string {
 
   return "EXPIRED";
 }
+
+/**
+ * Pack timelocks into a single uint256 value for the contract
+ * Based on the contract's timelock packing format
+ * @param timelocks The timelocks object
+ * @returns Packed timelocks as bigint
+ */
+export function packTimelocks(timelocks: Timelocks): bigint {
+  // The contract packs timelocks in a specific format
+  // This is a simplified version - you may need to adjust based on contract implementation
+  const packed = 
+    (timelocks.srcWithdrawal & 0xffffffffn) |
+    ((timelocks.srcPublicWithdrawal & 0xffffffffn) << 32n) |
+    ((timelocks.srcCancellation & 0xffffffffn) << 64n) |
+    ((timelocks.srcPublicCancellation & 0xffffffffn) << 96n) |
+    ((timelocks.dstWithdrawal & 0xffffffffn) << 128n) |
+    ((timelocks.dstCancellation & 0xffffffffn) << 160n);
+  
+  return packed;
+}
