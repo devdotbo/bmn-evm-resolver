@@ -37,3 +37,5 @@ coverage/
 # Build artifacts
 dist/
 build/
+# Runtime data storage
+data/
