@@ -56,8 +56,8 @@ export class OrderExecutor {
       console.log(`Executing order ${order.id}`);
 
       // Validate order state
-      if (order.status !== OrderStatus.SrcEscrowDeployed) {
-        console.error(`Order ${order.id} is not ready for execution`);
+      if (order.status !== OrderStatus.SrcEscrowDeployed && order.status !== OrderStatus.Created) {
+        console.error(`Order ${order.id} is not ready for execution (status: ${order.status})`);
         return false;
       }
 
