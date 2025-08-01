@@ -8,7 +8,7 @@ import { SECRET_STORAGE_FILE } from "../config/constants.ts";
 export class AliceStateManager {
   private orders: Map<string, OrderState> = new Map();
   private secretStore: SecretStore = new SecretStore();
-  private storageFile = "./data/alice-orders.json";
+  private storageFile = "./alice-state.json";
 
   /**
    * Add an order with its secret
@@ -89,13 +89,6 @@ export class AliceStateManager {
       secrets: Array.from(this.secretStore["secrets"].entries()),
       timestamp: Date.now(),
     };
-
-    // Ensure directory exists
-    try {
-      await Deno.mkdir("./data", { recursive: true });
-    } catch {
-      // Directory might already exist
-    }
 
     await Deno.writeTextFile(this.storageFile, JSON.stringify(data, null, 2));
   }

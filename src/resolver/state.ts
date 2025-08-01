@@ -1,4 +1,5 @@
-import type { OrderState, OrderStatus } from "../types/index.ts";
+import type { OrderState } from "../types/index.ts";
+import { OrderStatus } from "../types/index.ts";
 import { ORDER_STATE_FILE } from "../config/constants.ts";
 
 /**
