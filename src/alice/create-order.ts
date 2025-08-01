@@ -1,28 +1,28 @@
 import { parseArgs } from "https://deno.land/std@0.208.0/cli/parse_args.ts";
 import { privateKeyToAccount } from "viem/accounts";
-import type { Address } from "viem";
-import { parseEther } from "viem";
+import type { Address, Hex } from "viem";
+import { parseEther, keccak256, encodePacked } from "viem";
 import { chainA, chainB } from "../config/chains.ts";
 import {
-  getContractAddresses,
-  areContractsConfigured,
-  loadContractAddressesFromEnv,
-} from "../config/contracts.ts";
+  buildOrder,
+  LIMIT_ORDER_PROTOCOL_DOMAIN,
+  ORDER_TYPES,
+  type Order,
+  type OrderMetadata,
+} from "../types/order.ts";
+import { loadContractAddresses } from "../config/load-contracts.ts";
 import {
   createPublicClientForChain,
   createWalletClientForChain,
-  createLimitOrderProtocol,
-  createEscrowFactory,
   createERC20Token,
   waitForTransaction,
 } from "../utils/contracts.ts";
-import { generateSecret, computeHashlock, generateOrderHash } from "../utils/secrets.ts";
+import { generateSecret, computeHashlock } from "../utils/secrets.ts";
 import { createTimelocks } from "../utils/timelocks.ts";
-import { validateOrderParams, validateTokenBalance } from "../utils/validation.ts";
-import { generateOrderId, computeEscrowSrcAddress, getProxyBytecodeHash } from "../utils/addresses.ts";
-import { calculateSafetyDeposit, formatTokenAmount } from "../config/constants.ts";
+import { validateTokenBalance } from "../utils/validation.ts";
+import { formatTokenAmount } from "../config/constants.ts";
 import { AliceStateManager } from "./state.ts";
-import type { OrderParams, OrderState, Immutables } from "../types/index.ts";
+import type { OrderParams, OrderState } from "../types/index.ts";
 import { OrderStatus } from "../types/index.ts";
 
 /**
@@ -34,16 +34,7 @@ export async function createOrder(args: {
   tokenB: string;
   privateKey: `0x${string}`;
 }): Promise<void> {
-  console.log("=== Creating Cross-Chain Order ===\n");
-
-  // Load contract addresses
-  loadContractAddressesFromEnv();
-
-  // Check configuration
-  if (!areContractsConfigured(1337) || !areContractsConfigured(1338)) {
-    console.error("Contract addresses not configured. Please set environment variables.");
-    return;
-  }
+  console.log("=== Creating Cross-Chain Order (EIP-712) ===\n");
 
   // Get account
   const account = privateKeyToAccount(args.privateKey);
@@ -52,11 +43,11 @@ export async function createOrder(args: {
   // Create clients
   const srcPublicClient = createPublicClientForChain(chainA);
   const srcWalletClient = createWalletClientForChain(chainA, args.privateKey);
-  const dstPublicClient = createPublicClientForChain(chainB);
 
-  // Get contract addresses
-  const srcAddresses = getContractAddresses(1337);
-  const dstAddresses = getContractAddresses(1338);
+  // Load contract addresses
+  console.log("Loading contract addresses...");
+  const srcAddresses = await loadContractAddresses(chainA.id);
+  const dstAddresses = await loadContractAddresses(chainB.id);
 
   // Get token addresses
   const srcTokenAddress = srcAddresses.tokens[args.tokenA];
@@ -67,48 +58,26 @@ export async function createOrder(args: {
     return;
   }
 
-  // Parse amount
-  const amount = parseEther(args.amount);
-  const safetyDeposit = calculateSafetyDeposit(amount);
+  // Parse amounts
+  const makingAmount = parseEther(args.amount);
+  const takingAmount = parseEther(args.amount); // 1:1 for simplicity, could be different
 
-  // Generate secret and timelocks
+  // Generate secret for cross-chain atomicity
   const secret = generateSecret();
   const hashlock = computeHashlock(secret);
-  const timelocks = createTimelocks();
 
   console.log(`Order Details:`);
-  console.log(`  Amount: ${args.amount} ${args.tokenA}`);
-  console.log(`  For: ${args.amount} ${args.tokenB}`);
-  console.log(`  Safety Deposit: ${formatTokenAmount(safetyDeposit)} tokens`);
+  console.log(`  Offering: ${args.amount} ${args.tokenA}`);
+  console.log(`  Requesting: ${args.amount} ${args.tokenB}`);
   console.log(`  Secret: ${secret}`);
   console.log(`  Hashlock: ${hashlock}`);
-
-  // Create order parameters
-  const orderParams: OrderParams = {
-    srcToken: srcTokenAddress,
-    dstToken: dstTokenAddress,
-    srcAmount: amount,
-    dstAmount: amount, // 1:1 exchange for simplicity
-    safetyDeposit,
-    secret,
-    srcChainId: 1337,
-    dstChainId: 1338,
-  };
-
-  // Validate parameters
-  try {
-    validateOrderParams(orderParams);
-  } catch (error) {
-    console.error("Invalid order parameters:", error);
-    return;
-  }
 
   // Check balance
   try {
     await validateTokenBalance(
       srcTokenAddress,
       account.address,
-      amount + safetyDeposit,
+      makingAmount,
       srcPublicClient
     );
   } catch (error) {
@@ -116,106 +85,172 @@ export async function createOrder(args: {
     return;
   }
 
-  // Create immutables
-  const nonce = BigInt(Date.now()); // Simple nonce
-  const orderHash = generateOrderHash({
-    ...orderParams,
-    nonce,
+  // Generate unique salt
+  const salt = BigInt(keccak256(encodePacked(
+    ["uint256", "address", "bytes32"],
+    [BigInt(Date.now()), account.address, hashlock]
+  )));
+
+  // Build the order
+  console.log("\nBuilding 1inch Limit Order...");
+  const order: Order = buildOrder({
+    maker: account.address,
+    receiver: account.address,
+    makerAsset: srcTokenAddress,
+    takerAsset: dstTokenAddress,
+    makingAmount,
+    takingAmount,
+    salt,
+    allowPartialFills: false, // For atomic cross-chain swaps
+    allowMultipleFills: false,
+    needPostInteraction: true, // Required for escrow creation
   });
 
-  const immutables: Immutables = {
-    orderHash,
-    hashlock,
-    maker: account.address, // Alice
-    taker: "0x0000000000000000000000000000000000000000" as Address, // Anyone can be taker
-    token: srcTokenAddress,
-    amount,
-    safetyDeposit,
-    timelocks,
-  };
+  console.log("Order structure:", {
+    salt: order.salt.toString(),
+    maker: order.maker,
+    makerAsset: order.makerAsset,
+    takerAsset: order.takerAsset,
+    makingAmount: order.makingAmount.toString(),
+    takingAmount: order.takingAmount.toString(),
+    makerTraits: order.makerTraits.toString(),
+  });
 
-  // Deploy source escrow through LimitOrderProtocol
-  console.log("\nDeploying source escrow...");
-  
+  // Sign the order using EIP-712
+  console.log("\n✍️  Signing order with EIP-712...");
   try {
-    // Create contract instances
-    const limitOrderProtocol = createLimitOrderProtocol(
-      srcAddresses.limitOrderProtocol,
-      srcPublicClient,
-      srcWalletClient
-    );
-
+    // Approve tokens to LimitOrderProtocol
     const srcToken = createERC20Token(
       srcTokenAddress,
       srcPublicClient,
       srcWalletClient
     );
 
-    // Approve tokens
-    console.log("Approving tokens...");
+    console.log("Checking token allowance...");
     const allowance = await srcToken.read.allowance([
       account.address,
-      srcAddresses.escrowFactory,
+      srcAddresses.limitOrderProtocol,
     ]);
 
-    if (allowance < amount + safetyDeposit) {
+    if (allowance < makingAmount) {
+      console.log("Approving tokens to LimitOrderProtocol...");
       const approveHash = await srcToken.write.approve([
-        srcAddresses.escrowFactory,
-        amount + safetyDeposit,
+        srcAddresses.limitOrderProtocol,
+        makingAmount,
       ]);
       await waitForTransaction(srcPublicClient, approveHash);
-      console.log("Tokens approved");
+      console.log("✅ Tokens approved");
     }
 
-    // For demo purposes, we'll simulate order creation
-    // In production, this would go through LimitOrderProtocol
-    console.log("Creating order (demo mode)...");
-    
-    // For now, we'll just transfer tokens to a mock escrow address
-    // This is a simplified demo - in production, the LimitOrderProtocol
-    // would handle the escrow creation through its interaction hooks
-    
-    // Generate a deterministic escrow address for demo
-    const mockEscrowAddress = `0x${orderHash.slice(2, 42)}` as Address;
-    
-    // Transfer tokens to the mock escrow
-    const transferHash = await srcToken.write.transfer([
-      mockEscrowAddress,
-      amount + safetyDeposit
-    ]);
-    
-    const receipt = await waitForTransaction(srcPublicClient, transferHash);
-    if (receipt.status !== "success") {
-      throw new Error("Failed to transfer tokens to escrow");
-    }
+    // Sign the order
+    const signature = await srcWalletClient.signTypedData({
+      account,
+      domain: {
+        ...LIMIT_ORDER_PROTOCOL_DOMAIN,
+        chainId: chainA.id,
+        verifyingContract: srcAddresses.limitOrderProtocol,
+      },
+      types: ORDER_TYPES,
+      primaryType: "Order",
+      message: {
+        salt: order.salt,
+        maker: order.maker,
+        receiver: order.receiver,
+        makerAsset: order.makerAsset,
+        takerAsset: order.takerAsset,
+        makingAmount: order.makingAmount,
+        takingAmount: order.takingAmount,
+        makerTraits: order.makerTraits,
+      },
+    });
 
-    const srcEscrowAddress = mockEscrowAddress;
+    console.log("✅ Order signed successfully!");
+    console.log("Signature:", signature);
 
-    console.log(`Source escrow deployed at: ${srcEscrowAddress}`);
+    // Calculate order hash for tracking
+    const orderHash = keccak256(encodePacked(
+      ["bytes32", "address", "uint256"],
+      [hashlock, account.address, order.salt]
+    ));
 
-    // Create order state
-    const orderId = generateOrderId(1337, orderHash);
+    // Create order metadata
+    const orderMetadata: OrderMetadata = {
+      order,
+      signature,
+      orderHash,
+      createdAt: Date.now(),
+      chainId: chainA.id,
+      status: "pending",
+    };
+
+    // Save order and metadata
+    const ordersDir = "./data/orders";
+    await Deno.mkdir(ordersDir, { recursive: true });
+    const orderFile = `${ordersDir}/order-${orderHash}.json`;
+    
+    // Include additional cross-chain metadata
+    const fullOrderData = {
+      ...orderMetadata,
+      crossChainData: {
+        secret,
+        hashlock,
+        srcChainId: chainA.id,
+        dstChainId: chainB.id,
+        srcToken: args.tokenA,
+        dstToken: args.tokenB,
+      },
+    };
+
+    await Deno.writeTextFile(orderFile, JSON.stringify(fullOrderData, (_, v) =>
+      typeof v === "bigint" ? v.toString() : v
+    , 2));
+
+    // Save to state manager for backward compatibility
+    const orderParams: OrderParams = {
+      srcToken: srcTokenAddress,
+      dstToken: dstTokenAddress,
+      srcAmount: makingAmount,
+      dstAmount: takingAmount,
+      safetyDeposit: 0n, // Handled differently in new architecture
+      secret,
+      srcChainId: chainA.id,
+      dstChainId: chainB.id,
+    };
+
     const orderState: OrderState = {
-      id: orderId,
+      id: orderHash,
       params: orderParams,
-      immutables,
-      srcEscrowAddress,
-      status: OrderStatus.SrcEscrowDeployed,
+      immutables: {
+        orderHash,
+        hashlock,
+        maker: account.address,
+        taker: "0x0000000000000000000000000000000000000000" as Address,
+        token: srcTokenAddress,
+        amount: makingAmount,
+        safetyDeposit: 0n,
+        timelocks: createTimelocks(),
+      },
+      srcEscrowAddress: "0x0000000000000000000000000000000000000000" as Address, // Will be set when Bob deploys
+      status: OrderStatus.Created,
       createdAt: Date.now(),
     };
 
-    // Save to state
     const stateManager = new AliceStateManager();
-    await stateManager.loadFromFile().catch(() => {}); // Load existing state if any
+    await stateManager.loadFromFile().catch(() => {});
     stateManager.addOrder(orderState, secret);
     await stateManager.saveToFile();
 
-    console.log("\n✅ Order created successfully!");
-    console.log(`Order ID: ${orderId}`);
+    console.log("\n✅ Order created and signed successfully!");
+    console.log(`📋 Order Hash: ${orderHash}`);
+    console.log(`💾 Order saved to: ${orderFile}`);
+    console.log("\n📢 Important Notes:");
+    console.log("- Alice does NOT create the source escrow directly");
+    console.log("- The order is now discoverable by resolvers (Bob)");
+    console.log("- Bob will deploy the source escrow when filling the order");
+    console.log("- Use 'deno task alice:list-orders' to check order status");
     console.log("\nNext steps:");
-    console.log("1. Wait for Bob (resolver) to deploy destination escrow");
-    console.log("2. Use 'alice:withdraw' command to claim tokens from destination");
-    console.log("\nTo check order status, use: deno task alice:list-orders");
+    console.log("1. Wait for Bob to discover and fill your order");
+    console.log("2. Once Bob deploys destination escrow, use 'alice:withdraw' to claim tokens");
 
   } catch (error) {
     console.error("Error creating order:", error);
