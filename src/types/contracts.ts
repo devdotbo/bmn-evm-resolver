@@ -1,12 +1,12 @@
 import type { Address, PublicClient, WalletClient } from "viem";
 
 // Contract ABIs will be imported from the abis directory
-export { default as EscrowFactoryABI } from "../../abis/EscrowFactory.json" assert { type: "json" };
-export { default as EscrowSrcABI } from "../../abis/EscrowSrc.json" assert { type: "json" };
-export { default as EscrowDstABI } from "../../abis/EscrowDst.json" assert { type: "json" };
-export { default as LimitOrderProtocolABI } from "../../abis/LimitOrderProtocol.json" assert { type: "json" };
-export { default as IERC20ABI } from "../../abis/IERC20.json" assert { type: "json" };
-export { default as TokenMockABI } from "../../abis/TokenMock.json" assert { type: "json" };
+export { default as EscrowFactoryABI } from "../../abis/EscrowFactory.json" with { type: "json" };
+export { default as EscrowSrcABI } from "../../abis/EscrowSrc.json" with { type: "json" };
+export { default as EscrowDstABI } from "../../abis/EscrowDst.json" with { type: "json" };
+export { default as LimitOrderProtocolABI } from "../../abis/LimitOrderProtocol.json" with { type: "json" };
+export { default as IERC20ABI } from "../../abis/IERC20.json" with { type: "json" };
+export { default as TokenMockABI } from "../../abis/TokenMock.json" with { type: "json" };
 
 // Contract instance types
 export interface ContractInstance<T = any> {
