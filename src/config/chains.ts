@@ -11,6 +11,7 @@ export const chainA = defineChain({
   rpcUrls: {
     default: {
       http: ["http://localhost:8545"],
+      webSocket: ["ws://localhost:8545"],
     },
   },
   testnet: true,
@@ -27,6 +28,7 @@ export const chainB = defineChain({
   rpcUrls: {
     default: {
       http: ["http://localhost:8546"],
+      webSocket: ["ws://localhost:8546"],
     },
   },
   testnet: true,
