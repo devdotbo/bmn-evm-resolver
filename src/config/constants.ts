@@ -49,10 +49,10 @@ export const CHAIN_NAMES: Record<number, string> = {
   10: "Optimism",
 };
 
-// Default RPC URLs
+// Default RPC URLs loaded from environment
 export const DEFAULT_RPC_URLS: Record<number, string> = {
-  1337: "http://localhost:8545",
-  1338: "http://localhost:8546",
+  1337: Deno.env.get("CHAIN_A_RPC_URL") || "http://localhost:8545",
+  1338: Deno.env.get("CHAIN_B_RPC_URL") || "http://localhost:8546",
 };
 
 // Test mode settings
@@ -64,8 +64,8 @@ export const LOG_LEVEL = Deno.env.get("LOG_LEVEL") || "info";
 export const ENABLE_DEBUG_LOGS = LOG_LEVEL === "debug";
 
 // File paths
-export const ORDER_STATE_FILE = "./data/order-state.json";
-export const SECRET_STORAGE_FILE = "./data/secrets.json";
+export const ORDER_STATE_FILE = "./resolver-state.json";
+export const SECRET_STORAGE_FILE = "./resolver-secrets.json";
 
 /**
  * Get the minimum profit amount for a given token amount
