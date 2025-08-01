@@ -176,14 +176,21 @@ export function getCurrentPhase(timelocks: Timelocks): string {
  */
 export function packTimelocks(timelocks: Timelocks): bigint {
   // The contract packs timelocks in a specific format
-  // This is a simplified version - you may need to adjust based on contract implementation
+  // Convert each timestamp to bigint and pack into 32-bit slots
+  const srcWithdrawal = BigInt(timelocks.srcWithdrawal);
+  const srcPublicWithdrawal = BigInt(timelocks.srcPublicWithdrawal);
+  const srcCancellation = BigInt(timelocks.srcCancellation);
+  const srcPublicCancellation = BigInt(timelocks.srcPublicCancellation);
+  const dstWithdrawal = BigInt(timelocks.dstWithdrawal);
+  const dstCancellation = BigInt(timelocks.dstCancellation);
+  
   const packed = 
-    (timelocks.srcWithdrawal & 0xffffffffn) |
-    ((timelocks.srcPublicWithdrawal & 0xffffffffn) << 32n) |
-    ((timelocks.srcCancellation & 0xffffffffn) << 64n) |
-    ((timelocks.srcPublicCancellation & 0xffffffffn) << 96n) |
-    ((timelocks.dstWithdrawal & 0xffffffffn) << 128n) |
-    ((timelocks.dstCancellation & 0xffffffffn) << 160n);
+    (srcWithdrawal & 0xffffffffn) |
+    ((srcPublicWithdrawal & 0xffffffffn) << 32n) |
+    ((srcCancellation & 0xffffffffn) << 64n) |
+    ((srcPublicCancellation & 0xffffffffn) << 96n) |
+    ((dstWithdrawal & 0xffffffffn) << 128n) |
+    ((dstCancellation & 0xffffffffn) << 160n);
   
   return packed;
 }
