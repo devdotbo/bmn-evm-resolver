@@ -1,4 +1,5 @@
-import { defineChain } from "viem/chains";
+import { defineChain } from "viem";
+import type { Address } from "viem";
 
 export const chainA = defineChain({
   id: 1337,
@@ -10,8 +11,8 @@ export const chainA = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ["http://localhost:8545"],
-      webSocket: ["ws://localhost:8545"],
+      http: [Deno.env.get("CHAIN_A_RPC_URL") || "http://localhost:8545"],
+      webSocket: [Deno.env.get("CHAIN_A_WS_URL") || "ws://localhost:8545"],
     },
   },
   testnet: true,
@@ -27,17 +28,13 @@ export const chainB = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ["http://localhost:8546"],
-      webSocket: ["ws://localhost:8546"],
+      http: [Deno.env.get("CHAIN_B_RPC_URL") || "http://localhost:8546"],
+      webSocket: [Deno.env.get("CHAIN_B_WS_URL") || "ws://localhost:8546"],
     },
   },
   testnet: true,
 });
 
-// Test account addresses (Anvil defaults)
-export const ALICE_ADDRESS = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
-export const BOB_ADDRESS = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" as const;
-
-// Private keys (Anvil defaults - NEVER use in production!)
-export const ALICE_PRIVATE_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
-export const BOB_PRIVATE_KEY = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a" as const;
+// Test account addresses loaded from environment
+export const ALICE_ADDRESS = (Deno.env.get("ALICE_ADDRESS") || "0x70997970C51812dc3A010C7d01b50e0d17dc79C8") as Address;
+export const BOB_ADDRESS = (Deno.env.get("BOB_ADDRESS") || "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC") as Address;
