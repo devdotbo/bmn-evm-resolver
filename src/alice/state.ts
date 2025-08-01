@@ -90,7 +90,8 @@ export class AliceStateManager {
       timestamp: Date.now(),
     };
 
-    await Deno.writeTextFile(this.storageFile, JSON.stringify(data, null, 2));
+    await Deno.writeTextFile(this.storageFile, JSON.stringify(data, (_, v) => 
+      typeof v === 'bigint' ? v.toString() : v, 2));
   }
 
   /**
@@ -108,6 +109,27 @@ export class AliceStateManager {
 
       // Restore orders
       for (const [id, order] of data.orders) {
+        // Convert string values back to BigInt where needed
+        if (order.params) {
+          if (order.params.srcAmount) order.params.srcAmount = BigInt(order.params.srcAmount);
+          if (order.params.dstAmount) order.params.dstAmount = BigInt(order.params.dstAmount);
+          if (order.params.safetyDeposit) order.params.safetyDeposit = BigInt(order.params.safetyDeposit);
+        }
+        if (order.immutables?.amount) {
+          order.immutables.amount = BigInt(order.immutables.amount);
+        }
+        if (order.immutables?.safetyDeposit) {
+          order.immutables.safetyDeposit = BigInt(order.immutables.safetyDeposit);
+        }
+        if (order.immutables?.timelocks) {
+          const timelocks = order.immutables.timelocks;
+          if (timelocks.srcWithdrawal) timelocks.srcWithdrawal = BigInt(timelocks.srcWithdrawal);
+          if (timelocks.srcPublicWithdrawal) timelocks.srcPublicWithdrawal = BigInt(timelocks.srcPublicWithdrawal);
+          if (timelocks.srcCancellation) timelocks.srcCancellation = BigInt(timelocks.srcCancellation);
+          if (timelocks.dstWithdrawal) timelocks.dstWithdrawal = BigInt(timelocks.dstWithdrawal);
+          if (timelocks.dstPublicWithdrawal) timelocks.dstPublicWithdrawal = BigInt(timelocks.dstPublicWithdrawal);
+          if (timelocks.dstCancellation) timelocks.dstCancellation = BigInt(timelocks.dstCancellation);
+        }
         this.orders.set(id, order);
       }
 
