@@ -15,6 +15,7 @@ import { OrderStateManager } from "./state.ts";
 import { OrderMonitor } from "./monitor.ts";
 import { OrderExecutor } from "./executor.ts";
 import { ProfitabilityCalculator } from "./profitability.ts";
+import { FileMonitor } from "./file-monitor.ts";
 import type { SrcEscrowCreatedEvent } from "../types/events.ts";
 import type { OrderState } from "../types/index.ts";
 import { OrderStatus } from "../types/index.ts";
@@ -26,6 +27,7 @@ import { MAX_CONCURRENT_ORDERS, MAX_ORDER_AGE_SECONDS } from "../config/constant
 export class Resolver {
   private stateManager: OrderStateManager;
   private monitor: OrderMonitor;
+  private fileMonitor: FileMonitor;
   private executor: OrderExecutor;
   private profitCalculator: ProfitabilityCalculator;
   private srcChainId: number;
@@ -70,6 +72,11 @@ export class Resolver {
       srcChainId,
       dstChainId
     );
+
+    // Initialize file monitor for development
+    this.fileMonitor = new FileMonitor(
+      this.handleNewOrder.bind(this)
+    );
   }
 
   /**
@@ -106,6 +113,9 @@ export class Resolver {
     // Start monitoring
     this.isRunning = true;
     await this.monitor.start();
+    
+    // Start file monitor for development
+    await this.fileMonitor.start();
 
     // Start periodic tasks
     this.startPeriodicTasks();
@@ -126,6 +136,7 @@ export class Resolver {
     console.log("Stopping resolver...");
     this.isRunning = false;
     this.monitor.stop();
+    this.fileMonitor.stop();
     
     // Save state
     await this.stateManager.saveToFile();
@@ -147,7 +158,14 @@ export class Resolver {
         return;
       }
 
-      // Create order state
+      // Handle file-based orders differently
+      if (event.orderData) {
+        // This is a file-based order from FileMonitor
+        await this.handleFileBasedOrder(event);
+        return;
+      }
+
+      // Create order state for blockchain events
       const orderId = generateOrderId(this.srcChainId, event.orderHash);
       const orderState: OrderState = {
         id: orderId,
@@ -190,6 +208,78 @@ export class Resolver {
       await this.executeOrder(orderState);
     } catch (error) {
       console.error("Error handling new order:", error);
+    }
+  }
+
+  /**
+   * Handle file-based order from FileMonitor
+   * @param event The event with order data
+   */
+  private async handleFileBasedOrder(event: SrcEscrowCreatedEvent): Promise<void> {
+    if (!event.orderData) return;
+
+    const { order, crossChainData } = event.orderData;
+    
+    // Create order state from file data
+    const orderId = event.orderHash;
+    const orderState: OrderState = {
+      id: orderId,
+      params: {
+        srcToken: order.makerAsset,
+        dstToken: order.takerAsset,
+        srcAmount: BigInt(order.makingAmount),
+        dstAmount: BigInt(order.takingAmount),
+        safetyDeposit: BigInt(crossChainData.safetyDeposit || 0),
+        secret: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        srcChainId: this.srcChainId,
+        dstChainId: this.dstChainId,
+      },
+      immutables: event.immutables,
+      srcEscrowAddress: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      status: OrderStatus.Created,
+      createdAt: Date.now(),
+      orderData: event.orderData,
+    };
+
+    // Check profitability
+    const analysis = this.profitCalculator.analyzeOrder(
+      crossChainData.srcTokenSymbol || "TKA",
+      orderState.params.srcAmount,
+      crossChainData.dstTokenSymbol || "TKB",
+      orderState.params.dstAmount,
+      orderState.params.safetyDeposit
+    );
+
+    if (!analysis.isProfitable) {
+      console.log(`Order ${orderId} not profitable: ${analysis.reason}`);
+      return;
+    }
+
+    console.log(`Order ${orderId} is profitable: ${analysis.profitBps / 100}% profit`);
+    
+    // Add to state
+    this.stateManager.addOrder(orderState);
+    
+    // For file-based orders, we need to fill the limit order on-chain first
+    await this.fillLimitOrder(orderState);
+  }
+
+  /**
+   * Fill a limit order on-chain
+   * @param order The order to fill
+   */
+  private async fillLimitOrder(order: OrderState): Promise<void> {
+    if (!order.orderData) return;
+
+    try {
+      console.log(`Filling limit order ${order.id} on-chain...`);
+      
+      // TODO: Implement actual limit order filling via LimitOrderProtocol
+      // For now, we'll just execute the order directly
+      await this.executeOrder(order);
+    } catch (error) {
+      console.error(`Failed to fill limit order ${order.id}:`, error);
+      this.stateManager.updateOrderStatus(order.id, OrderStatus.Failed);
     }
   }
 
