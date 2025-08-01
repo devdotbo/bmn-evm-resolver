@@ -136,9 +136,13 @@ export class OrderExecutor {
       // Deploy escrow
       console.log("Deploying destination escrow...");
       const hash = await this.retryTransaction(async () => {
+        const srcCancellationTimestamp = typeof order.immutables.timelocks.srcCancellation === 'bigint' 
+          ? order.immutables.timelocks.srcCancellation 
+          : BigInt(order.immutables.timelocks.srcCancellation);
+        
         return await factory.write.createDstEscrow([
           dstImmutables,
-          BigInt(order.immutables.timelocks.srcCancellation)
+          srcCancellationTimestamp
         ], {
           value: order.params.safetyDeposit
         });
