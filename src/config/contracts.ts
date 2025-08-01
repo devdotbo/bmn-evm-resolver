@@ -127,9 +127,57 @@ export function loadContractAddressesFromEnv(): void {
   }
 }
 
-// Try to load addresses from environment on module load
+/**
+ * Load contract addresses from deployment JSON files
+ * This provides a fallback when environment variables are not set
+ */
+export function loadContractAddressesFromDeployments(): void {
+  try {
+    // Load Chain A deployment
+    const chainAPath = new URL("../../deployments/chainA.json", import.meta.url).pathname;
+    const chainADeployment = JSON.parse(Deno.readTextFileSync(chainAPath));
+    
+    if (chainADeployment.chainId === 1337 && chainADeployment.contracts) {
+      updateContractAddresses(1337, {
+        escrowFactory: chainADeployment.contracts.factory as Address,
+        limitOrderProtocol: chainADeployment.contracts.limitOrderProtocol as Address,
+        tokens: {
+          TKA: chainADeployment.contracts.tokenA as Address,
+          TKB: chainADeployment.contracts.tokenB as Address,
+        },
+      });
+    }
+    
+    // Load Chain B deployment
+    const chainBPath = new URL("../../deployments/chainB.json", import.meta.url).pathname;
+    const chainBDeployment = JSON.parse(Deno.readTextFileSync(chainBPath));
+    
+    if (chainBDeployment.chainId === 1338 && chainBDeployment.contracts) {
+      updateContractAddresses(1338, {
+        escrowFactory: chainBDeployment.contracts.factory as Address,
+        limitOrderProtocol: chainBDeployment.contracts.limitOrderProtocol as Address,
+        tokens: {
+          TKA: chainBDeployment.contracts.tokenA as Address,
+          TKB: chainBDeployment.contracts.tokenB as Address,
+        },
+      });
+    }
+  } catch (error) {
+    console.warn("Failed to load contract addresses from deployments:", error);
+  }
+}
+
+// Try to load addresses in order of priority:
+// 1. First try deployment files (most reliable for local dev)
+try {
+  loadContractAddressesFromDeployments();
+} catch (error) {
+  console.warn("Failed to load from deployments:", error);
+}
+
+// 2. Then override with environment variables if set
 try {
   loadContractAddressesFromEnv();
 } catch (error) {
-  console.warn("Failed to load contract addresses from environment:", error);
+  console.warn("Failed to load from environment:", error);
 }
