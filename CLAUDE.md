@@ -70,8 +70,32 @@ The resolver interacts with Bridge-Me-Not EVM contracts:
 - Timelocks ensure funds can be recovered if counterparty fails
 - Safety deposits protect against griefing attacks
 
+## Security Principles
+
+**The key principle: Never hardcode sensitive data, even for test environments. Always use environment variables to maintain good security practices.**
+
+### Configuration Management
+- All sensitive configuration (private keys, API keys, contract addresses) must be stored in `.env` files
+- Use `.env.example` as a template - it contains safe default values for local development
+- The `.env` file is gitignored to prevent accidental commits of sensitive data
+- Even test private keys should only be defined in environment files, not in source code
+
+### Best Practices
+1. Copy `.env.example` to `.env` before running the application
+2. Modify values in `.env` as needed for your environment
+3. Never commit `.env` files to version control
+4. For production deployments, use secure secret management systems
+5. Always validate that sensitive values are loaded from environment variables, not hardcoded
+
+### Environment Setup
+Run the setup script to automatically create your `.env` file from the template:
+```bash
+./scripts/setup-env.sh
+```
+
 ## Important Notes
 
-- Uses Anvil test accounts with hardcoded private keys (only for local development)
+- Uses Anvil test accounts loaded from environment variables (see `.env.example` for local development defaults)
+- Private keys in `.env.example` are standard Anvil test keys - only use these for local development
 - Timelocks are shortened for demo purposes (5-20 minutes)
 - Currently configured for mock tokens (TKA, TKB) on local test chains
