@@ -7,7 +7,8 @@ import {
 } from "../config/contracts.ts";
 import { 
   createPublicClientForChain,
-  createWalletClientForChain 
+  createWalletClientForChain,
+  createMonitoringClient 
 } from "../utils/contracts.ts";
 import { generateOrderId } from "../utils/addresses.ts";
 import { OrderStateManager } from "./state.ts";
@@ -46,15 +47,20 @@ export class Resolver {
     const srcWalletClient = createWalletClientForChain(chainA, privateKey);
     const dstPublicClient = createPublicClientForChain(chainB);
     const dstWalletClient = createWalletClientForChain(chainB, privateKey);
+    
+    // Create monitoring clients with WebSocket for real-time events
+    const srcMonitoringClient = createMonitoringClient(chainA);
+    const dstMonitoringClient = createMonitoringClient(chainB);
 
     // Get contract addresses
     const srcAddresses = getContractAddresses(srcChainId);
     
-    // Initialize monitor
+    // Initialize monitor with WebSocket client for real-time monitoring
     this.monitor = new OrderMonitor(
       srcPublicClient,
       srcAddresses.escrowFactory,
-      this.handleNewOrder.bind(this)
+      this.handleNewOrder.bind(this),
+      srcMonitoringClient
     );
 
     // Initialize executor
