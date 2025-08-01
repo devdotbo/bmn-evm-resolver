@@ -137,10 +137,11 @@ export class OrderExecutor {
       console.log("Deploying destination escrow...");
       const hash = await this.retryTransaction(async () => {
         return await factory.write.createDstEscrow([
-          order.immutables,
           dstImmutables,
-          BigInt(this.srcChainId)
-        ]);
+          BigInt(order.immutables.timelocks.srcCancellation)
+        ], {
+          value: order.params.safetyDeposit
+        });
       });
 
       // Wait for confirmation
