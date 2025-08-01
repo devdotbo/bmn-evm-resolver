@@ -108,12 +108,12 @@ export class FileMonitor {
           amount: BigInt(orderData.order.makingAmount),
           safetyDeposit: 0n,
           timelocks: {
-            srcWithdrawal: BigInt(Math.floor(Date.now() / 1000) + 300), // 5 minutes
-            srcPublicWithdrawal: BigInt(Math.floor(Date.now() / 1000) + 1200), // 20 minutes
-            srcCancellation: BigInt(Math.floor(Date.now() / 1000) + 300), // 5 minutes
-            dstWithdrawal: BigInt(Math.floor(Date.now() / 1000) + 600), // 10 minutes
-            dstPublicWithdrawal: BigInt(Math.floor(Date.now() / 1000) + 900), // 15 minutes
-            dstCancellation: BigInt(Math.floor(Date.now() / 1000) + 1200), // 20 minutes
+            srcWithdrawal: BigInt(orderData.crossChainData.timelocks?.srcWithdrawal || Math.floor(Date.now() / 1000) + 300),
+            srcPublicWithdrawal: BigInt(orderData.crossChainData.timelocks?.srcPublicWithdrawal || Math.floor(Date.now() / 1000) + 1200),
+            srcCancellation: BigInt(orderData.crossChainData.timelocks?.srcCancellation || Math.floor(Date.now() / 1000) + 300),
+            dstWithdrawal: BigInt(orderData.crossChainData.timelocks?.dstWithdrawal || Math.floor(Date.now() / 1000) + 600),
+            dstPublicWithdrawal: BigInt(orderData.crossChainData.timelocks?.dstPublicWithdrawal || Math.floor(Date.now() / 1000) + 900),
+            dstCancellation: BigInt(orderData.crossChainData.timelocks?.dstCancellation || Math.floor(Date.now() / 1000) + 1200),
           },
         },
         blockNumber: 0n,
