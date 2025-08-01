@@ -14,7 +14,7 @@ import {
   getProxyBytecodeHash 
 } from "../utils/addresses.ts";
 import { validateTokenBalance, validateTokenAllowance } from "../utils/validation.ts";
-import { hasTimelockPassed } from "../utils/timelocks.ts";
+import { hasTimelockPassed, packTimelocks } from "../utils/timelocks.ts";
 import { TX_RETRY_ATTEMPTS, TX_RETRY_DELAY_MS } from "../config/constants.ts";
 
 /**
@@ -122,7 +122,9 @@ export class OrderExecutor {
       );
 
       // Create destination immutables (Bob is maker on destination)
-      const dstImmutables: Immutables = {
+      // Note: Contract expects timelocks as a packed uint256 value
+      const packedTimelocks = packTimelocks(order.immutables.timelocks);
+      const dstImmutables = {
         orderHash: order.immutables.orderHash,
         hashlock: order.immutables.hashlock,
         maker: this.dstWalletClient.account!.address, // Bob
@@ -130,7 +132,7 @@ export class OrderExecutor {
         token: order.params.dstToken,
         amount: order.params.dstAmount,
         safetyDeposit: order.params.safetyDeposit,
-        timelocks: order.immutables.timelocks,
+        timelocks: packedTimelocks, // Packed into single uint256
       };
 
       // Deploy escrow
