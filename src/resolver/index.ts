@@ -307,8 +307,13 @@ export class Resolver {
       const result = await this.executor.executeOrder(order, dstAddresses.escrowFactory);
       
       if (result.success && result.dstEscrowAddress) {
-        // Update order with destination escrow address
-        this.stateManager.updateOrderEscrows(order.id, undefined, result.dstEscrowAddress);
+        // Update order with destination escrow address (both predicted and actual)
+        this.stateManager.updateOrderEscrows(
+          order.id, 
+          undefined, 
+          result.dstEscrowAddress,
+          result.dstEscrowAddress // The executor now returns the actual address from the event
+        );
         this.stateManager.updateOrderStatus(order.id, OrderStatus.DstEscrowDeployed);
         
         // Save state immediately
@@ -381,7 +386,10 @@ export class Resolver {
       
       // Find the order associated with this escrow
       const orders = this.stateManager.getAllOrders();
-      const order = orders.find(o => o.dstEscrowAddress === event.escrowAddress);
+      const order = orders.find(o => 
+        o.actualDstEscrowAddress === event.escrowAddress || 
+        o.dstEscrowAddress === event.escrowAddress
+      );
       
       if (!order) {
         console.error(`No order found for escrow ${event.escrowAddress}`);
@@ -438,10 +446,11 @@ export class Resolver {
     const activeOrders = this.stateManager.getActiveOrders();
     
     for (const order of activeOrders) {
-      if (order.dstEscrowAddress && this.executor.canCancelOrder(order)) {
+      const escrowAddress = order.actualDstEscrowAddress || order.dstEscrowAddress;
+      if (escrowAddress && this.executor.canCancelOrder(order)) {
         console.log(`Cancelling expired order ${order.id}`);
         const success = await this.executor.cancelDestinationEscrow(
-          order.dstEscrowAddress
+          escrowAddress
         );
         
         if (success) {
