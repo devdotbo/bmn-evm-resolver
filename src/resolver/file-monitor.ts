@@ -32,7 +32,7 @@ export class FileMonitor {
 
     // Start polling
     this.pollForOrders();
-    this.pollingInterval = setInterval(() => this.pollForOrders(), 3000);
+    this.pollingInterval = setInterval(() => this.pollForOrders(), 1000); // Poll every 1 second for faster order detection
   }
 
   /**
