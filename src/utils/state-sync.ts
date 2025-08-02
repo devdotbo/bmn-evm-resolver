@@ -60,7 +60,8 @@ export async function syncDestinationEscrows(): Promise<void> {
     
     // Iterate through resolver orders
     for (const resolverOrder of resolverOrders) {
-      if (!resolverOrder.dstEscrowAddress) continue;
+      const escrowAddress = resolverOrder.actualDstEscrowAddress || resolverOrder.dstEscrowAddress;
+      if (!escrowAddress) continue;
       
       // Find matching order in Alice's state
       const aliceOrderIndex = aliceData.orders.findIndex(
@@ -71,14 +72,15 @@ export async function syncDestinationEscrows(): Promise<void> {
         const [orderId, aliceOrder] = aliceData.orders[aliceOrderIndex];
         
         // Update if destination escrow is not set
-        if (!aliceOrder.dstEscrowAddress || 
+        if (!aliceOrder.actualDstEscrowAddress && !aliceOrder.dstEscrowAddress || 
             aliceOrder.dstEscrowAddress === "0x0000000000000000000000000000000000000000") {
           
           console.log(`Syncing destination escrow for order ${orderId}`);
-          console.log(`  Escrow address: ${resolverOrder.dstEscrowAddress}`);
+          console.log(`  Escrow address: ${escrowAddress}`);
           
-          // Update Alice's order
+          // Update Alice's order with both addresses
           aliceOrder.dstEscrowAddress = resolverOrder.dstEscrowAddress;
+          aliceOrder.actualDstEscrowAddress = resolverOrder.actualDstEscrowAddress;
           aliceOrder.status = "DST_ESCROW_DEPLOYED";
           
           // Also update the taker address to Bob's address
