@@ -44,6 +44,7 @@ export interface OrderState {
   immutables: Immutables;
   srcEscrowAddress?: Address;
   dstEscrowAddress?: Address;
+  actualDstEscrowAddress?: Address; // Actual deployed address from DstEscrowCreated event
   status: OrderStatus;
   createdAt: number;
   secretRevealed?: boolean;
