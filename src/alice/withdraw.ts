@@ -15,7 +15,7 @@ import {
 } from "../utils/contracts.ts";
 import { computeEscrowDstAddress, getProxyBytecodeHash } from "../utils/addresses.ts";
 import { validateSecret } from "../utils/secrets.ts";
-import { hasTimelockPassed, formatDuration, getTimeUntilTimelock } from "../utils/timelocks.ts";
+import { hasTimelockPassed, formatDuration, getTimeUntilTimelock, packTimelocks } from "../utils/timelocks.ts";
 import { validateForWithdrawal } from "../utils/validation.ts";
 import { formatTokenAmount } from "../config/constants.ts";
 import { AliceStateManager } from "./state.ts";
@@ -141,8 +141,21 @@ export async function withdrawFromOrder(args: {
     console.log("\nWithdrawing from destination escrow...");
     console.log(`Revealing secret: ${secret}`);
     
-    // Call withdraw function
-    const hash = await escrow.write.withdraw([secret]);
+    // Prepare immutables for destination escrow
+    // On destination chain, Bob is the maker and Alice is the taker
+    const dstImmutables = {
+      orderHash: order.immutables.orderHash,
+      hashlock: order.immutables.hashlock,
+      maker: order.immutables.taker, // Bob's address (was taker on source)
+      taker: order.immutables.maker, // Alice's address (was maker on source)
+      token: order.params.dstToken,
+      amount: order.params.dstAmount,
+      safetyDeposit: order.params.safetyDeposit,
+      timelocks: packTimelocks(order.immutables.timelocks),
+    };
+    
+    // Call withdraw function with secret and immutables
+    const hash = await escrow.write.withdraw([secret, dstImmutables]);
     console.log(`Transaction hash: ${hash}`);
     
     // Wait for confirmation
