@@ -16,15 +16,15 @@ export const MIN_SAFETY_DEPOSIT = 0n; // Minimum safety deposit amount
 export const GAS_BUFFER_MULTIPLIER = 1.2; // 20% gas buffer for transactions
 export const MAX_GAS_PRICE_GWEI = 1000n; // Maximum gas price in gwei
 
-// Monitoring settings
-export const BLOCK_POLLING_INTERVAL_MS = 2000; // Poll for new blocks every 2 seconds
+// Monitoring settings (optimized for 1-second block mining)
+export const BLOCK_POLLING_INTERVAL_MS = 1000; // Poll for new blocks every 1 second (matches 1-second block mining)
 export const EVENT_BATCH_SIZE = 100; // Number of events to fetch per batch
-export const RECONNECT_DELAY_MS = 5000; // Delay before reconnecting on error
+export const RECONNECT_DELAY_MS = 3000; // Delay before reconnecting on error (reduced for faster recovery)
 
-// Transaction settings
+// Transaction settings (optimized for 1-second block mining)
 export const TX_CONFIRMATION_BLOCKS = 2; // Number of confirmations required
 export const TX_RETRY_ATTEMPTS = 3; // Number of retry attempts for failed transactions
-export const TX_RETRY_DELAY_MS = 3000; // Delay between retry attempts
+export const TX_RETRY_DELAY_MS = 1500; // Delay between retry attempts (reduced for 1-second blocks)
 
 // Token decimals (for display purposes)
 export const DEFAULT_TOKEN_DECIMALS = 18;
