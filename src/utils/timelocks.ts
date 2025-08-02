@@ -1,13 +1,14 @@
 import type { Timelocks } from "../types/index.ts";
 
 // Default timelock durations in seconds (for demo/testing)
+// Updated to match contract's 1-second block mining configuration
 export const DEFAULT_TIMELOCK_DURATIONS = {
-  srcWithdrawal: 5n * 60n,           // 5 minutes
-  srcPublicWithdrawal: 10n * 60n,    // 10 minutes
-  srcCancellation: 15n * 60n,        // 15 minutes
-  srcPublicCancellation: 20n * 60n,  // 20 minutes
-  dstWithdrawal: 5n * 60n,           // 5 minutes
-  dstCancellation: 15n * 60n,        // 15 minutes
+  srcWithdrawal: 0n,                 // 0 seconds - immediate withdrawal allowed
+  srcPublicWithdrawal: 10n,          // 10 seconds
+  srcCancellation: 30n,              // 30 seconds
+  srcPublicCancellation: 45n,         // 45 seconds
+  dstWithdrawal: 0n,                 // 0 seconds - immediate withdrawal allowed
+  dstCancellation: 30n,              // 30 seconds
 } as const;
 
 // Production timelock durations (longer for security)
@@ -72,8 +73,8 @@ export function createTimelocksFromTimestamp(
  */
 export function validateTimelocks(timelocks: Timelocks): boolean {
   // Source chain validations
-  if (timelocks.srcWithdrawal >= timelocks.srcPublicWithdrawal) {
-    throw new Error("srcWithdrawal must be before srcPublicWithdrawal");
+  if (timelocks.srcWithdrawal > timelocks.srcPublicWithdrawal) {
+    throw new Error("srcWithdrawal must be before or equal to srcPublicWithdrawal");
   }
   if (timelocks.srcPublicWithdrawal >= timelocks.srcCancellation) {
     throw new Error("srcPublicWithdrawal must be before srcCancellation");
@@ -83,14 +84,12 @@ export function validateTimelocks(timelocks: Timelocks): boolean {
   }
 
   // Destination chain validations
-  if (timelocks.dstWithdrawal >= timelocks.dstCancellation) {
-    throw new Error("dstWithdrawal must be before dstCancellation");
+  if (timelocks.dstWithdrawal > timelocks.dstCancellation) {
+    throw new Error("dstWithdrawal must be before or equal to dstCancellation");
   }
 
-  // Cross-chain validations
-  if (timelocks.srcWithdrawal <= timelocks.dstWithdrawal) {
-    throw new Error("srcWithdrawal must be after dstWithdrawal to prevent race conditions");
-  }
+  // Cross-chain validations - removed since both can be 0 now
+  // With immediate withdrawals allowed, this validation is no longer needed
 
   return true;
 }
