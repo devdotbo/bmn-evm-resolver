@@ -1,5 +1,6 @@
 import { parseArgs } from "https://deno.land/std@0.208.0/cli/parse_args.ts";
 import { privateKeyToAccount } from "viem/accounts";
+import { type Address } from "viem";
 import { chainB } from "../config/chains.ts";
 import {
   getContractAddresses,
@@ -143,10 +144,13 @@ export async function withdrawFromOrder(args: {
     
     // Prepare immutables for destination escrow
     // On destination chain, Bob is the maker and Alice is the taker
+    // We need to get Bob's address from somewhere - for now, use the hardcoded resolver address
+    const bobAddress = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"; // TODO: Get this dynamically
+    
     const dstImmutables = {
       orderHash: order.immutables.orderHash,
       hashlock: order.immutables.hashlock,
-      maker: order.immutables.taker, // Bob's address (was taker on source)
+      maker: bobAddress as Address, // Bob is the maker on destination
       taker: order.immutables.maker, // Alice's address (was maker on source)
       token: order.params.dstToken,
       amount: order.params.dstAmount,
