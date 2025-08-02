@@ -95,6 +95,17 @@ export class FileMonitor {
         return v;
       });
 
+      // Generate default timelocks
+      const now = Math.floor(Date.now() / 1000);
+      const timelocks = {
+        srcWithdrawal: BigInt(orderData.crossChainData.timelocks?.srcWithdrawal ?? now + 300),
+        srcPublicWithdrawal: BigInt(orderData.crossChainData.timelocks?.srcPublicWithdrawal ?? now + 600),
+        srcCancellation: BigInt(orderData.crossChainData.timelocks?.srcCancellation ?? now + 900),
+        srcPublicCancellation: BigInt(orderData.crossChainData.timelocks?.srcPublicCancellation ?? now + 1200),
+        dstWithdrawal: BigInt(orderData.crossChainData.timelocks?.dstWithdrawal ?? now + 300),
+        dstCancellation: BigInt(orderData.crossChainData.timelocks?.dstCancellation ?? now + 900),
+      };
+
       // Convert to SrcEscrowCreatedEvent format
       const event: SrcEscrowCreatedEvent = {
         orderHash: orderData.orderHash,
@@ -107,14 +118,7 @@ export class FileMonitor {
           token: orderData.order.makerAsset,
           amount: BigInt(orderData.order.makingAmount),
           safetyDeposit: 0n,
-          timelocks: {
-            srcWithdrawal: BigInt(orderData.crossChainData.timelocks?.srcWithdrawal || Math.floor(Date.now() / 1000) + 300),
-            srcPublicWithdrawal: BigInt(orderData.crossChainData.timelocks?.srcPublicWithdrawal || Math.floor(Date.now() / 1000) + 1200),
-            srcCancellation: BigInt(orderData.crossChainData.timelocks?.srcCancellation || Math.floor(Date.now() / 1000) + 300),
-            dstWithdrawal: BigInt(orderData.crossChainData.timelocks?.dstWithdrawal || Math.floor(Date.now() / 1000) + 600),
-            dstPublicWithdrawal: BigInt(orderData.crossChainData.timelocks?.dstPublicWithdrawal || Math.floor(Date.now() / 1000) + 900),
-            dstCancellation: BigInt(orderData.crossChainData.timelocks?.dstCancellation || Math.floor(Date.now() / 1000) + 1200),
-          },
+          timelocks: timelocks,
         },
         blockNumber: 0n,
         transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
