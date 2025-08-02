@@ -146,7 +146,7 @@ export async function validateTokenAllowance(
  * @throws Error if not ready for withdrawal
  */
 export function validateForWithdrawal(orderState: OrderState): void {
-  if (!orderState.dstEscrowAddress) {
+  if (!orderState.actualDstEscrowAddress && !orderState.dstEscrowAddress) {
     throw new Error("Destination escrow not deployed");
   }
   
