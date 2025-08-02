@@ -18,20 +18,20 @@ export interface WithdrawnEvent {
  */
 export class DestinationChainMonitor {
   private publicClient: PublicClient;
+  private monitoringClient: PublicClient;
   private onSecretRevealCallback: (event: WithdrawnEvent) => Promise<void>;
   private lastProcessedBlock: bigint = 0n;
   private isRunning = false;
-  private pollInterval: number;
-  private intervalId?: number;
+  private unwatchFunctions: (() => void)[] = [];
 
   constructor(
     publicClient: PublicClient,
     onSecretRevealCallback: (event: WithdrawnEvent) => Promise<void>,
-    pollInterval = 2000, // 2 seconds for 1-second block mining
+    monitoringClient?: PublicClient
   ) {
     this.publicClient = publicClient;
+    this.monitoringClient = monitoringClient || publicClient;
     this.onSecretRevealCallback = onSecretRevealCallback;
-    this.pollInterval = pollInterval;
   }
 
   /**
@@ -50,67 +50,54 @@ export class DestinationChainMonitor {
 
     console.log(`Starting destination chain monitor from block ${this.lastProcessedBlock}`);
 
-    // Start polling
-    await this.poll();
-    this.intervalId = setInterval(() => this.poll(), this.pollInterval);
+    // Use WebSocket for real-time monitoring
+    console.log("Using WebSocket for real-time destination chain monitoring");
+    this.startRealtimeMonitoring();
   }
 
   /**
    * Stop monitoring
    */
   stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = undefined;
-    }
     this.isRunning = false;
+    
+    // Clean up WebSocket watchers
+    for (const unwatch of this.unwatchFunctions) {
+      unwatch();
+    }
+    this.unwatchFunctions = [];
+    
     console.log("Destination chain monitor stopped");
   }
 
   /**
-   * Poll for new events
+   * Start real-time monitoring using WebSocket
    */
-  private async poll(): Promise<void> {
-    if (!this.isRunning) return;
-
-    try {
-      const currentBlock = await this.publicClient.getBlockNumber();
-      
-      if (currentBlock > this.lastProcessedBlock) {
-        await this.fetchEvents(this.lastProcessedBlock + 1n, currentBlock);
-        this.lastProcessedBlock = currentBlock;
+  private startRealtimeMonitoring(): void {
+    // Watch for EscrowWithdrawal events on all addresses
+    const unwatch = this.monitoringClient.watchContractEvent({
+      // Watch all addresses since we don't know the escrow addresses in advance
+      abi: [{
+        type: "event",
+        name: "EscrowWithdrawal",
+        inputs: [
+          { name: "secret", type: "bytes32", indexed: false }
+        ]
+      }],
+      onLogs: async (logs) => {
+        for (const log of logs) {
+          await this.processEvent(log);
+        }
+      },
+      onError: (error) => {
+        console.error("WebSocket monitoring error on destination chain:", error);
+        // No fallback - just log the error
       }
-    } catch (error) {
-      console.error("Error polling destination chain:", error);
-    }
+    });
+
+    this.unwatchFunctions.push(unwatch);
   }
 
-  /**
-   * Fetch events from a block range
-   * @param fromBlock Start block
-   * @param toBlock End block
-   */
-  private async fetchEvents(fromBlock: bigint, toBlock: bigint): Promise<void> {
-    try {
-      // Get all logs for Withdrawn events
-      const logs = await this.publicClient.getLogs({
-        event: parseAbiItem("event EscrowWithdrawal(bytes32 secret)"),
-        fromBlock,
-        toBlock,
-      });
-
-      // Process each event
-      for (const log of logs) {
-        await this.processEvent(log);
-      }
-
-      if (logs.length > 0) {
-        console.log(`Processed ${logs.length} withdrawal events on destination chain`);
-      }
-    } catch (error) {
-      console.error(`Error fetching destination events from ${fromBlock} to ${toBlock}:`, error);
-    }
-  }
 
   /**
    * Process a single event log
