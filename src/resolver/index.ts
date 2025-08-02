@@ -80,10 +80,11 @@ export class Resolver {
       this.handleNewOrder.bind(this)
     );
 
-    // Initialize destination chain monitor for secret reveals
+    // Initialize destination chain monitor for secret reveals with WebSocket client
     this.destinationMonitor = new DestinationChainMonitor(
       dstPublicClient,
-      this.handleSecretReveal.bind(this)
+      this.handleSecretReveal.bind(this),
+      dstMonitoringClient
     );
   }
 
