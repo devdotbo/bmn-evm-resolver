@@ -292,22 +292,26 @@ export class Resolver {
       const dstAddresses = getContractAddresses(this.dstChainId);
       
       // Execute order
-      const success = await this.executor.executeOrder(order, dstAddresses.escrowFactory);
+      const result = await this.executor.executeOrder(order, dstAddresses.escrowFactory);
       
-      if (success) {
+      if (result.success && result.dstEscrowAddress) {
+        // Update order with destination escrow address
+        this.stateManager.updateOrderEscrows(order.id, undefined, result.dstEscrowAddress);
         this.stateManager.updateOrderStatus(order.id, OrderStatus.DstEscrowDeployed);
         
+        // Save state immediately
+        await this.stateManager.saveToFile();
+        
         // Watch for secret reveal on destination escrow
-        if (order.dstEscrowAddress) {
-          this.monitor.watchEscrowWithdrawals(
-            order.dstEscrowAddress,
-            async (secret) => {
-              await this.handleSecretRevealed(order.id, secret);
-            }
-          );
-        }
+        this.monitor.watchEscrowWithdrawals(
+          result.dstEscrowAddress,
+          async (secret) => {
+            await this.handleSecretRevealed(order.id, secret);
+          }
+        );
       } else {
         this.stateManager.updateOrderStatus(order.id, OrderStatus.Failed);
+        await this.stateManager.saveToFile();
       }
     } catch (error) {
       console.error(`Error executing order ${order.id}:`, error);
