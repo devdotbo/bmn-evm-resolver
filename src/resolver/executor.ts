@@ -85,17 +85,8 @@ export class OrderExecutor {
         throw new Error("Failed to deploy destination escrow");
       }
 
-      // Lock tokens in destination escrow
-      const success = await this.lockTokensInEscrow(
-        dstEscrowAddress,
-        order.params.dstToken,
-        order.params.dstAmount + order.params.safetyDeposit
-      );
-
-      if (!success) {
-        throw new Error("Failed to lock tokens in escrow");
-      }
-
+      // Tokens are transferred by the factory during deployment
+      // No need for manual token transfer
       console.log(`Successfully executed order ${order.id}`);
       return { success: true, dstEscrowAddress };
     } catch (error) {
