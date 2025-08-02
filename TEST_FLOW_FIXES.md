@@ -135,6 +135,8 @@ export class FileMonitor {
 ### Recently Fixed Issues
 - ✅ ABI encoding error when deploying destination escrow - Fixed by updating createDstEscrow to accept 2 parameters with safetyDeposit as msg.value
 - ✅ BigInt conversion error in timelocks - Fixed by implementing packTimelocks function to convert timelocks object to packed uint256
+- ✅ SafeTransferFromFailed error - Fixed by adding automatic token approval for escrow factory before deployment
+- ✅ BigInt serialization in resolver state save - Fixed by adding custom replacer to handle BigInt serialization
 
 ## Usage Instructions
 
@@ -270,9 +272,80 @@ const dstImmutables = {
 };
 ```
 
+## Automatic Token Approval
+
+### Problem
+When chains reset, all token approvals are lost. The resolver would fail with `SafeTransferFromFailed` when the escrow factory tried to transfer tokens from Bob to the newly created escrow.
+
+### Solution
+Added `ensureFactoryTokenApproval` method in `OrderExecutor`:
+```typescript
+private async ensureFactoryTokenApproval(
+  tokenAddress: Address,
+  factoryAddress: Address,
+  requiredAmount: bigint
+): Promise<void> {
+  const currentAllowance = await token.read.allowance([resolverAddress, factoryAddress]);
+  
+  if (currentAllowance < requiredAmount) {
+    // Approve 10,000 tokens to avoid frequent re-approvals
+    const approvalAmount = BigInt("10000") * BigInt("1000000000000000000");
+    const approveHash = await this.retryTransaction(async () => {
+      return await token.write.approve([factoryAddress, approvalAmount]);
+    });
+    await waitForTransaction(this.dstPublicClient, approveHash);
+  }
+}
+```
+
+This ensures the resolver works consistently regardless of chain resets or manual intervention.
+
+## State Synchronization Solution
+
+### Problem
+The resolver and Alice maintain separate state files, causing Alice's withdrawal to fail because she doesn't know the destination escrow address deployed by the resolver.
+
+### Solution
+Created an automated state synchronization mechanism:
+
+1. **State Sync Utility** (`src/utils/state-sync.ts`):
+   - Reads both `resolver-state.json` and `alice-state.json`
+   - Syncs destination escrow addresses from resolver to Alice
+   - Updates order status and taker address automatically
+   - Can run in watch mode for continuous synchronization
+
+2. **Resolver State Persistence**:
+   - Updated `executeOrder` to return both success status and destination escrow address
+   - Resolver immediately saves state after deploying destination escrow
+   - Uses `updateOrderEscrows` to store the escrow address
+
+3. **Alice Withdraw Function**:
+   - Fixed to pass both secret and immutables to the withdraw function
+   - Properly constructs destination immutables with swapped maker/taker roles
+   - Includes packed timelocks for contract compatibility
+
+4. **Test Flow Integration**:
+   - Added `state:sync` task to deno.json
+   - Updated test-flow.sh to run state sync after order creation
+   - Fixed order ID extraction to handle array-based order storage
+   - Runs sync before withdrawal attempt
+
+### Usage
+```bash
+# One-time sync
+deno task state:sync
+
+# Watch mode (continuous sync)
+deno task state:watch
+
+# Integrated in test flow automatically
+./scripts/test-flow.sh -y
+```
+
 ## Recommendations for Future Work
 
-1. **Implement Order Cleanup**: Add mechanism to archive or delete processed order files
+1. **Real-time State Sync**: Replace file-based sync with WebSocket or event-based synchronization
+2. **Implement Order Cleanup**: Add mechanism to archive or delete processed order files
 3. **Add Order Submission**: Implement proper on-chain order submission via LimitOrderProtocol
 4. **Improve Error Recovery**: Add retry logic for failed transactions
 5. **Add Integration Tests**: Create automated tests for the complete flow
@@ -280,4 +353,10 @@ const dstImmutables = {
 
 ## Conclusion
 
-The test flow now successfully demonstrates the order creation and detection process in non-interactive mode. While there are still some issues with the actual escrow deployment, the core infrastructure for automated testing is now in place and functional.
+The test flow now successfully demonstrates the complete cross-chain atomic swap process:
+1. Alice creates orders which are saved as JSON files
+2. Bob (resolver) automatically detects orders via file monitoring
+3. Bob automatically approves tokens for the escrow factory
+4. Bob deploys destination escrow and locks tokens
+5. Alice can withdraw after timelocks expire
+6. The entire flow works in non-interactive mode with the `-y` flag
