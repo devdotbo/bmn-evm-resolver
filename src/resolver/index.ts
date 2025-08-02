@@ -16,6 +16,7 @@ import { OrderMonitor } from "./monitor.ts";
 import { OrderExecutor } from "./executor.ts";
 import { ProfitabilityCalculator } from "./profitability.ts";
 import { FileMonitor } from "./file-monitor.ts";
+import { DestinationChainMonitor } from "./destination-monitor.ts";
 import type { SrcEscrowCreatedEvent } from "../types/events.ts";
 import type { OrderState } from "../types/index.ts";
 import { OrderStatus } from "../types/index.ts";
@@ -28,6 +29,7 @@ export class Resolver {
   private stateManager: OrderStateManager;
   private monitor: OrderMonitor;
   private fileMonitor: FileMonitor;
+  private destinationMonitor: DestinationChainMonitor;
   private executor: OrderExecutor;
   private profitCalculator: ProfitabilityCalculator;
   private srcChainId: number;
@@ -77,6 +79,12 @@ export class Resolver {
     this.fileMonitor = new FileMonitor(
       this.handleNewOrder.bind(this)
     );
+
+    // Initialize destination chain monitor for secret reveals
+    this.destinationMonitor = new DestinationChainMonitor(
+      dstPublicClient,
+      this.handleSecretReveal.bind(this)
+    );
   }
 
   /**
@@ -116,6 +124,9 @@ export class Resolver {
     
     // Start file monitor for development
     await this.fileMonitor.start();
+    
+    // Start destination chain monitor for secret reveals
+    await this.destinationMonitor.start();
 
     // Start periodic tasks
     this.startPeriodicTasks();
@@ -137,6 +148,7 @@ export class Resolver {
     this.isRunning = false;
     this.monitor.stop();
     this.fileMonitor.stop();
+    this.destinationMonitor.stop();
     
     // Save state
     await this.stateManager.saveToFile();
@@ -355,6 +367,36 @@ export class Resolver {
       }
     } catch (error) {
       console.error(`Error handling secret reveal for ${orderId}:`, error);
+    }
+  }
+
+  /**
+   * Handle secret reveal event from destination chain monitor
+   * @param event The withdrawn event with secret
+   */
+  private async handleSecretReveal(event: import("./destination-monitor.ts").WithdrawnEvent): Promise<void> {
+    try {
+      console.log(`Secret revealed on destination chain: ${event.secret}`);
+      console.log(`From escrow: ${event.escrowAddress}`);
+      
+      // Find the order associated with this escrow
+      const orders = this.stateManager.getAllOrders();
+      const order = orders.find(o => o.dstEscrowAddress === event.escrowAddress);
+      
+      if (!order) {
+        console.error(`No order found for escrow ${event.escrowAddress}`);
+        return;
+      }
+      
+      console.log(`Found order ${order.id} for escrow ${event.escrowAddress}`);
+      
+      // Update order status
+      this.stateManager.updateOrderStatus(order.id, OrderStatus.SecretRevealed);
+      
+      // Execute Bob's withdrawal from source escrow
+      await this.handleSecretRevealed(order.id, event.secret);
+    } catch (error) {
+      console.error("Error handling destination chain secret reveal:", error);
     }
   }
 
