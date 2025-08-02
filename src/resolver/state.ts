@@ -102,19 +102,22 @@ export class OrderStateManager {
    * Update order with escrow addresses
    * @param orderId The order ID
    * @param srcEscrow Source escrow address
-   * @param dstEscrow Destination escrow address
+   * @param dstEscrow Destination escrow address (predicted)
+   * @param actualDstEscrow Actual destination escrow address from event
    * @returns True if updated
    */
   updateOrderEscrows(
     orderId: string,
     srcEscrow?: `0x${string}`,
-    dstEscrow?: `0x${string}`
+    dstEscrow?: `0x${string}`,
+    actualDstEscrow?: `0x${string}`
   ): boolean {
     const order = this.orders.get(orderId);
     if (!order) return false;
     
     if (srcEscrow) order.srcEscrowAddress = srcEscrow;
     if (dstEscrow) order.dstEscrowAddress = dstEscrow;
+    if (actualDstEscrow) order.actualDstEscrowAddress = actualDstEscrow;
     
     return true;
   }
