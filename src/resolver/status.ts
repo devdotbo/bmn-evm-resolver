@@ -105,12 +105,15 @@ async function displayOrderDetails(order: any): Promise<void> {
   console.log("  Timelocks:");
   const timelocks = order.immutables.timelocks;
   
-  if (now < timelocks.dstWithdrawal) {
-    const remaining = timelocks.dstWithdrawal - now;
+  const dstWithdrawal = BigInt(timelocks.dstWithdrawal);
+  const dstCancellation = BigInt(timelocks.dstCancellation);
+  
+  if (now < dstWithdrawal) {
+    const remaining = dstWithdrawal - now;
     console.log(`    Dst Withdrawal: ${formatDuration(remaining)} remaining`);
-  } else if (now < timelocks.dstCancellation) {
+  } else if (now < dstCancellation) {
     console.log(`    Dst Withdrawal: ACTIVE`);
-    const remaining = timelocks.dstCancellation - now;
+    const remaining = dstCancellation - now;
     console.log(`    Dst Cancellation: ${formatDuration(remaining)} remaining`);
   } else {
     console.log(`    Dst Cancellation: ACTIVE`);
