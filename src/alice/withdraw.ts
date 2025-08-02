@@ -83,7 +83,7 @@ export async function withdrawFromOrder(args: {
     console.error("Order not ready for withdrawal:", error);
     
     // Check if we need to wait for destination escrow
-    if (!order.dstEscrowAddress) {
+    if (!order.actualDstEscrowAddress && !order.dstEscrowAddress) {
       console.log("\nWaiting for resolver to deploy destination escrow...");
       console.log("Please ensure the resolver is running.");
       return;
@@ -96,8 +96,8 @@ export async function withdrawFromOrder(args: {
   const dstPublicClient = createPublicClientForChain(chainB);
   const dstWalletClient = createWalletClientForChain(chainB, args.privateKey);
 
-  // Get destination escrow address
-  let dstEscrowAddress = order.dstEscrowAddress;
+  // Get destination escrow address (prefer actual address from event)
+  let dstEscrowAddress = order.actualDstEscrowAddress || order.dstEscrowAddress;
   
   if (!dstEscrowAddress) {
     // Try to compute it
