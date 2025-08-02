@@ -46,12 +46,12 @@ export class OrderExecutor {
    * Execute an order by deploying destination escrow and locking tokens
    * @param order The order to execute
    * @param escrowFactoryAddress The escrow factory address on destination chain
-   * @returns True if successful
+   * @returns Object with success status and destination escrow address
    */
   async executeOrder(
     order: OrderState,
     escrowFactoryAddress: Address
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; dstEscrowAddress?: Address }> {
     try {
       console.log(`Executing order ${order.id}`);
 
@@ -97,10 +97,10 @@ export class OrderExecutor {
       }
 
       console.log(`Successfully executed order ${order.id}`);
-      return true;
+      return { success: true, dstEscrowAddress };
     } catch (error) {
       console.error(`Error executing order ${order.id}:`, error);
-      return false;
+      return { success: false };
     }
   }
 
@@ -122,8 +122,6 @@ export class OrderExecutor {
       );
 
       // Create destination immutables (Bob is maker on destination)
-      // Note: Contract expects timelocks as a packed uint256 value
-      const packedTimelocks = packTimelocks(order.immutables.timelocks);
       const dstImmutables = {
         orderHash: order.immutables.orderHash,
         hashlock: order.immutables.hashlock,
@@ -132,8 +130,14 @@ export class OrderExecutor {
         token: order.params.dstToken,
         amount: order.params.dstAmount,
         safetyDeposit: order.params.safetyDeposit,
-        timelocks: packedTimelocks, // Packed into single uint256
+        timelocks: order.immutables.timelocks, // Keep original Timelocks object for address computation
       };
+
+      // Pack timelocks for contract call
+      const packedTimelocks = packTimelocks(order.immutables.timelocks);
+
+      // Ensure Bob has approval to let factory transfer TKB tokens
+      await this.ensureFactoryTokenApproval(order.params.dstToken, escrowFactoryAddress, order.params.dstAmount);
 
       // Deploy escrow
       console.log("Deploying destination escrow...");
@@ -142,8 +146,14 @@ export class OrderExecutor {
           ? order.immutables.timelocks.srcCancellation 
           : BigInt(order.immutables.timelocks.srcCancellation);
         
+        // Create immutables for contract call with packed timelocks
+        const dstImmutablesForContract = {
+          ...dstImmutables,
+          timelocks: packedTimelocks // Use packed timelocks for contract
+        };
+        
         return await factory.write.createDstEscrow([
-          dstImmutables,
+          dstImmutablesForContract,
           srcCancellationTimestamp
         ], {
           value: order.params.safetyDeposit
@@ -325,6 +335,49 @@ export class OrderExecutor {
     }
     
     throw lastError;
+  }
+
+  /**
+   * Ensure Bob has approved the factory to spend tokens
+   * @param tokenAddress The token to approve
+   * @param factoryAddress The factory address to approve
+   * @param requiredAmount The minimum amount needed
+   */
+  private async ensureFactoryTokenApproval(
+    tokenAddress: Address,
+    factoryAddress: Address,
+    requiredAmount: bigint
+  ): Promise<void> {
+    try {
+      const token = createERC20Token(
+        tokenAddress,
+        this.dstPublicClient,
+        this.dstWalletClient
+      );
+
+      const resolverAddress = this.dstWalletClient.account!.address;
+      const currentAllowance = await token.read.allowance([resolverAddress, factoryAddress]);
+
+      console.log(`Current factory allowance: ${currentAllowance}, required: ${requiredAmount}`);
+
+      if (currentAllowance < requiredAmount) {
+        // Approve a generous amount (10,000 tokens) to avoid frequent re-approvals
+        const approvalAmount = BigInt("10000") * BigInt("1000000000000000000"); // 10,000 tokens with 18 decimals
+        console.log(`Approving factory to spend ${approvalAmount} tokens...`);
+        
+        const approveHash = await this.retryTransaction(async () => {
+          return await token.write.approve([factoryAddress, approvalAmount]);
+        });
+
+        await waitForTransaction(this.dstPublicClient, approveHash);
+        console.log("✅ Factory approval completed");
+      } else {
+        console.log("✅ Factory approval sufficient");
+      }
+    } catch (error) {
+      console.error("Error ensuring factory token approval:", error);
+      throw new Error("Failed to approve factory token spending");
+    }
   }
 
   /**

@@ -191,7 +191,7 @@ get_order_id() {
     
     # Try jq first
     if command -v jq >/dev/null 2>&1; then
-        order_id=$(jq -r '.orders | keys[0] // empty' alice-state.json 2>/dev/null || echo "")
+        order_id=$(jq -r '.orders[0][0] // empty' alice-state.json 2>/dev/null || echo "")
     fi
     
     # Fallback to Python if jq failed or not available
@@ -200,8 +200,8 @@ get_order_id() {
 import json, sys
 try:
     data = json.load(sys.stdin)
-    if data.get('orders'):
-        print(list(data['orders'].keys())[0])
+    if data.get('orders') and len(data['orders']) > 0:
+        print(data['orders'][0][0])
 except:
     pass
 " || echo "")
@@ -268,6 +268,10 @@ run_command "Creating order on Chain A" \
 echo -e "${YELLOW}⏳ Waiting for Bob to detect and execute order...${NC}"
 sleep $ORDER_DETECTION_DELAY
 
+# Start state synchronization
+echo -e "${BLUE}Starting state synchronization...${NC}"
+deno task state:sync > /dev/null 2>&1 || echo -e "${YELLOW}Warning: State sync failed${NC}"
+
 # 4. List Alice's orders
 echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}Step 4: Listing Alice's Orders${NC}"
@@ -291,6 +295,11 @@ if [ -z "$ORDER_ID" ]; then
     echo -e "${YELLOW}Please check the logs for errors.${NC}"
 else
     echo -e "${BLUE}Found order ID: $ORDER_ID${NC}"
+    
+    # Sync state before withdrawal attempt
+    echo -e "${BLUE}Syncing state before withdrawal...${NC}"
+    deno task state:sync > /dev/null 2>&1 || echo -e "${YELLOW}Warning: State sync failed${NC}"
+    
     run_command "Alice withdrawing from Chain B" \
         "deno task alice:withdraw --order-id $ORDER_ID"
     
