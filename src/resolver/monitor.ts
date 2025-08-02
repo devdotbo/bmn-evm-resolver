@@ -25,7 +25,6 @@ export class OrderMonitor {
   private onOrderCallback: EventCallback<SrcEscrowCreatedEvent>;
   private isRunning = false;
   private lastProcessedBlock: bigint = 0n;
-  private pollingInterval?: number;
   private unwatchFunctions: (() => void)[] = [];
 
   constructor(
@@ -55,15 +54,9 @@ export class OrderMonitor {
     
     console.log(`Starting order monitor from block ${this.lastProcessedBlock}`);
     
-    // If we have a monitoring client (WebSocket), use real-time monitoring
-    if (this.monitoringClient !== this.publicClient) {
-      console.log("Using WebSocket for real-time event monitoring");
-      this.startRealtimeMonitoring();
-    } else {
-      console.log("Using HTTP polling for event monitoring");
-      // Start polling
-      this.pollForEvents();
-    }
+    // Use WebSocket for real-time event monitoring
+    console.log("Using WebSocket for real-time event monitoring");
+    this.startRealtimeMonitoring();
   }
 
   /**
@@ -71,10 +64,6 @@ export class OrderMonitor {
    */
   stop(): void {
     this.isRunning = false;
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = undefined;
-    }
     
     // Clean up WebSocket watchers
     for (const unwatch of this.unwatchFunctions) {
@@ -132,92 +121,13 @@ export class OrderMonitor {
       },
       onError: (error) => {
         console.error("WebSocket monitoring error:", error);
-        // Fallback to polling on error
-        if (this.isRunning) {
-          console.log("Falling back to HTTP polling");
-          this.pollForEvents();
-        }
+        // No fallback - just log the error
       }
     });
 
     this.unwatchFunctions.push(unwatch);
   }
 
-  /**
-   * Poll for new events
-   */
-  private async pollForEvents(): Promise<void> {
-    while (this.isRunning) {
-      try {
-        const currentBlock = await getCurrentBlock(this.publicClient);
-        
-        if (currentBlock > this.lastProcessedBlock) {
-          await this.processBlocks(this.lastProcessedBlock + 1n, currentBlock);
-          this.lastProcessedBlock = currentBlock;
-        }
-        
-        // Wait before next poll
-        await new Promise(resolve => setTimeout(resolve, BLOCK_POLLING_INTERVAL_MS));
-      } catch (error) {
-        console.error("Error in event polling:", error);
-        
-        // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, RECONNECT_DELAY_MS));
-      }
-    }
-  }
-
-  /**
-   * Process blocks for events
-   * @param fromBlock Starting block
-   * @param toBlock Ending block
-   */
-  private async processBlocks(fromBlock: bigint, toBlock: bigint): Promise<void> {
-    // Process in batches to avoid overwhelming the RPC
-    let currentBlock = fromBlock;
-    
-    while (currentBlock <= toBlock) {
-      const batchEnd = currentBlock + BigInt(EVENT_BATCH_SIZE) - 1n;
-      const actualEnd = batchEnd > toBlock ? toBlock : batchEnd;
-      
-      await this.fetchAndProcessEvents(currentBlock, actualEnd);
-      currentBlock = actualEnd + 1n;
-    }
-  }
-
-  /**
-   * Fetch and process events for a block range
-   * @param fromBlock Starting block
-   * @param toBlock Ending block
-   */
-  private async fetchAndProcessEvents(
-    fromBlock: bigint,
-    toBlock: bigint
-  ): Promise<void> {
-    try {
-      // Fetch SrcEscrowCreated events
-      const logs = await this.publicClient.getLogs({
-        address: this.escrowFactoryAddress,
-        event: parseAbiItem(
-          "event SrcEscrowCreated(address indexed escrow, address indexed orderHash, (bytes32,bytes32,address,address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256,uint256)) immutables)"
-        ),
-        fromBlock,
-        toBlock,
-      });
-
-      // Process each event
-      for (const log of logs) {
-        await this.processEvent(log);
-      }
-
-      if (logs.length > 0) {
-        console.log(`Processed ${logs.length} SrcEscrowCreated events`);
-      }
-    } catch (error) {
-      console.error(`Error fetching events from ${fromBlock} to ${toBlock}:`, error);
-      throw error;
-    }
-  }
 
   /**
    * Process a single event log
