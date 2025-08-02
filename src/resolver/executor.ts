@@ -167,17 +167,43 @@ export class OrderExecutor {
         throw new Error("Escrow deployment failed");
       }
 
-      // Get escrow address from event or compute it
-      const proxyBytecodeHash = getProxyBytecodeHash(this.dstChainId);
-      const escrowAddress = computeEscrowDstAddress(
-        escrowFactoryAddress,
-        dstImmutables,
-        BigInt(this.srcChainId),
-        proxyBytecodeHash
-      );
+      // Parse the actual deployed address from DstEscrowCreated event
+      let actualEscrowAddress: Address | null = null;
+      
+      // Find the DstEscrowCreated event in the logs
+      for (const log of receipt.logs) {
+        try {
+          // DstEscrowCreated event signature
+          const eventSignature = "0x0e534c62f0afd2fa0f0fa71198e8aa2d549f24daf2bb47de0d5486c7ce9288ca";
+          
+          if (log.topics[0] === eventSignature) {
+            // The first 32 bytes of the event data contain the escrow address (padded to 32 bytes)
+            if (log.data && log.data.length >= 66) { // 0x + 64 hex chars
+              // Extract address from data (bytes 12-32 of the first 32-byte word)
+              actualEscrowAddress = ('0x' + log.data.slice(26, 66)) as Address;
+              console.log(`Parsed actual destination escrow address from event: ${actualEscrowAddress}`);
+              break;
+            }
+          }
+        } catch (error) {
+          console.warn("Error parsing log:", error);
+        }
+      }
 
-      console.log(`Destination escrow deployed at ${escrowAddress}`);
-      return escrowAddress;
+      if (!actualEscrowAddress) {
+        // Fallback to computed address if event parsing fails
+        console.warn("Failed to parse DstEscrowCreated event, falling back to computed address");
+        const proxyBytecodeHash = getProxyBytecodeHash(this.dstChainId);
+        actualEscrowAddress = computeEscrowDstAddress(
+          escrowFactoryAddress,
+          dstImmutables,
+          BigInt(this.srcChainId),
+          proxyBytecodeHash
+        );
+      }
+
+      console.log(`Destination escrow deployed at ${actualEscrowAddress}`);
+      return actualEscrowAddress;
     } catch (error) {
       console.error("Error deploying destination escrow:", error);
       return null;
@@ -304,7 +330,8 @@ export class OrderExecutor {
    * @returns True if can be cancelled
    */
   canCancelOrder(order: OrderState): boolean {
-    if (!order.dstEscrowAddress) return false;
+    const escrowAddress = order.actualDstEscrowAddress || order.dstEscrowAddress;
+    if (!escrowAddress) return false;
     
     // Check if destination cancellation timelock has passed
     return hasTimelockPassed(order.immutables.timelocks.dstCancellation);
