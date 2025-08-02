@@ -5,7 +5,11 @@
     "resolver:status": "deno run --allow-net --allow-read --allow-env --env-file src/resolver/status.ts",
     "alice:create-order": "deno run --allow-net --allow-read --allow-write --allow-env --env-file src/alice/create-order.ts",
     "alice:list-orders": "deno run --allow-net --allow-read --allow-env --env-file src/alice/list-orders.ts",
-    "alice:withdraw": "deno run --allow-net --allow-read --allow-write --allow-env --env-file src/alice/withdraw.ts"
+    "alice:withdraw": "deno run --allow-net --allow-read --allow-write --allow-env --env-file src/alice/withdraw.ts",
+    "state:sync": "deno run --allow-read --allow-write --allow-env src/utils/state-sync.ts",
+    "state:watch": "deno run --allow-read --allow-write --allow-env src/utils/state-sync.ts --watch",
+    "mprocs": "./scripts/run-mprocs.sh",
+    "demo": "./scripts/run-mprocs.sh"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
