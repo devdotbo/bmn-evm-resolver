@@ -111,7 +111,7 @@ export async function syncDestinationEscrows(): Promise<void> {
  * Watch for state changes and sync automatically
  * @param intervalMs Check interval in milliseconds
  */
-export async function watchAndSyncStates(intervalMs = 2000): Promise<void> {
+export async function watchAndSyncStates(intervalMs = 1000): Promise<void> { // 1 second interval for 1-second block mining
   console.log("Starting state synchronization watcher...");
   
   // Initial sync
