@@ -90,8 +90,8 @@ async function displayOrderDetails(order: any): Promise<void> {
   console.log(`  Created: ${new Date(order.createdAt).toLocaleString()}`);
   console.log(`  Source Chain: ${CHAIN_NAMES[order.params.srcChainId] || order.params.srcChainId}`);
   console.log(`  Destination Chain: ${CHAIN_NAMES[order.params.dstChainId] || order.params.dstChainId}`);
-  console.log(`  Amount: ${formatTokenAmount(order.params.srcAmount)} tokens`);
-  console.log(`  Safety Deposit: ${formatTokenAmount(order.params.safetyDeposit)} tokens`);
+  console.log(`  Amount: ${formatTokenAmount(BigInt(order.params.srcAmount))} tokens`);
+  console.log(`  Safety Deposit: ${formatTokenAmount(BigInt(order.params.safetyDeposit))} tokens`);
   
   // Show addresses if available
   if (order.srcEscrowAddress) {

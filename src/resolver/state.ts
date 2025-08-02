@@ -166,7 +166,15 @@ export class OrderStateManager {
       timestamp: Date.now(),
     };
     
-    await Deno.writeTextFile(filePath, JSON.stringify(data, null, 2));
+    // Use custom replacer to handle BigInt serialization
+    const jsonString = JSON.stringify(data, (_, value) => {
+      if (typeof value === 'bigint') {
+        return value.toString();
+      }
+      return value;
+    }, 2);
+    
+    await Deno.writeTextFile(filePath, jsonString);
   }
 
   /**

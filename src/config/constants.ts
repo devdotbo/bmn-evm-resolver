@@ -66,6 +66,7 @@ export const ENABLE_DEBUG_LOGS = LOG_LEVEL === "debug";
 // File paths
 export const ORDER_STATE_FILE = "./resolver-state.json";
 export const SECRET_STORAGE_FILE = "./resolver-secrets.json";
+export const ALICE_STATE_FILE = "./alice-state.json";
 
 /**
  * Get the minimum profit amount for a given token amount
