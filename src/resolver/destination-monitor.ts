@@ -27,7 +27,7 @@ export class DestinationChainMonitor {
   constructor(
     publicClient: PublicClient,
     onSecretRevealCallback: (event: WithdrawnEvent) => Promise<void>,
-    pollInterval = 12000, // 12 seconds default
+    pollInterval = 2000, // 2 seconds for 1-second block mining
   ) {
     this.publicClient = publicClient;
     this.onSecretRevealCallback = onSecretRevealCallback;
