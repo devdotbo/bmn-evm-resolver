@@ -91,4 +91,3 @@ keymap_procs:
   <C-s>: { c: start-proc }
   <C-r>: { c: restart-proc }
   <C-k>: { c: kill-proc }
-  <C-l>: { c: clear-proc }
