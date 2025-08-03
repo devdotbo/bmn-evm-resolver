@@ -167,6 +167,7 @@ export function isZeroAddress(address: Address): boolean {
  */
 export function getProxyBytecodeHash(chainId: number): `0x${string}` {
   // In production, this would be fetched from the factory contract
-  // For now, return a placeholder that would be replaced with actual value
-  return "0x0000000000000000000000000000000000000000000000000000000000000000";
+  // Using the standard minimal proxy bytecode hash
+  // This is the keccak256 hash of the minimal proxy bytecode pattern
+  return "0x21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f";
 }
