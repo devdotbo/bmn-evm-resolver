@@ -81,3 +81,28 @@ export function getChainName(chainId: number): string {
       return `Chain ${chainId}`;
   }
 }
+
+/**
+ * Get chains for reverse direction (Etherlink to Base)
+ */
+export function getReverseChains(): { srcChain: Chain; dstChain: Chain; srcChainId: number; dstChainId: number } {
+  const mode = getNetworkMode();
+  
+  if (mode === "mainnet") {
+    console.log("🌐 Using MAINNET configuration (Etherlink → Base)");
+    return {
+      srcChain: etherlinkMainnet,
+      dstChain: baseMainnet,
+      srcChainId: 42793,
+      dstChainId: 8453,
+    };
+  } else {
+    console.log("🧪 Using TESTNET configuration (Chain B → Chain A)");
+    return {
+      srcChain: chainB,
+      dstChain: chainA,
+      srcChainId: 1338,
+      dstChainId: 1337,
+    };
+  }
+}
