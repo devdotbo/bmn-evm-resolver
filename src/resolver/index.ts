@@ -4,7 +4,7 @@ import {
   areContractsConfigured,
   loadContractAddressesFromEnv 
 } from "../config/contracts.ts";
-import { getChains, getChainName } from "../config/chain-selector.ts";
+import { getChains, getChainName, getReverseChains } from "../config/chain-selector.ts";
 import { 
   createPublicClientForChain,
   createWalletClientForChain,
@@ -41,8 +41,9 @@ export class Resolver {
     srcChainId?: number,
     dstChainId?: number
   ) {
-    // Get chain configuration based on network mode
-    const chains = getChains();
+    // Get chain configuration based on network mode and direction
+    const useReverse = Deno.env.get("REVERSE_CHAINS") === "true";
+    const chains = useReverse ? getReverseChains() : getChains();
     this.srcChainId = srcChainId ?? chains.srcChainId;
     this.dstChainId = dstChainId ?? chains.dstChainId;
     this.stateManager = new OrderStateManager();
@@ -59,7 +60,7 @@ export class Resolver {
     const dstMonitoringClient = createMonitoringClient(chains.dstChain);
 
     // Get contract addresses
-    const srcAddresses = getContractAddresses(srcChainId);
+    const srcAddresses = getContractAddresses(this.srcChainId);
     
     // Initialize monitor with WebSocket client for real-time monitoring
     this.monitor = new OrderMonitor(
