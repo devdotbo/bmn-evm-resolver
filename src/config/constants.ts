@@ -52,6 +52,8 @@ export const CHAIN_NAMES: Record<number, string> = {
 // Default RPC URLs loaded from environment
 export const DEFAULT_RPC_URLS: Record<number, string> = {
   1337: Deno.env.get("CHAIN_A_RPC_URL") || "http://localhost:8545",
+  8453: Deno.env.get("BASE_RPC_URL") || "https://mainnet.base.org",
+  42793: Deno.env.get("ETHERLINK_RPC_URL") || "https://node.mainnet.etherlink.com",
   1338: Deno.env.get("CHAIN_B_RPC_URL") || "http://localhost:8546",
 };
 
