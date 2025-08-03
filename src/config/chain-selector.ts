@@ -1,5 +1,6 @@
 import { defineChain, type Chain } from "viem";
 import { chainA, chainB, baseMainnet, etherlinkMainnet } from "./chains.ts";
+import { getMainnetChains as getMainnetChainsConfig, useTestFactory } from "./mainnet.ts";
 
 export type NetworkMode = "testnet" | "mainnet";
 
@@ -15,19 +16,22 @@ export function getNetworkMode(): NetworkMode {
 }
 
 /**
+ * Check if currently in mainnet mode
+ */
+export function isMainnetMode(): boolean {
+  return getNetworkMode() === "mainnet";
+}
+
+/**
  * Get chain configurations based on network mode
  */
 export function getChains(): { srcChain: Chain; dstChain: Chain; srcChainId: number; dstChainId: number } {
   const mode = getNetworkMode();
   
   if (mode === "mainnet") {
-    console.log("🌐 Using MAINNET configuration (Base & Etherlink)");
-    return {
-      srcChain: baseMainnet,
-      dstChain: etherlinkMainnet,
-      srcChainId: 8453,
-      dstChainId: 42793,
-    };
+    const testMode = useTestFactory() ? " (TEST FACTORY)" : "";
+    console.log(`🌐 Using MAINNET configuration (Base & Etherlink)${testMode}`);
+    return getMainnetChainsConfig(false);
   } else {
     console.log("🧪 Using TESTNET configuration (Local Anvil chains)");
     return {
@@ -89,13 +93,9 @@ export function getReverseChains(): { srcChain: Chain; dstChain: Chain; srcChain
   const mode = getNetworkMode();
   
   if (mode === "mainnet") {
-    console.log("🌐 Using MAINNET configuration (Etherlink → Base)");
-    return {
-      srcChain: etherlinkMainnet,
-      dstChain: baseMainnet,
-      srcChainId: 42793,
-      dstChainId: 8453,
-    };
+    const testMode = useTestFactory() ? " (TEST FACTORY)" : "";
+    console.log(`🌐 Using MAINNET configuration (Etherlink → Base)${testMode}`);
+    return getMainnetChainsConfig(true);
   } else {
     console.log("🧪 Using TESTNET configuration (Chain B → Chain A)");
     return {

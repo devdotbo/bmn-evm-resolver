@@ -31,20 +31,20 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   
   // Base Mainnet
   8453: {
-    escrowFactory: "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+    escrowFactory: "0xc72ed1E8a0649e51Cd046a0FfccC8f8c0bf385Fa" as Address, // CrossChainEscrowFactory
     limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
     tokens: {
-      BMN: "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
+      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // 18 decimals
       // Add other tokens as needed
     },
   },
   
   // Etherlink Mainnet
   42793: {
-    escrowFactory: "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+    escrowFactory: "0xc72ed1E8a0649e51Cd046a0FfccC8f8c0bf385Fa" as Address, // CrossChainEscrowFactory (same on both chains)
     limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
     tokens: {
-      BMN: "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
+      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // 18 decimals
       // Add other tokens as needed
     },
   },

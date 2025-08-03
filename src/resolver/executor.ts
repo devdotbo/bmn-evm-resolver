@@ -16,6 +16,13 @@ import {
 import { validateTokenBalance, validateTokenAllowance } from "../utils/validation.ts";
 import { hasTimelockPassed, packTimelocks } from "../utils/timelocks.ts";
 import { TX_RETRY_ATTEMPTS, TX_RETRY_DELAY_MS } from "../config/constants.ts";
+import { 
+  classifyMainnetError, 
+  isRetryableError, 
+  getRetryDelay, 
+  logMainnetError 
+} from "../utils/mainnet-errors.ts";
+import { isMainnetMode } from "../config/chain-selector.ts";
 
 /**
  * Order executor that handles the execution of profitable orders
@@ -229,7 +236,7 @@ export class OrderExecutor {
         console.log("Approving token transfer...");
         const approveHash = await this.retryTransaction(async () => {
           return await token.write.approve([escrowAddress, amount]);
-        });
+        }, "Token Approval");
 
         await waitForTransaction(this.dstPublicClient, approveHash);
       }
@@ -238,7 +245,7 @@ export class OrderExecutor {
       console.log("Transferring tokens to escrow...");
       const transferHash = await this.retryTransaction(async () => {
         return await token.write.transfer([escrowAddress, amount]);
-      });
+      }, "Token Transfer");
 
       const receipt = await waitForTransaction(this.dstPublicClient, transferHash);
       
@@ -271,7 +278,7 @@ export class OrderExecutor {
       // Call withdraw function
       const hash = await this.retryTransaction(async () => {
         return await escrow.write.withdraw([secret]);
-      });
+      }, "Source Escrow Withdrawal");
 
       const receipt = await waitForTransaction(this.srcPublicClient, hash);
       
@@ -331,22 +338,45 @@ export class OrderExecutor {
   /**
    * Retry a transaction with exponential backoff
    * @param fn The function to retry
+   * @param context Optional context for error logging
    * @returns Transaction hash
    */
   private async retryTransaction(
-    fn: () => Promise<`0x${string}`>
+    fn: () => Promise<`0x${string}`>,
+    context = "Transaction"
   ): Promise<`0x${string}`> {
     let lastError: any;
+    const maxAttempts = isMainnetMode() ? TX_RETRY_ATTEMPTS * 2 : TX_RETRY_ATTEMPTS; // More retries on mainnet
     
-    for (let i = 0; i < TX_RETRY_ATTEMPTS; i++) {
+    for (let i = 0; i < maxAttempts; i++) {
       try {
         return await fn();
       } catch (error) {
         lastError = error;
-        console.warn(`Transaction attempt ${i + 1} failed:`, error);
         
-        if (i < TX_RETRY_ATTEMPTS - 1) {
-          const delay = TX_RETRY_DELAY_MS * Math.pow(2, i);
+        // Enhanced error logging for mainnet
+        if (isMainnetMode()) {
+          logMainnetError(`${context} - Attempt ${i + 1}/${maxAttempts}`, error, {
+            attempt: i + 1,
+            maxAttempts,
+          });
+        } else {
+          console.warn(`Transaction attempt ${i + 1} failed:`, error);
+        }
+        
+        // Check if error is retryable
+        if (!isRetryableError(error) && isMainnetMode()) {
+          console.error("Error is not retryable, aborting");
+          throw error;
+        }
+        
+        if (i < maxAttempts - 1) {
+          const errorType = classifyMainnetError(error);
+          const delay = errorType 
+            ? getRetryDelay(errorType, i)
+            : TX_RETRY_DELAY_MS * Math.pow(2, i);
+          
+          console.log(`Waiting ${delay}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }

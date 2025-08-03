@@ -1,4 +1,6 @@
 import type { Timelocks } from "../types/index.ts";
+import { isMainnetMode } from "../config/chain-selector.ts";
+import { MAINNET_CONFIG } from "../config/mainnet.ts";
 
 // Default timelock durations in seconds (for demo/testing)
 // Updated to match contract's 1-second block mining configuration
@@ -21,6 +23,16 @@ export const PRODUCTION_TIMELOCK_DURATIONS = {
   dstCancellation: 72n * 60n * 60n,          // 72 hours
 } as const;
 
+// Mainnet timelock durations (from RESOLVER-AGENT-GUIDE.md)
+export const MAINNET_TIMELOCK_DURATIONS = {
+  srcWithdrawal: BigInt(MAINNET_CONFIG.TIMELOCKS.srcWithdrawal),               // 300s (5 min)
+  srcPublicWithdrawal: BigInt(MAINNET_CONFIG.TIMELOCKS.srcPublicWithdrawal),   // 600s (10 min)
+  srcCancellation: BigInt(MAINNET_CONFIG.TIMELOCKS.srcCancellation),            // 900s (15 min)
+  srcPublicCancellation: BigInt(MAINNET_CONFIG.TIMELOCKS.srcPublicCancellation),// 900s+ (15+ min)
+  dstWithdrawal: BigInt(MAINNET_CONFIG.TIMELOCKS.dstWithdrawal),               // 600s (10 min)
+  dstCancellation: BigInt(MAINNET_CONFIG.TIMELOCKS.dstCancellation),            // 1200s (20 min)
+} as const;
+
 /**
  * Create timelocks from the current timestamp
  * @param useProduction Whether to use production timelock durations
@@ -28,9 +40,16 @@ export const PRODUCTION_TIMELOCK_DURATIONS = {
  */
 export function createTimelocks(useProduction = false): Timelocks {
   const now = BigInt(Math.floor(Date.now() / 1000));
-  const durations = useProduction 
-    ? PRODUCTION_TIMELOCK_DURATIONS 
-    : DEFAULT_TIMELOCK_DURATIONS;
+  
+  // Check if running in mainnet mode
+  let durations;
+  if (isMainnetMode()) {
+    durations = MAINNET_TIMELOCK_DURATIONS;
+  } else if (useProduction) {
+    durations = PRODUCTION_TIMELOCK_DURATIONS;
+  } else {
+    durations = DEFAULT_TIMELOCK_DURATIONS;
+  }
 
   return {
     srcWithdrawal: now + durations.srcWithdrawal,
@@ -52,9 +71,15 @@ export function createTimelocksFromTimestamp(
   timestamp: bigint,
   useProduction = false
 ): Timelocks {
-  const durations = useProduction 
-    ? PRODUCTION_TIMELOCK_DURATIONS 
-    : DEFAULT_TIMELOCK_DURATIONS;
+  // Check if running in mainnet mode
+  let durations;
+  if (isMainnetMode()) {
+    durations = MAINNET_TIMELOCK_DURATIONS;
+  } else if (useProduction) {
+    durations = PRODUCTION_TIMELOCK_DURATIONS;
+  } else {
+    durations = DEFAULT_TIMELOCK_DURATIONS;
+  }
 
   return {
     srcWithdrawal: timestamp + durations.srcWithdrawal,
