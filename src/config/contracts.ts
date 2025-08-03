@@ -100,6 +100,17 @@ export function areContractsConfigured(chainId: number): boolean {
   const addresses = CONTRACT_ADDRESSES[chainId];
   if (!addresses) return false;
   
+  // For mainnet chains, we only need escrowFactory and tokens
+  const isMainnet = chainId === 8453 || chainId === 42793;
+  
+  if (isMainnet) {
+    return (
+      addresses.escrowFactory !== PLACEHOLDER_ADDRESS &&
+      Object.values(addresses.tokens).some(addr => addr !== PLACEHOLDER_ADDRESS)
+    );
+  }
+  
+  // For local chains, we need all addresses
   return (
     addresses.escrowFactory !== PLACEHOLDER_ADDRESS &&
     addresses.limitOrderProtocol !== PLACEHOLDER_ADDRESS &&
@@ -117,14 +128,16 @@ export function loadContractAddressesFromEnv(): void {
   const chainAProtocol = Deno.env.get("CHAIN_A_LIMIT_ORDER_PROTOCOL");
   const chainATKA = Deno.env.get("CHAIN_A_TOKEN_TKA");
   const chainATKB = Deno.env.get("CHAIN_A_TOKEN_TKB");
+  const chainABMN = Deno.env.get("CHAIN_A_TOKEN_BMN");
   
-  if (chainAFactory || chainAProtocol || chainATKA || chainATKB) {
+  if (chainAFactory || chainAProtocol || chainATKA || chainATKB || chainABMN) {
     updateContractAddresses(1337, {
       escrowFactory: (chainAFactory as Address) || PLACEHOLDER_ADDRESS,
       limitOrderProtocol: (chainAProtocol as Address) || PLACEHOLDER_ADDRESS,
       tokens: {
         TKA: (chainATKA as Address) || PLACEHOLDER_ADDRESS,
         TKB: (chainATKB as Address) || PLACEHOLDER_ADDRESS,
+        BMN: (chainABMN as Address) || PLACEHOLDER_ADDRESS,
       },
     });
   }
@@ -134,14 +147,16 @@ export function loadContractAddressesFromEnv(): void {
   const chainBProtocol = Deno.env.get("CHAIN_B_LIMIT_ORDER_PROTOCOL");
   const chainBTKA = Deno.env.get("CHAIN_B_TOKEN_TKA");
   const chainBTKB = Deno.env.get("CHAIN_B_TOKEN_TKB");
+  const chainBBMN = Deno.env.get("CHAIN_B_TOKEN_BMN");
   
-  if (chainBFactory || chainBProtocol || chainBTKA || chainBTKB) {
+  if (chainBFactory || chainBProtocol || chainBTKA || chainBTKB || chainBBMN) {
     updateContractAddresses(1338, {
       escrowFactory: (chainBFactory as Address) || PLACEHOLDER_ADDRESS,
       limitOrderProtocol: (chainBProtocol as Address) || PLACEHOLDER_ADDRESS,
       tokens: {
         TKA: (chainBTKA as Address) || PLACEHOLDER_ADDRESS,
         TKB: (chainBTKB as Address) || PLACEHOLDER_ADDRESS,
+        BMN: (chainBBMN as Address) || PLACEHOLDER_ADDRESS,
       },
     });
   }
