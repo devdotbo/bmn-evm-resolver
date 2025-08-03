@@ -130,6 +130,27 @@ async function createOrder() {
     Deno.exit(1);
   }
   
+  // First, compute the escrow address
+  console.log("📍 Computing escrow address...");
+  const escrowAddress = await basePublicClient.readContract({
+    address: factoryAddress as `0x${string}`,
+    abi: TestEscrowFactoryABI.abi,
+    functionName: "computeSrcEscrowAddress",
+    args: [immutables],
+  }) as string;
+  
+  console.log(`Escrow will be deployed at: ${escrowAddress}`);
+  
+  // Send safety deposit to the escrow address
+  console.log("💰 Sending safety deposit to escrow address...");
+  const depositTx = await baseClient.sendTransaction({
+    to: escrowAddress as `0x${string}`,
+    value: SAFETY_DEPOSIT,
+  });
+  
+  console.log(`Safety deposit tx: ${depositTx}`);
+  await basePublicClient.waitForTransactionReceipt({ hash: depositTx });
+  
   // Approve BMN transfer
   console.log("📝 Approving BMN transfer...");
   const approveTx = await baseClient.writeContract({
@@ -149,31 +170,18 @@ async function createOrder() {
     abi: TestEscrowFactoryABI.abi,
     functionName: "createSrcEscrowForTesting",
     args: [immutables, AMOUNT],
-    value: SAFETY_DEPOSIT, // Send safety deposit
   });
   
   console.log(`Create escrow tx: ${createTx}`);
   const receipt = await basePublicClient.waitForTransactionReceipt({ hash: createTx });
   
   // Parse logs to find escrow address
-  let escrowAddress = "";
   for (const log of receipt.logs) {
     if (log.topics[0] === "0x0e534c62f0afd2fa0f0fa71198e8aa2d549f24daf2bb47de0d5486c7ce9288ca") { // SrcEscrowCreated event
-      // The escrow address should be in the log data
-      console.log("Found SrcEscrowCreated event");
+      console.log("✅ Found SrcEscrowCreated event");
       break;
     }
   }
-  
-  // Compute escrow address
-  const computedAddress = await basePublicClient.readContract({
-    address: factoryAddress as `0x${string}`,
-    abi: TestEscrowFactoryABI.abi,
-    functionName: "computeSrcEscrowAddress",
-    args: [immutables],
-  }) as string;
-  
-  escrowAddress = computedAddress;
   
   console.log("✅ Order created successfully!");
   console.log(`Escrow address: ${escrowAddress}`);
