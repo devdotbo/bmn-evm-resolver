@@ -2,7 +2,7 @@ import { parseArgs } from "https://deno.land/std@0.208.0/cli/parse_args.ts";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex } from "viem";
 import { parseEther, keccak256, encodePacked } from "viem";
-import { chainA, chainB } from "../config/chains.ts";
+import { getChains, getChainName } from "../config/chain-selector.ts";
 import {
   buildOrder,
   LIMIT_ORDER_PROTOCOL_DOMAIN,
@@ -11,6 +11,7 @@ import {
   type OrderMetadata,
 } from "../types/order.ts";
 import { loadContractAddresses } from "../config/load-contracts.ts";
+import { getContractAddresses } from "../config/contracts.ts";
 import {
   createPublicClientForChain,
   createWalletClientForChain,
@@ -36,18 +37,24 @@ export async function createOrder(args: {
 }): Promise<void> {
   console.log("=== Creating Cross-Chain Order (EIP-712) ===\n");
 
+  // Get chain configuration
+  const chains = getChains();
+  console.log(`Network mode: ${chains.srcChainId === 1337 ? "TESTNET" : "MAINNET"}`);
+  console.log(`Source chain: ${getChainName(chains.srcChainId)} (${chains.srcChainId})`);
+  console.log(`Destination chain: ${getChainName(chains.dstChainId)} (${chains.dstChainId})\n`);
+
   // Get account
   const account = privateKeyToAccount(args.privateKey);
   console.log(`Alice address: ${account.address}`);
 
   // Create clients
-  const srcPublicClient = createPublicClientForChain(chainA);
-  const srcWalletClient = createWalletClientForChain(chainA, args.privateKey);
+  const srcPublicClient = createPublicClientForChain(chains.srcChain);
+  const srcWalletClient = createWalletClientForChain(chains.srcChain, args.privateKey);
 
   // Load contract addresses
   console.log("Loading contract addresses...");
-  const srcAddresses = await loadContractAddresses(chainA.id);
-  const dstAddresses = await loadContractAddresses(chainB.id);
+  const srcAddresses = getContractAddresses(chains.srcChainId);
+  const dstAddresses = getContractAddresses(chains.dstChainId);
 
   // Get token addresses
   const srcTokenAddress = srcAddresses.tokens[args.tokenA];
@@ -147,7 +154,7 @@ export async function createOrder(args: {
       account,
       domain: {
         ...LIMIT_ORDER_PROTOCOL_DOMAIN,
-        chainId: chainA.id,
+        chainId: chains.srcChainId,
         verifyingContract: srcAddresses.limitOrderProtocol,
       },
       types: ORDER_TYPES,
@@ -179,7 +186,7 @@ export async function createOrder(args: {
       signature,
       orderHash,
       createdAt: Date.now(),
-      chainId: chainA.id,
+      chainId: chains.srcChainId,
       status: "pending",
     };
 
@@ -194,8 +201,8 @@ export async function createOrder(args: {
       crossChainData: {
         secret,
         hashlock,
-        srcChainId: chainA.id,
-        dstChainId: chainB.id,
+        srcChainId: chains.srcChainId,
+        dstChainId: chains.dstChainId,
         srcToken: args.tokenA,
         dstToken: args.tokenB,
       },
@@ -213,8 +220,8 @@ export async function createOrder(args: {
       dstAmount: takingAmount,
       safetyDeposit: 0n, // Handled differently in new architecture
       secret,
-      srcChainId: chainA.id,
-      dstChainId: chainB.id,
+      srcChainId: chains.srcChainId,
+      dstChainId: chains.dstChainId,
     };
 
     const orderState: OrderState = {

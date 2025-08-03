@@ -1,10 +1,10 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { chainA, chainB } from "../config/chains.ts";
 import { 
   getContractAddresses, 
   areContractsConfigured,
   loadContractAddressesFromEnv 
 } from "../config/contracts.ts";
+import { getChains, getChainName } from "../config/chain-selector.ts";
 import { 
   createPublicClientForChain,
   createWalletClientForChain,
@@ -38,23 +38,25 @@ export class Resolver {
 
   constructor(
     private privateKey: `0x${string}`,
-    srcChainId = 1337,
-    dstChainId = 1338
+    srcChainId?: number,
+    dstChainId?: number
   ) {
-    this.srcChainId = srcChainId;
-    this.dstChainId = dstChainId;
+    // Get chain configuration based on network mode
+    const chains = getChains();
+    this.srcChainId = srcChainId ?? chains.srcChainId;
+    this.dstChainId = dstChainId ?? chains.dstChainId;
     this.stateManager = new OrderStateManager();
     this.profitCalculator = new ProfitabilityCalculator();
 
     // Initialize clients and services
-    const srcPublicClient = createPublicClientForChain(chainA);
-    const srcWalletClient = createWalletClientForChain(chainA, privateKey);
-    const dstPublicClient = createPublicClientForChain(chainB);
-    const dstWalletClient = createWalletClientForChain(chainB, privateKey);
+    const srcPublicClient = createPublicClientForChain(chains.srcChain);
+    const srcWalletClient = createWalletClientForChain(chains.srcChain, privateKey);
+    const dstPublicClient = createPublicClientForChain(chains.dstChain);
+    const dstWalletClient = createWalletClientForChain(chains.dstChain, privateKey);
     
     // Create monitoring clients with WebSocket for real-time events
-    const srcMonitoringClient = createMonitoringClient(chainA);
-    const dstMonitoringClient = createMonitoringClient(chainB);
+    const srcMonitoringClient = createMonitoringClient(chains.srcChain);
+    const dstMonitoringClient = createMonitoringClient(chains.dstChain);
 
     // Get contract addresses
     const srcAddresses = getContractAddresses(srcChainId);
@@ -133,8 +135,8 @@ export class Resolver {
     this.startPeriodicTasks();
 
     console.log("Resolver started successfully");
-    console.log(`Monitoring chain ${this.srcChainId} for orders`);
-    console.log(`Will execute on chain ${this.dstChainId}`);
+    console.log(`Monitoring ${getChainName(this.srcChainId)} (${this.srcChainId}) for orders`);
+    console.log(`Will execute on ${getChainName(this.dstChainId)} (${this.dstChainId})`);
 
     // Get resolver address
     const account = privateKeyToAccount(this.privateKey);

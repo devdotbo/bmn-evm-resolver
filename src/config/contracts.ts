@@ -28,6 +28,26 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
       WETH: PLACEHOLDER_ADDRESS, // Wrapped ETH
     },
   },
+  
+  // Base Mainnet
+  8453: {
+    escrowFactory: "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+    limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
+    tokens: {
+      BMN: "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
+      // Add other tokens as needed
+    },
+  },
+  
+  // Etherlink Mainnet
+  42793: {
+    escrowFactory: "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+    limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
+    tokens: {
+      BMN: "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
+      // Add other tokens as needed
+    },
+  },
 };
 
 /**
@@ -122,6 +142,36 @@ export function loadContractAddressesFromEnv(): void {
       tokens: {
         TKA: (chainBTKA as Address) || PLACEHOLDER_ADDRESS,
         TKB: (chainBTKB as Address) || PLACEHOLDER_ADDRESS,
+      },
+    });
+  }
+  
+  // Base Mainnet addresses
+  const baseFactory = Deno.env.get("BASE_ESCROW_FACTORY");
+  const baseProtocol = Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL");
+  const baseBMN = Deno.env.get("BASE_TOKEN_BMN");
+  
+  if (baseFactory || baseProtocol || baseBMN) {
+    updateContractAddresses(8453, {
+      escrowFactory: (baseFactory as Address) || "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+      limitOrderProtocol: (baseProtocol as Address) || PLACEHOLDER_ADDRESS,
+      tokens: {
+        BMN: (baseBMN as Address) || "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
+      },
+    });
+  }
+  
+  // Etherlink Mainnet addresses
+  const etherlinkFactory = Deno.env.get("ETHERLINK_ESCROW_FACTORY");
+  const etherlinkProtocol = Deno.env.get("ETHERLINK_LIMIT_ORDER_PROTOCOL");
+  const etherlinkBMN = Deno.env.get("ETHERLINK_TOKEN_BMN");
+  
+  if (etherlinkFactory || etherlinkProtocol || etherlinkBMN) {
+    updateContractAddresses(42793, {
+      escrowFactory: (etherlinkFactory as Address) || "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+      limitOrderProtocol: (etherlinkProtocol as Address) || PLACEHOLDER_ADDRESS,
+      tokens: {
+        BMN: (etherlinkBMN as Address) || "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
       },
     });
   }

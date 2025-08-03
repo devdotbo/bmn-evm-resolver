@@ -35,6 +35,48 @@ export const chainB = defineChain({
   testnet: true,
 });
 
+// Base Mainnet
+export const baseMainnet = defineChain({
+  id: 8453,
+  name: "Base",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: [Deno.env.get("BASE_RPC_URL") || "https://mainnet.base.org"],
+      webSocket: [Deno.env.get("BASE_WS_URL") || "wss://base-mainnet.g.alchemy.com/v2/{your-api-key}"],
+    },
+  },
+  testnet: false,
+  blockExplorers: {
+    default: { name: "BaseScan", url: "https://basescan.org" },
+  },
+});
+
+// Etherlink Mainnet
+export const etherlinkMainnet = defineChain({
+  id: 42793,
+  name: "Etherlink",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: [Deno.env.get("ETHERLINK_RPC_URL") || "https://node.mainnet.etherlink.com"],
+      webSocket: [Deno.env.get("ETHERLINK_WS_URL") || "wss://node.mainnet.etherlink.com"],
+    },
+  },
+  testnet: false,
+  blockExplorers: {
+    default: { name: "Etherlink Explorer", url: "https://explorer.etherlink.com" },
+  },
+});
+
 // Test account addresses loaded from environment
 export const ALICE_ADDRESS = (Deno.env.get("ALICE_ADDRESS") || "0x70997970C51812dc3A010C7d01b50e0d17dc79C8") as Address;
 export const BOB_ADDRESS = (Deno.env.get("BOB_ADDRESS") || "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC") as Address;

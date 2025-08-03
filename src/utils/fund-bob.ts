@@ -2,7 +2,7 @@
 
 import { privateKeyToAccount } from "viem/accounts";
 import { parseEther } from "viem";
-import { chainB } from "../config/chains.ts";
+import { getChains } from "../config/chain-selector.ts";
 import { getContractAddresses } from "../config/contracts.ts";
 import { createWalletClientForChain } from "../utils/contracts.ts";
 import { TokenMockABI } from "../types/contracts.ts";
@@ -10,8 +10,11 @@ import { TokenMockABI } from "../types/contracts.ts";
 // Funding script to give Bob TKB on Chain B
 
 async function fundBob() {
+  // Get chain configuration
+  const chains = getChains();
+  
   // Get contract addresses
-  const chainBAddresses = getContractAddresses(1338);
+  const chainBAddresses = getContractAddresses(chains.dstChainId);
   
   // Use Alice's private key (she has TKB on chain B)
   const alicePrivateKey = Deno.env.get("ALICE_PRIVATE_KEY") as `0x${string}`;
@@ -20,12 +23,12 @@ async function fundBob() {
   const aliceAccount = privateKeyToAccount(alicePrivateKey);
   const bobAccount = privateKeyToAccount(bobPrivateKey);
   
-  console.log("Funding Bob with TKB on Chain B...");
+  console.log(`Funding Bob with TKB on ${chains.dstChain.name}...`);
   console.log(`Alice: ${aliceAccount.address}`);
   console.log(`Bob: ${bobAccount.address}`);
   
-  // Create wallet client for Alice on Chain B
-  const walletClient = createWalletClientForChain(chainB, alicePrivateKey);
+  // Create wallet client for Alice on destination chain
+  const walletClient = createWalletClientForChain(chains.dstChain, alicePrivateKey);
   
   // Transfer 50 TKB from Alice to Bob on Chain B (Alice only has 100)
   const amount = parseEther("50");
@@ -38,7 +41,7 @@ async function fundBob() {
       args: [bobAccount.address, amount],
     });
     
-    console.log(`✅ Transferred 50 TKB to Bob on Chain B`);
+    console.log(`✅ Transferred 50 TKB to Bob on ${chains.dstChain.name}`);
     console.log(`   Transaction: ${hash}`);
   } catch (error) {
     console.error("❌ Failed to transfer TKB:", error);

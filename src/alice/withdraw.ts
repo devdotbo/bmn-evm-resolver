@@ -1,7 +1,7 @@
 import { parseArgs } from "https://deno.land/std@0.208.0/cli/parse_args.ts";
 import { privateKeyToAccount } from "viem/accounts";
 import { type Address } from "viem";
-import { chainB } from "../config/chains.ts";
+import { getChains, getChainName } from "../config/chain-selector.ts";
 import {
   getContractAddresses,
   areContractsConfigured,
@@ -93,8 +93,12 @@ export async function withdrawFromOrder(args: {
   }
 
   // Create clients
-  const dstPublicClient = createPublicClientForChain(chainB);
-  const dstWalletClient = createWalletClientForChain(chainB, args.privateKey);
+  // Get chain configuration
+  const chains = getChains();
+  console.log(`Using ${getChainName(chains.dstChainId)} (${chains.dstChainId}) for withdrawal\n`);
+  
+  const dstPublicClient = createPublicClientForChain(chains.dstChain);
+  const dstWalletClient = createWalletClientForChain(chains.dstChain, args.privateKey);
 
   // Get destination escrow address (prefer actual address from event)
   let dstEscrowAddress = order.actualDstEscrowAddress || order.dstEscrowAddress;
