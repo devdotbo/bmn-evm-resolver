@@ -14,9 +14,12 @@ import {
   EVENT_BATCH_SIZE,
   RECONNECT_DELAY_MS 
 } from "../config/constants.ts";
+import { IndexerClient, type IndexerClientConfig } from "../indexer/client.ts";
+import type { AtomicSwap } from "../indexer/types.ts";
 
 /**
  * Order monitor that watches for new orders on the source chain
+ * Supports both indexer-based and event-based monitoring
  */
 export class OrderMonitor {
   private publicClient: PublicClient;
@@ -26,17 +29,38 @@ export class OrderMonitor {
   private isRunning = false;
   private lastProcessedBlock: bigint = 0n;
   private unwatchFunctions: (() => void)[] = [];
+  
+  // Indexer support
+  private indexerClient?: IndexerClient;
+  private useIndexer: boolean;
+  private hybridMode: boolean;
+  private indexerPollingInterval?: number;
+  private resolverAddress?: Address;
 
   constructor(
     publicClient: PublicClient,
     escrowFactoryAddress: Address,
     onOrderCallback: EventCallback<SrcEscrowCreatedEvent>,
-    monitoringClient?: PublicClient
+    monitoringClient?: PublicClient,
+    options?: {
+      indexerClient?: IndexerClient;
+      useIndexer?: boolean;
+      hybridMode?: boolean;
+      resolverAddress?: Address;
+      indexerPollingInterval?: number;
+    }
   ) {
     this.publicClient = publicClient;
     this.monitoringClient = monitoringClient || publicClient;
     this.escrowFactoryAddress = escrowFactoryAddress;
     this.onOrderCallback = onOrderCallback;
+    
+    // Indexer configuration
+    this.indexerClient = options?.indexerClient;
+    this.useIndexer = options?.useIndexer || false;
+    this.hybridMode = options?.hybridMode || false;
+    this.resolverAddress = options?.resolverAddress;
+    this.indexerPollingInterval = options?.indexerPollingInterval || 5000;
   }
 
   /**
@@ -54,9 +78,20 @@ export class OrderMonitor {
     
     console.log(`Starting order monitor from block ${this.lastProcessedBlock}`);
     
-    // Use WebSocket for real-time event monitoring
-    console.log("Using WebSocket for real-time event monitoring");
-    this.startRealtimeMonitoring();
+    // Determine monitoring mode
+    if (this.useIndexer && this.indexerClient) {
+      console.log("Using indexer-based monitoring");
+      await this.startIndexerMonitoring();
+      
+      if (this.hybridMode) {
+        console.log("Also enabling WebSocket event monitoring (hybrid mode)");
+        this.startRealtimeMonitoring();
+      }
+    } else {
+      // Fallback to event monitoring
+      console.log("Using WebSocket for real-time event monitoring");
+      this.startRealtimeMonitoring();
+    }
   }
 
   /**
@@ -71,7 +106,91 @@ export class OrderMonitor {
     }
     this.unwatchFunctions = [];
     
+    // Stop indexer subscription if active
+    if (this.indexerClient) {
+      // Unsubscribe handled by unwatchFunctions
+    }
+    
     console.log("Order monitor stopped");
+  }
+
+  /**
+   * Start indexer-based monitoring
+   */
+  private async startIndexerMonitoring(): Promise<void> {
+    if (!this.indexerClient || !this.resolverAddress) {
+      console.error("Indexer client or resolver address not configured");
+      return;
+    }
+    
+    try {
+      // Subscribe to new orders via indexer
+      const unsubscribe = await this.indexerClient.subscribeToNewOrders(
+        async (order: AtomicSwap) => {
+          // Convert AtomicSwap to SrcEscrowCreatedEvent format
+          const event = this.convertAtomicSwapToEvent(order);
+          if (event) {
+            await this.onOrderCallback(event);
+          }
+        },
+        this.resolverAddress
+      );
+      
+      this.unwatchFunctions.push(unsubscribe);
+      
+      console.log("Started indexer-based order monitoring");
+    } catch (error) {
+      console.error("Failed to start indexer monitoring:", error);
+      // Fallback to event monitoring if indexer fails
+      if (!this.hybridMode) {
+        console.log("Falling back to event-based monitoring");
+        this.startRealtimeMonitoring();
+      }
+    }
+  }
+  
+  /**
+   * Convert AtomicSwap from indexer to SrcEscrowCreatedEvent
+   */
+  private convertAtomicSwapToEvent(swap: AtomicSwap): SrcEscrowCreatedEvent | null {
+    try {
+      // Only process orders that have source escrow created
+      if (!swap.srcEscrowAddress) {
+        return null;
+      }
+      
+      const immutables: Immutables = {
+        orderHash: swap.orderHash as `0x${string}`,
+        hashlock: swap.hashlock as `0x${string}`,
+        maker: swap.srcMaker as Address,
+        taker: swap.srcTaker as Address,
+        token: swap.srcToken as Address,
+        amount: swap.srcAmount,
+        safetyDeposit: swap.srcSafetyDeposit,
+        timelocks: {
+          // Extract timelocks from packed format if needed
+          // For now, use defaults
+          srcWithdrawal: 300n, // 5 minutes
+          srcPublicWithdrawal: 600n, // 10 minutes
+          srcCancellation: 900n, // 15 minutes
+          srcPublicCancellation: 1200n, // 20 minutes
+          dstWithdrawal: 300n, // 5 minutes
+          dstCancellation: 600n, // 10 minutes
+        },
+      };
+      
+      return {
+        escrow: swap.srcEscrowAddress as Address,
+        orderHash: swap.orderHash as Address,
+        immutables,
+        blockNumber: swap.srcCreatedAt || 0n,
+        transactionHash: "0x0" as `0x${string}`, // Not available from indexer
+        logIndex: 0,
+      };
+    } catch (error) {
+      console.error("Error converting AtomicSwap to event:", error);
+      return null;
+    }
   }
 
   /**

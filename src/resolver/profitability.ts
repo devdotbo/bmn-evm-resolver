@@ -5,6 +5,7 @@ import {
   MOCK_TOKEN_PRICES,
   DEFAULT_TOKEN_DECIMALS 
 } from "../config/constants.ts";
+import { BMN_TOKEN_CONFIG } from "../config/contracts.ts";
 
 /**
  * Profitability calculator for cross-chain orders
@@ -16,11 +17,16 @@ export class ProfitabilityCalculator {
 
   constructor(
     minProfitBps = MIN_PROFIT_BPS,
-    maxSlippageBps = MAX_SLIPPAGE_BPS
+    maxSlippageBps = MAX_SLIPPAGE_BPS,
+    tokenPrices?: Record<string, number>
   ) {
     this.minProfitBps = minProfitBps;
     this.maxSlippageBps = maxSlippageBps;
-    this.tokenPrices = new Map(Object.entries(MOCK_TOKEN_PRICES));
+    this.tokenPrices = new Map(Object.entries({
+      ...MOCK_TOKEN_PRICES,
+      BMN: 0.1, // Default BMN price
+      ...tokenPrices, // Override with custom prices
+    }));
   }
 
   /**
@@ -47,7 +53,8 @@ export class ProfitabilityCalculator {
    * @param srcAmount Amount to receive on source chain
    * @param dstToken Destination token symbol
    * @param dstAmount Amount to provide on destination chain
-   * @param safetyDeposit Safety deposit amount
+   * @param safetyDeposit Safety deposit amount (in token or ETH)
+   * @param isEthDeposit Whether safety deposit is in ETH
    * @returns Profitability analysis
    */
   analyzeOrder(
@@ -55,7 +62,8 @@ export class ProfitabilityCalculator {
     srcAmount: bigint,
     dstToken: string,
     dstAmount: bigint,
-    safetyDeposit: bigint
+    safetyDeposit: bigint,
+    isEthDeposit = false
   ): ProfitabilityAnalysis {
     const srcPrice = this.tokenPrices.get(srcToken) || 0;
     const dstPrice = this.tokenPrices.get(dstToken) || 0;
@@ -74,7 +82,11 @@ export class ProfitabilityCalculator {
     // Calculate values in USD
     const srcValueUsd = this.calculateUsdValue(srcAmount, srcPrice);
     const dstValueUsd = this.calculateUsdValue(dstAmount, dstPrice);
-    const safetyDepositUsd = this.calculateUsdValue(safetyDeposit, dstPrice);
+    
+    // Handle safety deposit (can be in ETH or token)
+    const safetyDepositUsd = isEthDeposit
+      ? this.calculateUsdValue(safetyDeposit, this.tokenPrices.get("WETH") || 2000, 18)
+      : this.calculateUsdValue(safetyDeposit, dstPrice);
 
     // Calculate profit
     const grossProfitUsd = srcValueUsd - dstValueUsd;

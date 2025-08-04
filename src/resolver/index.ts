@@ -2,7 +2,9 @@ import { privateKeyToAccount } from "viem/accounts";
 import { 
   getContractAddresses, 
   areContractsConfigured,
-  loadContractAddressesFromEnv 
+  loadContractAddressesFromEnv,
+  CONTRACT_ADDRESSES,
+  CREATE3_ADDRESSES 
 } from "../config/contracts.ts";
 import { getChains, getChainName, getReverseChains } from "../config/chain-selector.ts";
 import { 
@@ -21,6 +23,13 @@ import type { SrcEscrowCreatedEvent } from "../types/events.ts";
 import type { OrderState } from "../types/index.ts";
 import { OrderStatus } from "../types/index.ts";
 import { MAX_CONCURRENT_ORDERS, MAX_ORDER_AGE_SECONDS } from "../config/constants.ts";
+import { 
+  ResolverConfig, 
+  mergeResolverConfig, 
+  validateResolverConfig 
+} from "./config.ts";
+import { createLocalIndexerClient } from "../indexer/local-setup.ts";
+import { IndexerClient } from "../indexer/client.ts";
 
 /**
  * Main resolver application (Bob)
@@ -35,19 +44,46 @@ export class Resolver {
   private srcChainId: number;
   private dstChainId: number;
   private isRunning = false;
+  private config: ResolverConfig;
+  private indexerClient?: IndexerClient;
+  private resolverAddress: `0x${string}`;
 
   constructor(
-    private privateKey: `0x${string}`,
+    privateKey: `0x${string}`,
     srcChainId?: number,
-    dstChainId?: number
+    dstChainId?: number,
+    config?: Partial<ResolverConfig>
   ) {
     // Get chain configuration based on network mode and direction
     const useReverse = Deno.env.get("REVERSE_CHAINS") === "true";
     const chains = useReverse ? getReverseChains() : getChains();
     this.srcChainId = srcChainId ?? chains.srcChainId;
     this.dstChainId = dstChainId ?? chains.dstChainId;
+    
+    // Merge configuration
+    this.config = mergeResolverConfig({
+      privateKey,
+      srcChainId: this.srcChainId,
+      dstChainId: this.dstChainId,
+      ...config,
+    });
+    
+    // Validate configuration
+    validateResolverConfig(this.config);
+    
+    // Set resolver address
+    const account = privateKeyToAccount(privateKey);
+    this.resolverAddress = account.address;
+    
+    // Initialize state manager
     this.stateManager = new OrderStateManager();
-    this.profitCalculator = new ProfitabilityCalculator();
+    
+    // Initialize profitability calculator with custom settings
+    this.profitCalculator = new ProfitabilityCalculator(
+      this.config.profitability?.minProfitBps,
+      this.config.profitability?.maxSlippageBps,
+      this.config.profitability?.tokenPrices
+    );
 
     // Initialize clients and services
     const srcPublicClient = createPublicClientForChain(chains.srcChain);
@@ -59,15 +95,40 @@ export class Resolver {
     const srcMonitoringClient = createMonitoringClient(chains.srcChain);
     const dstMonitoringClient = createMonitoringClient(chains.dstChain);
 
-    // Get contract addresses
-    const srcAddresses = getContractAddresses(this.srcChainId);
+    // Get contract addresses - use CREATE3 addresses for mainnet chains
+    const isMainnet = this.srcChainId === 8453 || this.srcChainId === 42793;
+    const srcAddresses = isMainnet 
+      ? { 
+          escrowFactory: CREATE3_ADDRESSES.ESCROW_FACTORY,
+          limitOrderProtocol: CONTRACT_ADDRESSES[this.srcChainId].limitOrderProtocol,
+          tokens: CONTRACT_ADDRESSES[this.srcChainId].tokens 
+        }
+      : getContractAddresses(this.srcChainId);
     
-    // Initialize monitor with WebSocket client for real-time monitoring
+    // Initialize indexer client if configured (connection happens in start())
+    if (this.config.indexerUrl) {
+      this.indexerClient = new IndexerClient({
+        sqlUrl: this.config.indexerUrl,
+        tablePrefix: this.config.indexerTablePrefix,
+        retryAttempts: 3,
+        retryDelay: 1000,
+        timeout: 30000,
+      });
+    }
+    
+    // Initialize monitor with optional indexer support
     this.monitor = new OrderMonitor(
       srcPublicClient,
       srcAddresses.escrowFactory,
       this.handleNewOrder.bind(this),
-      srcMonitoringClient
+      srcMonitoringClient,
+      {
+        indexerClient: this.indexerClient,
+        useIndexer: this.config.features?.useIndexerForOrders || false,
+        hybridMode: this.config.features?.hybridMode || false,
+        resolverAddress: this.resolverAddress,
+        indexerPollingInterval: this.config.monitoring?.indexerPollingInterval,
+      }
     );
 
     // Initialize executor
@@ -83,11 +144,16 @@ export class Resolver {
       this.handleNewOrder.bind(this)
     );
 
-    // Initialize destination chain monitor for secret reveals with WebSocket client
+    // Initialize destination chain monitor for secret reveals with optional indexer support
     this.destinationMonitor = new DestinationChainMonitor(
       dstPublicClient,
       this.handleSecretReveal.bind(this),
-      dstMonitoringClient
+      dstMonitoringClient,
+      {
+        indexerClient: this.indexerClient,
+        useIndexer: this.config.features?.useIndexerForSecrets || false,
+        hybridMode: this.config.features?.hybridMode || false,
+      }
     );
   }
 
@@ -96,22 +162,65 @@ export class Resolver {
    */
   async start(): Promise<void> {
     console.log("Starting Bridge-Me-Not Resolver...");
+    console.log(`Configuration:`);
+    console.log(`- Source Chain: ${getChainName(this.srcChainId)} (${this.srcChainId})`);
+    console.log(`- Destination Chain: ${getChainName(this.dstChainId)} (${this.dstChainId})`);
+    console.log(`- Resolver Address: ${this.resolverAddress}`);
+    console.log(`- Min Profit: ${this.config.profitability?.minProfitBps} bps`);
+    console.log(`- Indexer: ${this.config.indexerUrl ? 'Enabled' : 'Disabled'}`);
 
     // Load contract addresses from environment
     loadContractAddressesFromEnv();
 
-    // Check if contracts are configured
-    if (!areContractsConfigured(this.srcChainId) || !areContractsConfigured(this.dstChainId)) {
-      console.error("Contract addresses not configured. Please set environment variables:");
-      console.error("- CHAIN_A_ESCROW_FACTORY");
-      console.error("- CHAIN_A_LIMIT_ORDER_PROTOCOL");
-      console.error("- CHAIN_B_ESCROW_FACTORY");
-      console.error("- CHAIN_B_LIMIT_ORDER_PROTOCOL");
-      console.error("- CHAIN_A_TOKEN_TKA");
-      console.error("- CHAIN_A_TOKEN_TKB");
-      console.error("- CHAIN_B_TOKEN_TKA");
-      console.error("- CHAIN_B_TOKEN_TKB");
-      return;
+    // Check if contracts are configured for local chains
+    const isMainnet = this.srcChainId === 8453 || this.srcChainId === 42793 || 
+                     this.dstChainId === 8453 || this.dstChainId === 42793;
+    
+    if (!isMainnet) {
+      // Only check full configuration for local chains
+      if (!areContractsConfigured(this.srcChainId) || !areContractsConfigured(this.dstChainId)) {
+        console.error("Contract addresses not configured. Please set environment variables:");
+        console.error("- CHAIN_A_ESCROW_FACTORY");
+        console.error("- CHAIN_A_LIMIT_ORDER_PROTOCOL");
+        console.error("- CHAIN_B_ESCROW_FACTORY");
+        console.error("- CHAIN_B_LIMIT_ORDER_PROTOCOL");
+        console.error("- CHAIN_A_TOKEN_TKA");
+        console.error("- CHAIN_A_TOKEN_TKB");
+        console.error("- CHAIN_B_TOKEN_TKA");
+        console.error("- CHAIN_B_TOKEN_TKB");
+        return;
+      }
+    } else {
+      console.log("Using CREATE3 deterministic addresses for mainnet");
+      console.log(`- Escrow Factory: ${CREATE3_ADDRESSES.ESCROW_FACTORY}`);
+      console.log(`- BMN Token: ${CREATE3_ADDRESSES.BMN_TOKEN}`);
+    }
+    
+    // Connect to indexer if configured
+    if (this.indexerClient) {
+      try {
+        await this.indexerClient.connect();
+        console.log("✅ Connected to indexer for enhanced monitoring");
+        
+        // Check indexer health
+        const health = await this.indexerClient.checkHealth();
+        console.log("📊 Indexer health:", {
+          connected: health.connected,
+          synced: health.synced,
+          latestBlock: health.latestBlock.toString(),
+          chainId: health.chainId
+        });
+      } catch (error) {
+        console.error("❌ Failed to connect to indexer:", error);
+        console.log("Will use event-based monitoring only");
+        
+        // Disable indexer features on failure
+        if (this.config.features) {
+          this.config.features.useIndexerForOrders = false;
+          this.config.features.useIndexerForSecrets = false;
+          this.config.features.hybridMode = false;
+        }
+      }
     }
 
     // Load saved state
@@ -135,13 +244,10 @@ export class Resolver {
     // Start periodic tasks
     this.startPeriodicTasks();
 
-    console.log("Resolver started successfully");
-    console.log(`Monitoring ${getChainName(this.srcChainId)} (${this.srcChainId}) for orders`);
-    console.log(`Will execute on ${getChainName(this.dstChainId)} (${this.dstChainId})`);
-
-    // Get resolver address
-    const account = privateKeyToAccount(this.privateKey);
-    console.log(`Resolver address: ${account.address}`);
+    console.log("\n✅ Resolver started successfully");
+    console.log(`📍 Monitoring ${getChainName(this.srcChainId)} (${this.srcChainId}) for orders`);
+    console.log(`🎯 Will execute on ${getChainName(this.dstChainId)} (${this.dstChainId})`);
+    console.log(`💼 Resolver address: ${this.resolverAddress}`);
   }
 
   /**
@@ -153,6 +259,12 @@ export class Resolver {
     this.monitor.stop();
     this.fileMonitor.stop();
     this.destinationMonitor.stop();
+    
+    // Disconnect from indexer if connected
+    if (this.indexerClient) {
+      await this.indexerClient.disconnect();
+      console.log("Disconnected from indexer");
+    }
     
     // Save state
     await this.stateManager.saveToFile();
@@ -201,13 +313,15 @@ export class Resolver {
         createdAt: Date.now(),
       };
 
-      // Check profitability
+      // Check profitability (with ETH safety deposits if enabled)
+      const isEthDeposit = this.config.features?.ethSafetyDeposits || false;
       const analysis = this.profitCalculator.analyzeOrder(
         "TKA", // Assuming token symbol
         orderState.params.srcAmount,
         "TKA",
         orderState.params.dstAmount,
-        orderState.params.safetyDeposit
+        orderState.params.safetyDeposit,
+        isEthDeposit
       );
 
       if (!analysis.isProfitable) {
@@ -257,13 +371,15 @@ export class Resolver {
       orderData: event.orderData,
     };
 
-    // Check profitability
+    // Check profitability (with ETH safety deposits if enabled)
+    const isEthDeposit = this.config.features?.ethSafetyDeposits || false;
     const analysis = this.profitCalculator.analyzeOrder(
       crossChainData.srcTokenSymbol || "TKA",
       orderState.params.srcAmount,
       crossChainData.dstTokenSymbol || "TKB",
       orderState.params.dstAmount,
-      orderState.params.safetyDeposit
+      orderState.params.safetyDeposit,
+      isEthDeposit
     );
 
     if (!analysis.isProfitable) {
@@ -305,7 +421,17 @@ export class Resolver {
    */
   private async executeOrder(order: OrderState): Promise<void> {
     try {
-      const dstAddresses = getContractAddresses(this.dstChainId);
+      // Get destination contract addresses - use CREATE3 addresses for mainnet chains
+      const isMainnet = this.dstChainId === 8453 || this.dstChainId === 42793;
+      const dstAddresses = isMainnet 
+        ? { 
+            escrowFactory: CREATE3_ADDRESSES.ESCROW_FACTORY,
+            limitOrderProtocol: CONTRACT_ADDRESSES[this.dstChainId].limitOrderProtocol,
+            tokens: CONTRACT_ADDRESSES[this.dstChainId].tokens 
+          }
+        : getContractAddresses(this.dstChainId);
+      
+      console.log(`Executing order on ${getChainName(this.dstChainId)} with factory: ${dstAddresses.escrowFactory}`);
       
       // Execute order
       const result = await this.executor.executeOrder(order, dstAddresses.escrowFactory);
@@ -469,11 +595,30 @@ export class Resolver {
    * @returns Statistics object
    */
   getStatistics(): Record<string, any> {
-    return {
+    const stats: Record<string, any> = {
       isRunning: this.isRunning,
       orderStats: this.stateManager.getStatistics(),
       lastBlock: this.monitor.getLastProcessedBlock().toString(),
+      config: {
+        srcChainId: this.srcChainId,
+        dstChainId: this.dstChainId,
+        minProfitBps: this.config.profitability?.minProfitBps,
+        useIndexer: this.config.features?.useIndexerForOrders,
+        hybridMode: this.config.features?.hybridMode,
+      },
     };
+    
+    // Add indexer status if available
+    if (this.indexerClient) {
+      const health = this.indexerClient.getLastHealthCheck();
+      stats.indexer = {
+        connected: health?.connected || false,
+        synced: health?.synced || false,
+        latestBlock: health?.latestBlock?.toString() || "0",
+      };
+    }
+    
+    return stats;
   }
 }
 
@@ -486,7 +631,18 @@ if (import.meta.main) {
     Deno.exit(1);
   }
 
-  const resolver = new Resolver(privateKey as `0x${string}`);
+  // Load optional configuration from environment
+  const userConfig: Partial<ResolverConfig> = {};
+  
+  // Check if we should use indexer
+  const indexerUrl = Deno.env.get("INDEXER_URL");
+  if (indexerUrl) {
+    console.log(`Indexer URL configured: ${indexerUrl}`);
+    userConfig.indexerUrl = indexerUrl;
+    userConfig.indexerTablePrefix = Deno.env.get("INDEXER_TABLE_PREFIX");
+  }
+
+  const resolver = new Resolver(privateKey as `0x${string}`, undefined, undefined, userConfig);
   
   // Handle shutdown
   Deno.addSignalListener("SIGINT", async () => {

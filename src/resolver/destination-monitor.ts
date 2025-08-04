@@ -4,6 +4,8 @@ import {
   parseAbiItem,
   type Address,
 } from "viem";
+import { IndexerClient } from "../indexer/client.ts";
+import type { SecretRevealEvent } from "../indexer/types.ts";
 
 export interface WithdrawnEvent {
   escrowAddress: Address;
@@ -15,6 +17,7 @@ export interface WithdrawnEvent {
 
 /**
  * Monitor for destination chain events (secret reveals)
+ * Supports both indexer-based and event-based monitoring
  */
 export class DestinationChainMonitor {
   private publicClient: PublicClient;
@@ -23,15 +26,30 @@ export class DestinationChainMonitor {
   private lastProcessedBlock: bigint = 0n;
   private isRunning = false;
   private unwatchFunctions: (() => void)[] = [];
+  
+  // Indexer support
+  private indexerClient?: IndexerClient;
+  private useIndexer: boolean;
+  private hybridMode: boolean;
 
   constructor(
     publicClient: PublicClient,
     onSecretRevealCallback: (event: WithdrawnEvent) => Promise<void>,
-    monitoringClient?: PublicClient
+    monitoringClient?: PublicClient,
+    options?: {
+      indexerClient?: IndexerClient;
+      useIndexer?: boolean;
+      hybridMode?: boolean;
+    }
   ) {
     this.publicClient = publicClient;
     this.monitoringClient = monitoringClient || publicClient;
     this.onSecretRevealCallback = onSecretRevealCallback;
+    
+    // Indexer configuration
+    this.indexerClient = options?.indexerClient;
+    this.useIndexer = options?.useIndexer || false;
+    this.hybridMode = options?.hybridMode || false;
   }
 
   /**
@@ -50,9 +68,20 @@ export class DestinationChainMonitor {
 
     console.log(`Starting destination chain monitor from block ${this.lastProcessedBlock}`);
 
-    // Use WebSocket for real-time monitoring
-    console.log("Using WebSocket for real-time destination chain monitoring");
-    this.startRealtimeMonitoring();
+    // Determine monitoring mode
+    if (this.useIndexer && this.indexerClient) {
+      console.log("Using indexer-based monitoring for secret reveals");
+      await this.startIndexerMonitoring();
+      
+      if (this.hybridMode) {
+        console.log("Also enabling WebSocket event monitoring (hybrid mode)");
+        this.startRealtimeMonitoring();
+      }
+    } else {
+      // Use WebSocket for real-time monitoring
+      console.log("Using WebSocket for real-time destination chain monitoring");
+      this.startRealtimeMonitoring();
+    }
   }
 
   /**
@@ -68,6 +97,45 @@ export class DestinationChainMonitor {
     this.unwatchFunctions = [];
     
     console.log("Destination chain monitor stopped");
+  }
+
+  /**
+   * Start indexer-based monitoring
+   */
+  private async startIndexerMonitoring(): Promise<void> {
+    if (!this.indexerClient) {
+      console.error("Indexer client not configured");
+      return;
+    }
+    
+    try {
+      // Subscribe to secret reveals via indexer
+      const unsubscribe = await this.indexerClient.subscribeToSecretReveals(
+        async (event: SecretRevealEvent) => {
+          // Convert to WithdrawnEvent format
+          const withdrawnEvent: WithdrawnEvent = {
+            escrowAddress: event.escrowAddress as Address,
+            secret: event.secret as `0x${string}`,
+            blockNumber: BigInt(event.blockNumber || 0),
+            transactionHash: event.transactionHash as `0x${string}`,
+            logIndex: 0, // Not available from indexer
+          };
+          
+          await this.onSecretRevealCallback(withdrawnEvent);
+        }
+      );
+      
+      this.unwatchFunctions.push(unsubscribe);
+      
+      console.log("Started indexer-based secret reveal monitoring");
+    } catch (error) {
+      console.error("Failed to start indexer monitoring:", error);
+      // Fallback to event monitoring if indexer fails
+      if (!this.hybridMode) {
+        console.log("Falling back to event-based monitoring");
+        this.startRealtimeMonitoring();
+      }
+    }
   }
 
   /**
