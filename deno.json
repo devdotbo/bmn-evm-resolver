@@ -13,17 +13,21 @@
     "mainnet:resolver": "./scripts/run-mainnet-resolver.sh",
     "mainnet:check-balances": "./scripts/check-mainnet-balances.sh",
     "mainnet:create-order": "deno run --allow-net --allow-read --allow-write --allow-env --env-file scripts/create-mainnet-order.ts",
-    "mainnet:create-order-reverse": "deno run --allow-net --allow-read --allow-write --allow-env --env-file scripts/create-mainnet-order-reverse.ts"
+    "mainnet:create-order-reverse": "deno run --allow-net --allow-read --allow-write --allow-env --env-file scripts/create-mainnet-order-reverse.ts",
+    "test:integration": "./scripts/test-flow.sh",
+    "test:setup": "deno run --allow-all scripts/setup-test-environment.ts",
+    "test:flow": "deno run --allow-all scripts/integration-test-flow.ts"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
     "viem": "npm:viem@^2.21.0",
     "viem/chains": "npm:viem@^2.21.0/chains",
-    "viem/accounts": "npm:viem@^2.21.0/accounts"
+    "viem/accounts": "npm:viem@^2.21.0/accounts",
+    "@ponder/client": "npm:@ponder/client@^0.4.0"
   },
   "compilerOptions": {
     "allowJs": true,
     "strict": true,
-    "lib": ["deno.window", "dom"]
+    "lib": ["deno.window", "dom", "deno.unstable"]
   }
 }
