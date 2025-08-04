@@ -1,5 +1,7 @@
 import type { Chain } from "viem";
 import { baseMainnet, etherlinkMainnet } from "./chains.ts";
+import { CREATE3_ADDRESSES } from "./contracts.ts";
+import { SAFETY_DEPOSIT_ETH } from "./constants.ts";
 
 /**
  * Mainnet configuration for Bridge-Me-Not resolver
@@ -23,16 +25,16 @@ export const MAINNET_CONFIG = {
     explorer: "https://explorer.etherlink.com",
   },
   
-  // Contract addresses (same on both chains via CREATE2)
+  // Contract addresses (same on both chains via CREATE3)
   CONTRACTS: {
-    // Production deployment
-    crossChainEscrowFactory: "0xc72ed1E8a0649e51Cd046a0FfccC8f8c0bf385Fa",
+    // Production deployment - CREATE3 deterministic addresses
+    crossChainEscrowFactory: CREATE3_ADDRESSES.ESCROW_FACTORY,
     
     // Test deployment for development
-    testEscrowFactory: "0xc72ed1E8a0649e51Cd046a0FfccC8f8c0bf385Fa", // Will be updated after deployment
+    testEscrowFactory: CREATE3_ADDRESSES.ESCROW_FACTORY, // Same as production for now
     
-    // BMN Token (same on both chains)
-    bmnToken: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1",
+    // BMN Token (same on both chains via CREATE3)
+    bmnToken: CREATE3_ADDRESSES.BMN_TOKEN,
   },
   
   // Timelock configuration (in seconds)
@@ -49,7 +51,7 @@ export const MAINNET_CONFIG = {
   },
   
   // Safety deposit amount (in wei)
-  SAFETY_DEPOSIT: "10000000000000", // 0.00001 ETH
+  SAFETY_DEPOSIT: SAFETY_DEPOSIT_ETH.toString(), // 0.00002 ETH (~$0.03-0.04 at $2000/ETH)
   
   // Token decimals
   BMN_DECIMALS: 18,

@@ -1,9 +1,34 @@
 import type { Address } from "viem";
 import type { ContractAddresses } from "../types/contracts.ts";
+import { parseUnits } from "viem";
 
 // Placeholder addresses - will be replaced with actual deployed addresses
 // These are valid Ethereum addresses for type safety
 export const PLACEHOLDER_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+
+// CREATE3-deployed contract addresses (deterministic across all chains)
+export const CREATE3_ADDRESSES = {
+  ESCROW_FACTORY: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory
+  BMN_TOKEN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token
+  // Implementation addresses (for reference)
+  ESCROW_SRC_IMPL: "0x77CC1A51dC5855bcF0d9f1c1FceaeE7fb855a535" as Address,
+  ESCROW_DST_IMPL: "0x36938b7899A17362520AA741C0E0dA0c8EfE5e3b" as Address,
+} as const;
+
+// BMN Token configuration
+export const BMN_TOKEN_CONFIG = {
+  address: CREATE3_ADDRESSES.BMN_TOKEN,
+  decimals: 18,
+  symbol: "BMN",
+  name: "Bridge-Me-Not",
+  totalSupply: parseUnits("20000000", 18), // 20 million BMN tokens
+} as const;
+
+// Export for convenience
+export const CONTRACT_ADDRESSES_EXPORTS = {
+  ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY,
+  BMN_TOKEN: CREATE3_ADDRESSES.BMN_TOKEN,
+} as const;
 
 // Contract addresses for each chain
 export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
@@ -31,20 +56,20 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   
   // Base Mainnet
   8453: {
-    escrowFactory: "0xc72ed1E8a0649e51Cd046a0FfccC8f8c0bf385Fa" as Address, // CrossChainEscrowFactory
+    escrowFactory: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory - CREATE3 deterministic address
     limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
     tokens: {
-      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // 18 decimals
+      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
       // Add other tokens as needed
     },
   },
   
   // Etherlink Mainnet
   42793: {
-    escrowFactory: "0xc72ed1E8a0649e51Cd046a0FfccC8f8c0bf385Fa" as Address, // CrossChainEscrowFactory (same on both chains)
+    escrowFactory: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory - CREATE3 deterministic address (same on both chains)
     limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
     tokens: {
-      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // 18 decimals
+      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
       // Add other tokens as needed
     },
   },
@@ -168,10 +193,10 @@ export function loadContractAddressesFromEnv(): void {
   
   if (baseFactory || baseProtocol || baseBMN) {
     updateContractAddresses(8453, {
-      escrowFactory: (baseFactory as Address) || "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+      escrowFactory: (baseFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY,
       limitOrderProtocol: (baseProtocol as Address) || PLACEHOLDER_ADDRESS,
       tokens: {
-        BMN: (baseBMN as Address) || "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
+        BMN: (baseBMN as Address) || CREATE3_ADDRESSES.BMN_TOKEN,
       },
     });
   }
@@ -183,10 +208,10 @@ export function loadContractAddressesFromEnv(): void {
   
   if (etherlinkFactory || etherlinkProtocol || etherlinkBMN) {
     updateContractAddresses(42793, {
-      escrowFactory: (etherlinkFactory as Address) || "0x068aABdFa6B8c442CD32945A9A147B45ad7146d2" as Address,
+      escrowFactory: (etherlinkFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY,
       limitOrderProtocol: (etherlinkProtocol as Address) || PLACEHOLDER_ADDRESS,
       tokens: {
-        BMN: (etherlinkBMN as Address) || "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address,
+        BMN: (etherlinkBMN as Address) || CREATE3_ADDRESSES.BMN_TOKEN,
       },
     });
   }

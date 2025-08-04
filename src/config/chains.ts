@@ -1,5 +1,10 @@
 import { defineChain } from "viem";
 import type { Address } from "viem";
+import { CONTRACT_ADDRESSES_EXPORTS } from "./contracts.ts";
+
+// Re-export CREATE3-deployed contract addresses for convenience
+export const ESCROW_FACTORY_ADDRESS = CONTRACT_ADDRESSES_EXPORTS.ESCROW_FACTORY;
+export const BMN_TOKEN_ADDRESS = CONTRACT_ADDRESSES_EXPORTS.BMN_TOKEN;
 
 export const chainA = defineChain({
   id: 1337,

@@ -1,4 +1,6 @@
 // System-wide constants for the Bridge-Me-Not resolver
+import { parseEther } from "viem";
+import { BMN_TOKEN_CONFIG } from "./contracts.ts";
 
 // Profitability settings
 export const MIN_PROFIT_BPS = 0; // Demo mode: Accept zero profit orders
@@ -8,9 +10,16 @@ export const MAX_SLIPPAGE_BPS = 50; // Maximum 0.5% slippage allowed
 export const MAX_CONCURRENT_ORDERS = 10; // Maximum orders Bob can handle at once
 export const MAX_ORDER_AGE_SECONDS = 3600; // Maximum age of orders to consider (1 hour)
 
-// Safety deposit settings
-export const DEFAULT_SAFETY_DEPOSIT_BPS = 1000; // 10% safety deposit
+// Safety deposit settings (using ETH for deposits)
+export const SAFETY_DEPOSIT_ETH = parseEther("0.00002"); // 0.00002 ETH (~$0.03-0.04 at $2000/ETH)
+export const DEFAULT_SAFETY_DEPOSIT_BPS = 1000; // 10% safety deposit (legacy, kept for compatibility)
 export const MIN_SAFETY_DEPOSIT = 0n; // Minimum safety deposit amount
+
+// BMN Token constants
+export const BMN_TOKEN_ADDRESS = BMN_TOKEN_CONFIG.address;
+export const BMN_TOKEN_DECIMALS = BMN_TOKEN_CONFIG.decimals;
+export const BMN_TOKEN_SYMBOL = BMN_TOKEN_CONFIG.symbol;
+export const BMN_TOTAL_SUPPLY = BMN_TOKEN_CONFIG.totalSupply;
 
 // Gas settings
 export const GAS_BUFFER_MULTIPLIER = 1.2; // 20% gas buffer for transactions
@@ -37,6 +46,8 @@ export const MOCK_TOKEN_PRICES: Record<string, number> = {
   TKA: 1.0,  // $1 per TKA
   TKB: 1.0,  // $1 per TKB
   WETH: 2000.0, // $2000 per WETH
+  ETH: 2000.0, // $2000 per ETH
+  BMN: 0.1, // $0.10 per BMN (example price)
 };
 
 // Chain names for display
@@ -47,6 +58,8 @@ export const CHAIN_NAMES: Record<number, string> = {
   137: "Polygon",
   42161: "Arbitrum One",
   10: "Optimism",
+  8453: "Base",
+  42793: "Etherlink",
 };
 
 // Default RPC URLs loaded from environment
@@ -81,12 +94,27 @@ export function calculateMinProfit(amount: bigint, profitBps = MIN_PROFIT_BPS): 
 }
 
 /**
- * Get the safety deposit amount for a given token amount
+ * Get the safety deposit amount
+ * For the new architecture, we use a fixed ETH amount instead of percentage-based
+ * @param amount The token amount (kept for compatibility)
+ * @param depositBps The deposit in basis points (kept for compatibility)
+ * @returns The safety deposit amount in ETH
+ */
+export function calculateSafetyDeposit(
+  amount?: bigint, 
+  depositBps?: number
+): bigint {
+  // New architecture: return fixed ETH amount
+  return SAFETY_DEPOSIT_ETH;
+}
+
+/**
+ * Get the safety deposit amount for a given token amount (legacy)
  * @param amount The token amount
  * @param depositBps The deposit in basis points
  * @returns The safety deposit amount
  */
-export function calculateSafetyDeposit(
+export function calculateSafetyDepositLegacy(
   amount: bigint, 
   depositBps = DEFAULT_SAFETY_DEPOSIT_BPS
 ): bigint {
