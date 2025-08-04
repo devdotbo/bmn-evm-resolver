@@ -4,7 +4,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import type { Address } from "viem";
 import { parseEther } from "viem";
 import { baseMainnet, etherlinkMainnet } from "../config/chains.ts";
-import { getContractAddresses } from "../config/contracts.ts";
+import { getContractAddresses, BMN_TOKEN_CONFIG } from "../config/contracts.ts";
+import { SAFETY_DEPOSIT_ETH } from "../config/constants.ts";
 import {
   createPublicClientForChain,
   createWalletClientForChain,
@@ -54,12 +55,12 @@ async function createMainnetOrderReverse() {
   const srcAddresses = getContractAddresses(srcChainId);
   const dstAddresses = getContractAddresses(dstChainId);
 
-  // BMN token address (same on both chains)
-  const BMN_TOKEN = "0x18ae5BB6E03Dc346eA9fd1afA78FEc314343857e" as Address;
+  // BMN token address (same on both chains via CREATE3)
+  const BMN_TOKEN = BMN_TOKEN_CONFIG.address;
 
   // Swap parameters - BMN has 18 decimals
   const swapAmount = parseEther("10"); // Swap 10 BMN tokens
-  const safetyDeposit = parseEther("1"); // 1 BMN safety deposit
+  const safetyDeposit = SAFETY_DEPOSIT_ETH; // 0.00002 ETH (~$0.03-0.04 at $2000/ETH)
 
   // Check BMN balance on Etherlink
   const bmnToken = createERC20Token(BMN_TOKEN, srcPublicClient, srcWalletClient);
@@ -67,8 +68,15 @@ async function createMainnetOrderReverse() {
   
   console.log(`Alice BMN balance on Etherlink: ${balance} (${formatTokenAmount(balance)} BMN)`);
   
-  if (balance < swapAmount + safetyDeposit) {
-    console.error("Insufficient BMN balance for swap and safety deposit");
+  if (balance < swapAmount) {
+    console.error("Insufficient BMN balance for swap");
+    return;
+  }
+  
+  // Check ETH balance for safety deposit
+  const ethBalance = await srcPublicClient.getBalance({ address: account.address });
+  if (ethBalance < safetyDeposit) {
+    console.error("Insufficient ETH balance for safety deposit");
     return;
   }
 

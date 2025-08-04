@@ -28,16 +28,19 @@ import { OrderStatus } from "../types/index.ts";
 export async function withdrawFromOrder(args: {
   orderId: string;
   privateKey: `0x${string}`;
-}): Promise<void> {
+}): Promise<boolean> {
   console.log("=== Withdrawing from Destination Escrow ===\n");
 
   // Load contract addresses
   loadContractAddressesFromEnv();
 
+  // Get chain configuration
+  const chains = getChains();
+  
   // Check configuration
-  if (!areContractsConfigured(1338)) {
-    console.error("Contract addresses not configured for destination chain.");
-    return;
+  if (!areContractsConfigured(chains.dstChainId)) {
+    console.error(`Contract addresses not configured for destination chain ${chains.dstChainId}.`);
+    return false;
   }
 
   // Get account
@@ -49,7 +52,7 @@ export async function withdrawFromOrder(args: {
   const loaded = await stateManager.loadFromFile();
   if (!loaded) {
     console.error("No saved orders found. Please create an order first.");
-    return;
+    return false;
   }
 
   // Get order
@@ -61,14 +64,14 @@ export async function withdrawFromOrder(args: {
     for (const o of orders) {
       console.log(`  ${o.id} - Status: ${o.status}`);
     }
-    return;
+    return false;
   }
 
   // Get secret
   const secret = stateManager.getSecret(args.orderId);
   if (!secret) {
     console.error(`Secret not found for order ${args.orderId}`);
-    return;
+    return false;
   }
 
   console.log(`Order Details:`);
@@ -86,15 +89,13 @@ export async function withdrawFromOrder(args: {
     if (!order.actualDstEscrowAddress && !order.dstEscrowAddress) {
       console.log("\nWaiting for resolver to deploy destination escrow...");
       console.log("Please ensure the resolver is running.");
-      return;
+      return false;
     }
     
-    return;
+    return false;
   }
 
   // Create clients
-  // Get chain configuration
-  const chains = getChains();
   console.log(`Using ${getChainName(chains.dstChainId)} (${chains.dstChainId}) for withdrawal\n`);
   
   const dstPublicClient = createPublicClientForChain(chains.dstChain);
@@ -106,14 +107,14 @@ export async function withdrawFromOrder(args: {
   if (!dstEscrowAddress) {
     // Try to compute it
     console.log("Computing destination escrow address...");
-    const dstAddresses = getContractAddresses(1338);
-    const proxyBytecodeHash = getProxyBytecodeHash(1338);
+    const dstAddresses = getContractAddresses(chains.dstChainId);
+    const proxyBytecodeHash = getProxyBytecodeHash(chains.dstChainId);
     
     // For destination escrow, Bob is the maker
     // We need to know Bob's address to compute the correct immutables
     console.log("Note: Cannot compute destination escrow address without Bob's address");
     console.log("Please wait for Bob to deploy the escrow and try again.");
-    return;
+    return false;
   }
 
   console.log(`Destination escrow: ${dstEscrowAddress}`);
@@ -126,13 +127,13 @@ export async function withdrawFromOrder(args: {
     const remaining = getTimeUntilTimelock(withdrawalTimelock);
     console.error(`Withdrawal timelock not yet passed.`);
     console.log(`Time remaining: ${formatDuration(remaining)}`);
-    return;
+    return false;
   }
 
   // Validate secret
   if (!validateSecret(secret, order.immutables.hashlock)) {
     console.error("Secret does not match hashlock!");
-    return;
+    return false;
   }
 
   // Create escrow contract instance
@@ -148,8 +149,9 @@ export async function withdrawFromOrder(args: {
     
     // Prepare immutables for destination escrow
     // On destination chain, Bob is the maker and Alice is the taker
-    // We need to get Bob's address from somewhere - for now, use the hardcoded resolver address
-    const bobAddress = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"; // TODO: Get this dynamically
+    // Get Bob's address from environment or use default
+    const bobPrivateKey = Deno.env.get("RESOLVER_PRIVATE_KEY") as `0x${string}`;
+    const bobAddress = bobPrivateKey ? privateKeyToAccount(bobPrivateKey).address : "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" as Address;
     
     const dstImmutables = {
       orderHash: order.immutables.orderHash,
@@ -182,12 +184,14 @@ export async function withdrawFromOrder(args: {
       
       console.log("\nThe secret has been revealed on-chain.");
       console.log("Bob can now withdraw from the source escrow using this secret.");
+      return true;
     } else {
       console.error("❌ Withdrawal failed!");
       console.log("Transaction reverted. Please check:");
       console.log("- The timelock has passed");
       console.log("- The secret is correct");
       console.log("- The escrow has not already been withdrawn");
+      return false;
     }
   } catch (error) {
     console.error("Error during withdrawal:", error);
@@ -200,6 +204,7 @@ export async function withdrawFromOrder(args: {
     } else if (error.message?.includes("Already withdrawn")) {
       console.log("\nThe escrow has already been withdrawn.");
     }
+    return false;
   }
 }
 
@@ -221,8 +226,10 @@ if (import.meta.main) {
     Deno.exit(1);
   }
 
-  await withdrawFromOrder({
+  const success = await withdrawFromOrder({
     orderId: flags["order-id"],
     privateKey: privateKey as `0x${string}`,
   });
+  
+  Deno.exit(success ? 0 : 1);
 }

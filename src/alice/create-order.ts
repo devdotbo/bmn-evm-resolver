@@ -1,7 +1,7 @@
 import { parseArgs } from "https://deno.land/std@0.208.0/cli/parse_args.ts";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex } from "viem";
-import { parseEther, keccak256, encodePacked } from "viem";
+import { parseEther, keccak256, encodePacked, formatEther, type Address } from "viem";
 import { getChains, getChainName } from "../config/chain-selector.ts";
 import {
   buildOrder,
@@ -11,7 +11,7 @@ import {
   type OrderMetadata,
 } from "../types/order.ts";
 import { loadContractAddresses } from "../config/load-contracts.ts";
-import { getContractAddresses } from "../config/contracts.ts";
+import { getContractAddresses, BMN_TOKEN_CONFIG } from "../config/contracts.ts";
 import {
   createPublicClientForChain,
   createWalletClientForChain,
@@ -57,17 +57,29 @@ export async function createOrder(args: {
   const dstAddresses = getContractAddresses(chains.dstChainId);
 
   // Get token addresses
-  const srcTokenAddress = srcAddresses.tokens[args.tokenA];
-  const dstTokenAddress = dstAddresses.tokens[args.tokenB];
-
-  if (!srcTokenAddress || !dstTokenAddress) {
-    console.error(`Token addresses not found for ${args.tokenA} or ${args.tokenB}`);
-    return;
+  let srcTokenAddress: Address;
+  let dstTokenAddress: Address;
+  
+  // Check if we're using BMN token on mainnet
+  const isMainnet = chains.srcChainId === 8453 || chains.srcChainId === 42793;
+  
+  if (isMainnet && (args.tokenA === "BMN" || args.tokenB === "BMN")) {
+    srcTokenAddress = BMN_TOKEN_CONFIG.address;
+    dstTokenAddress = BMN_TOKEN_CONFIG.address;
+  } else {
+    srcTokenAddress = srcAddresses.tokens[args.tokenA];
+    dstTokenAddress = dstAddresses.tokens[args.tokenB];
+    
+    if (!srcTokenAddress || !dstTokenAddress) {
+      console.error(`Token addresses not found for ${args.tokenA} or ${args.tokenB}`);
+      return;
+    }
   }
 
   // Parse amounts
   const makingAmount = parseEther(args.amount);
   const takingAmount = parseEther(args.amount); // 1:1 for simplicity, could be different
+  const safetyDeposit = parseEther("0.00002"); // 0.00002 ETH safety deposit
 
   // Generate secret for cross-chain atomicity
   const secret = generateSecret();
@@ -76,19 +88,28 @@ export async function createOrder(args: {
   console.log(`Order Details:`);
   console.log(`  Offering: ${args.amount} ${args.tokenA}`);
   console.log(`  Requesting: ${args.amount} ${args.tokenB}`);
+  console.log(`  Safety Deposit: ${formatEther(safetyDeposit)} ETH`);
   console.log(`  Secret: ${secret}`);
   console.log(`  Hashlock: ${hashlock}`);
 
-  // Check balance
+  // Check balances
   try {
+    // Check token balance
     await validateTokenBalance(
       srcTokenAddress,
       account.address,
       makingAmount,
       srcPublicClient
     );
+    
+    // Check ETH balance for safety deposit
+    const ethBalance = await srcPublicClient.getBalance({ address: account.address });
+    if (ethBalance < safetyDeposit) {
+      console.error(`Insufficient ETH balance for safety deposit. Need ${formatEther(safetyDeposit)} ETH, have ${formatEther(ethBalance)} ETH`);
+      return;
+    }
   } catch (error) {
-    console.error("Insufficient balance:", error);
+    console.error("Balance validation failed:", error);
     return;
   }
 
@@ -205,6 +226,9 @@ export async function createOrder(args: {
         dstChainId: chains.dstChainId,
         srcToken: args.tokenA,
         dstToken: args.tokenB,
+        srcTokenSymbol: args.tokenA,
+        dstTokenSymbol: args.tokenB,
+        safetyDeposit: safetyDeposit.toString(),
       },
     };
 
@@ -218,7 +242,7 @@ export async function createOrder(args: {
       dstToken: dstTokenAddress,
       srcAmount: makingAmount,
       dstAmount: takingAmount,
-      safetyDeposit: 0n, // Handled differently in new architecture
+      safetyDeposit: safetyDeposit,
       secret,
       srcChainId: chains.srcChainId,
       dstChainId: chains.dstChainId,
@@ -234,7 +258,7 @@ export async function createOrder(args: {
         taker: "0x0000000000000000000000000000000000000000" as Address,
         token: srcTokenAddress,
         amount: makingAmount,
-        safetyDeposit: 0n,
+        safetyDeposit: safetyDeposit,
         timelocks: createTimelocks(),
       },
       srcEscrowAddress: "0x0000000000000000000000000000000000000000" as Address, // Will be set when Bob deploys
