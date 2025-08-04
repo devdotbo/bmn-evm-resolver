@@ -1,240 +1,158 @@
-# SQL-Based Indexer Client
+# Indexer Integration
 
-This directory contains the implementation of a SQL-based indexer client for the Bridge-Me-Not protocol. The client uses Ponder's direct SQL API over HTTP for querying indexed blockchain data.
+This directory contains the IndexerClient implementation for querying the Ponder indexer via SQL over HTTP.
 
-## Overview
+## Local Development Setup
 
-The indexer client provides:
-- Direct SQL query execution using Ponder's SQL API format (`{ statement, params }`)
-- Automatic table prefix handling for Ponder's schema isolation
-- Polling-based subscriptions that simulate real-time updates
-- Type-safe query results with automatic mapping to TypeScript types
-- Retry logic and error handling
-- Connection health monitoring
+1. **Start the local Ponder indexer** (in the bmn-evm-indexer directory):
+   ```bash
+   pnpm dev
+   ```
+   The indexer will run on `http://localhost:42069`
 
-## Ponder SQL API Integration
+2. **Configure the resolver** to use the local indexer:
+   ```bash
+   # Copy the example env file if you haven't already
+   cp .env.example .env
+   
+   # The default INDEXER_URL is already set for local development:
+   # INDEXER_URL=http://localhost:42069/sql
+   ```
 
-The client is specifically designed to work with Ponder's SQL endpoint:
-- **Endpoint**: `/sql` (e.g., `http://localhost:42069/sql`)
-- **Request Format**: `POST` with JSON body `{ statement: "SELECT ...", params: [...] }`
-- **Response Format**: `{ rows: [...] }`
-- **Table Prefixing**: Ponder automatically prefixes tables with the app name (e.g., `myapp.atomicSwap`)
+3. **Test the connection**:
+   ```bash
+   deno run --allow-net --allow-read --allow-env scripts/test-local-indexer.ts
+   ```
 
-## Architecture
+## Usage Examples
 
-### Components
-
-1. **IndexerClient** (`client.ts`)
-   - Main client class for interacting with the SQL endpoint
-   - Provides high-level methods for common queries
-   - Handles connection management and health checks
-   - Maps SQL results to TypeScript types
-
-2. **SQL Queries** (`queries.ts`)
-   - Contains all SQL queries as constants
-   - Uses parameterized queries for safety
-   - Optimized for the Ponder indexer's PostgreSQL schema
-
-3. **SubscriptionManager** (`subscriptions.ts`)
-   - Implements polling-based subscriptions
-   - Simulates real-time updates by polling the database
-   - Manages multiple concurrent subscriptions
-   - Emits events for new data
-
-4. **Types** (`types.ts`)
-   - TypeScript type definitions for all entities
-   - Matches the database schema from the indexer
-
-## Usage
-
-### Basic Setup
+### Basic Usage
 
 ```typescript
-import { IndexerClient } from "./indexer/client.ts";
+import { createLocalIndexerClient } from "./src/indexer/local-setup.ts";
 
-const client = new IndexerClient({
-  sqlUrl: "http://localhost:42069/sql",
-  retryAttempts: 3,
-  retryDelay: 1000,
-  timeout: 30000,
-  // Optional: Set if your Ponder app uses table prefixing
-  tablePrefix: "bmn_indexer"
-});
+// Create a client with local defaults
+const indexer = createLocalIndexerClient();
 
 // Connect to the indexer
-await client.connect();
+await indexer.connect();
 
-// Check health
-const health = await client.checkHealth();
-console.log("Indexer synced:", health.synced);
-```
+// Query pending orders
+const pendingOrders = await indexer.getPendingOrders(resolverAddress);
 
-### Querying Data
-
-```typescript
-// Get pending orders for a resolver
-const pendingOrders = await client.getPendingOrders(resolverAddress, {
-  limit: 100,
-  offset: 0
-});
-
-// Get order details with escrow information
-const orderDetails = await client.getOrderDetails(orderHash);
-
-// Get revealed secret
-const secret = await client.getRevealedSecret(orderHash);
-
-// Get profitable orders
-const profitableOrders = await client.getProfitableOrders(
-  resolverAddress,
-  minProfitMargin,
-  supportedTokens,
-  50 // limit
-);
-```
-
-### Subscriptions (Polling-Based)
-
-Since SQL doesn't support real-time subscriptions, we use polling:
-
-```typescript
 // Subscribe to new orders
-const unsubscribe = await client.subscribeToNewOrders(
-  (order) => {
-    console.log("New order:", order.orderHash);
-  },
-  resolverAddress // optional filter
-);
-
-// Subscribe to secret reveals
-const unsubscribeSecrets = await client.subscribeToSecretReveals((event) => {
-  console.log("Secret revealed:", event.data.secret);
+const unsubscribe = await indexer.subscribeToNewOrders((order) => {
+  console.log("New order:", order);
 });
-
-// Subscribe to order updates
-const unsubscribeUpdates = await client.subscribeToOrderUpdates(
-  orderHash,
-  (update) => {
-    console.log("Order updated:", update);
-  }
-);
 
 // Clean up when done
-unsubscribe();
-unsubscribeSecrets();
-unsubscribeUpdates();
+await indexer.disconnect();
 ```
 
-### Direct SQL Queries
-
-For custom queries not covered by the high-level API:
+### Advanced Configuration
 
 ```typescript
-const result = await client.executeSqlQuery(
-  'SELECT * FROM "atomicSwap" WHERE src_maker = $1 LIMIT $2',
-  [makerAddress, 10]
-);
+import { IndexerClient } from "./src/indexer/client.ts";
+import { getIndexerConfig } from "./src/config/indexer.ts";
 
-console.log("Results:", result.rows);
-console.log("Row count:", result.rowCount);
+// Use environment configuration
+const config = getIndexerConfig();
+const indexer = new IndexerClient(config);
+
+// Or provide custom configuration
+const customIndexer = new IndexerClient({
+  sqlUrl: "http://localhost:42069/sql",
+  tablePrefix: "", // No prefix for local dev
+  retryAttempts: 5,
+  retryDelay: 2000,
+  timeout: 30000
+});
 ```
 
-## Database Schema
-
-The indexer uses the following main tables:
-
-- **atomicSwap**: Primary swap records
-- **srcEscrow**: Source chain escrow details
-- **dstEscrow**: Destination chain escrow details
-- **escrowWithdrawal**: Withdrawal events with revealed secrets
-- **chainStatistics**: Aggregate statistics per chain
-
-## SQL Query Examples
-
-All queries use PostgreSQL syntax with parameterized queries:
-
-```sql
--- Get pending orders
-SELECT a.*, s.escrow_address 
-FROM "atomicSwap" a
-JOIN "srcEscrow" s ON a.order_hash = s.order_hash
-WHERE a.dst_maker = $1 
-  AND a.status IN ('src_created', 'pending')
-ORDER BY a.src_created_at DESC
-LIMIT $2;
-
--- Get revealed secret
-SELECT COALESCE(a.secret, w.secret) as secret
-FROM "atomicSwap" a
-LEFT JOIN "dstEscrow" d ON a.order_hash = d.order_hash
-LEFT JOIN "escrowWithdrawal" w ON d.escrow_address = w.escrow_address
-WHERE a.order_hash = $1;
-```
-
-## Migration from GraphQL
-
-The main changes from the GraphQL implementation:
-
-1. **Queries**: GraphQL queries replaced with SQL queries
-2. **Subscriptions**: WebSocket subscriptions replaced with polling
-3. **Response Format**: SQL results mapped to match GraphQL response structure
-4. **Error Handling**: SQL-specific error handling added
-
-## Performance Considerations
-
-- Polling interval is configurable (default: 5 seconds)
-- Batch queries where possible to reduce round trips
-- Use indexed columns in WHERE clauses
-- Limit result sets with LIMIT clauses
-- Connection pooling handled by the indexer
-
-## Testing
-
-Run the test script to verify the implementation:
-
-```bash
-deno run --allow-net src/indexer/test-sql-client.ts
-```
-
-This will test:
-- Connection and health checks
-- Basic queries
-- Polling-based subscriptions
-- Direct SQL execution
-
-## Error Handling
-
-The client includes comprehensive error handling:
+### Integration with Resolver
 
 ```typescript
-try {
-  const result = await client.getPendingOrders(resolver);
-} catch (error) {
-  if (error.code === IndexerErrorCode.QUERY_FAILED) {
-    // Handle query errors
-  } else if (error.code === IndexerErrorCode.CONNECTION_FAILED) {
-    // Handle connection errors
+import { createLocalIndexerClient } from "./src/indexer/local-setup.ts";
+
+export class BridgeResolver {
+  private indexer: IndexerClient;
+
+  async initialize() {
+    // Use indexer for order discovery instead of chain polling
+    this.indexer = createLocalIndexerClient();
+    await this.indexer.connect();
+    
+    // Subscribe to new orders
+    await this.indexer.subscribeToNewOrders(
+      async (order) => {
+        await this.handleNewOrder(order);
+      },
+      this.config.resolverAddress
+    );
+  }
+
+  async findProfitableOrders() {
+    // Query profitable orders from indexer
+    const orders = await this.indexer.getProfitableOrders(
+      this.config.resolverAddress,
+      this.config.minProfitMargin,
+      this.config.supportedTokens
+    );
+    
+    return orders;
   }
 }
 ```
 
-## Configuration
+## Environment Variables
 
-The client accepts the following configuration:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INDEXER_URL` | `http://localhost:42069/sql` | SQL endpoint for the Ponder indexer |
+| `INDEXER_TABLE_PREFIX` | (empty) | Table prefix for multi-tenant deployments |
+| `INDEXER_RETRY_ATTEMPTS` | `3` | Number of retry attempts for failed queries |
+| `INDEXER_RETRY_DELAY` | `1000` | Delay between retries in milliseconds |
+| `INDEXER_TIMEOUT` | `30000` | Query timeout in milliseconds |
 
-```typescript
-interface IndexerClientConfig {
-  sqlUrl: string;              // SQL endpoint URL (e.g., "http://localhost:42069/sql")
-  retryAttempts?: number;      // Number of retry attempts (default: 3)
-  retryDelay?: number;         // Delay between retries in ms (default: 1000)
-  timeout?: number;            // Request timeout in ms (default: 30000)
-  tablePrefix?: string;        // Ponder app name for table prefixing (e.g., "bmn_indexer")
-}
-```
+## Switching Between Local and Production
 
-## Security
+The indexer client automatically detects whether you're using a local or production indexer based on the URL:
 
-- All queries use parameterized statements to prevent SQL injection
-- The indexer provides read-only access to the database
-- Connection uses HTTP POST with JSON body
-- Sensitive data should not be logged
+- **Local**: URLs containing `localhost` or `127.0.0.1`
+- **Production**: All other URLs
+
+For production deployments:
+
+1. Set the production indexer URL:
+   ```bash
+   INDEXER_URL=https://indexer.bridge-me-not.com/sql
+   ```
+
+2. If using a multi-tenant Ponder deployment, set the table prefix:
+   ```bash
+   INDEXER_TABLE_PREFIX=bmn
+   ```
+
+3. Adjust timeout and retry settings as needed for your infrastructure.
+
+## Troubleshooting
+
+If the indexer connection fails:
+
+1. **Check if Ponder is running**: 
+   ```bash
+   curl http://localhost:42069/health
+   ```
+
+2. **Verify the SQL endpoint**:
+   ```bash
+   curl -X POST http://localhost:42069/sql \
+     -H "Content-Type: application/json" \
+     -d '{"statement": "SELECT 1 as test", "params": []}'
+   ```
+
+3. **Check your .env file** has the correct INDEXER_URL
+
+4. **Ensure chains are running** and the indexer has synced some data
+
+5. **Check Ponder logs** for any errors or sync issues
