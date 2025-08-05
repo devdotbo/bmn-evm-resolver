@@ -8,11 +8,11 @@ export const PLACEHOLDER_ADDRESS: Address = "0x000000000000000000000000000000000
 
 // CREATE3-deployed contract addresses (deterministic across all chains)
 export const CREATE3_ADDRESSES = {
-  ESCROW_FACTORY: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory
-  BMN_TOKEN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token
+  ESCROW_FACTORY: (Deno.env.get("MAINNET_ESCROW_FACTORY") || "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1") as Address, // CrossChainEscrowFactory
+  BMN_TOKEN: (Deno.env.get("MAINNET_BMN_TOKEN") || "0x8287CD2aC7E227D9D927F998EB600a0683a832A1") as Address, // BMN Token
   // Implementation addresses (for reference)
-  ESCROW_SRC_IMPL: "0x77CC1A51dC5855bcF0d9f1c1FceaeE7fb855a535" as Address,
-  ESCROW_DST_IMPL: "0x36938b7899A17362520AA741C0E0dA0c8EfE5e3b" as Address,
+  ESCROW_SRC_IMPL: (Deno.env.get("MAINNET_ESCROW_SRC_IMPL") || "0x77CC1A51dC5855bcF0d9f1c1FceaeE7fb855a535") as Address,
+  ESCROW_DST_IMPL: (Deno.env.get("MAINNET_ESCROW_DST_IMPL") || "0x36938b7899A17362520AA741C0E0dA0c8EfE5e3b") as Address,
 } as const;
 
 // BMN Token configuration
@@ -56,20 +56,20 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   
   // Base Mainnet
   8453: {
-    escrowFactory: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory - CREATE3 deterministic address
-    limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
+    escrowFactory: (Deno.env.get("BASE_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY) as Address, // CrossChainEscrowFactory - CREATE3 deterministic address
+    limitOrderProtocol: (Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL") || "0x1111111254EEB25477B68fb85Ed929f73A960582") as Address, // 1inch Limit Order Protocol v4
     tokens: {
-      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
+      BMN: (Deno.env.get("BASE_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
       // Add other tokens as needed
     },
   },
   
   // Etherlink Mainnet
   42793: {
-    escrowFactory: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory - CREATE3 deterministic address (same on both chains)
-    limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
+    escrowFactory: (Deno.env.get("ETHERLINK_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY) as Address, // CrossChainEscrowFactory - CREATE3 deterministic address (same on both chains)
+    limitOrderProtocol: (Deno.env.get("ETHERLINK_LIMIT_ORDER_PROTOCOL") || "0x1111111254EEB25477B68fb85Ed929f73A960582") as Address, // 1inch Limit Order Protocol v4
     tokens: {
-      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
+      BMN: (Deno.env.get("ETHERLINK_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
       // Add other tokens as needed
     },
   },

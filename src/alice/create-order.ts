@@ -147,27 +147,28 @@ export async function createOrder(args: {
   // Sign the order using EIP-712
   console.log("\n✍️  Signing order with EIP-712...");
   try {
-    // Approve tokens to LimitOrderProtocol
+    // Approve tokens to EscrowFactory (not LimitOrderProtocol)
+    // The EscrowFactory will pull tokens when creating the source escrow
     const srcToken = createERC20Token(
       srcTokenAddress,
       srcPublicClient,
       srcWalletClient
     );
 
-    console.log("Checking token allowance...");
+    console.log("Checking token allowance for EscrowFactory...");
     const allowance = await srcToken.read.allowance([
       account.address,
-      srcAddresses.limitOrderProtocol,
+      srcAddresses.escrowFactory,
     ]);
 
     if (allowance < makingAmount) {
-      console.log("Approving tokens to LimitOrderProtocol...");
+      console.log("Approving tokens to EscrowFactory...");
       const approveHash = await srcToken.write.approve([
-        srcAddresses.limitOrderProtocol,
+        srcAddresses.escrowFactory,
         makingAmount,
       ]);
       await waitForTransaction(srcPublicClient, approveHash);
-      console.log("✅ Tokens approved");
+      console.log("✅ Tokens approved to EscrowFactory");
     }
 
     // Sign the order
