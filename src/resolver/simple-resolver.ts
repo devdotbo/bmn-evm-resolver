@@ -71,15 +71,16 @@ export class SimpleResolver {
     console.log(`🚀 Starting simplified resolver with address: ${this.account.address}`);
     this.isRunning = true;
 
-    // Subscribe to new source escrows
-    const unsubscribe = await this.ponderClient.subscribe(
-      "src_escrow",
-      async (data) => {
-        console.log("📦 New source escrow detected:", data);
-        await this.handleNewSrcEscrow(data);
-      },
-      { taker: this.account.address.toLowerCase() }
-    );
+    // Optional: Subscribe to live updates (can be commented out if not needed)
+    // const { unsubscribe } = this.ponderClient.subscribeToAtomicSwaps(
+    //   this.account.address,
+    //   (swaps) => {
+    //     console.log(`📦 Live update: ${swaps.length} pending swaps`);
+    //   },
+    //   (error) => {
+    //     console.error("❌ Live query error:", error);
+    //   }
+    // );
 
     // Poll for pending orders
     while (this.isRunning) {
@@ -92,7 +93,8 @@ export class SimpleResolver {
       await new Promise((resolve) => setTimeout(resolve, this.pollingInterval));
     }
 
-    unsubscribe();
+    // If using live subscription, uncomment:
+    // unsubscribe();
   }
 
   async stop() {

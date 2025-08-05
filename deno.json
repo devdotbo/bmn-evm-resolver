@@ -1,11 +1,14 @@
 {
   "tasks": {
-    "resolver": "deno run --allow-net --allow-env --allow-read --allow-write resolver.ts",
-    "alice": "deno run --allow-net --allow-env --allow-read --allow-write alice.ts"
+    "resolver": "deno run --allow-net --allow-env --allow-read --allow-write  --env-file=.env resolver.ts",
+    "alice": "deno run --allow-net --allow-env --allow-read  --allow-write --env-file=.env alice.ts"
   },
   "imports": {
     "viem": "npm:viem@^2.21.0",
     "viem/accounts": "npm:viem@^2.21.0/accounts",
-    "viem/chains": "npm:viem@^2.21.0/chains"
-  }
+    "viem/chains": "npm:viem@^2.21.0/chains",
+    "@ponder/client": "npm:@ponder/client@^0.12.0",
+    "ponder": "npm:ponder@^0.12.0"
+  },
+  "nodeModulesDir": "auto"
 }
