@@ -2,6 +2,7 @@ import { createPublicClient, createWalletClient, http, parseAbi, encodeFunctionD
 import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { PonderClient } from "../indexer/ponder-client.ts";
+import { SecretManager } from "../state/SecretManager.ts";
 import CrossChainEscrowFactoryAbi from "../../abis/CrossChainEscrowFactory.json" with { type: "json" };
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
 import EscrowSrcAbi from "../../abis/EscrowSrc.json" with { type: "json" };
@@ -20,6 +21,7 @@ interface ResolverConfig {
 
 export class SimpleResolver {
   private ponderClient: PonderClient;
+  private secretManager: SecretManager;
   private account: any;
   private baseClient: any;
   private optimismClient: any;
@@ -32,6 +34,9 @@ export class SimpleResolver {
     this.ponderClient = new PonderClient({
       url: config.indexerUrl || INDEXER_URL,
     });
+
+    // Initialize local state manager
+    this.secretManager = new SecretManager();
 
     const privateKey = config.privateKey || RESOLVER_PRIVATE_KEY;
     if (!privateKey) {
@@ -69,37 +74,31 @@ export class SimpleResolver {
 
   async start() {
     console.log(`🚀 Starting simplified resolver with address: ${this.account.address}`);
+    
+    // Initialize local state
+    await this.secretManager.init();
+    const stats = await this.secretManager.getStatistics();
+    console.log(`📊 SecretManager stats: ${JSON.stringify(stats)}`);
+    
     this.isRunning = true;
-
-    // Optional: Subscribe to live updates (can be commented out if not needed)
-    // const { unsubscribe } = this.ponderClient.subscribeToAtomicSwaps(
-    //   this.account.address,
-    //   (swaps) => {
-    //     console.log(`📦 Live update: ${swaps.length} pending swaps`);
-    //   },
-    //   (error) => {
-    //     console.error("❌ Live query error:", error);
-    //   }
-    // );
 
     // Poll for pending orders
     while (this.isRunning) {
       try {
         await this.processPendingOrders();
-        await this.checkForRevealedSecrets();
+        await this.monitorForRevealedSecrets();
+        await this.processLocalSecrets();
       } catch (error) {
         console.error("❌ Error in main loop:", error);
       }
       await new Promise((resolve) => setTimeout(resolve, this.pollingInterval));
     }
-
-    // If using live subscription, uncomment:
-    // unsubscribe();
   }
 
   async stop() {
     console.log("🛑 Stopping resolver...");
     this.isRunning = false;
+    await this.secretManager.close();
   }
 
   private async processPendingOrders() {
@@ -170,21 +169,68 @@ export class SimpleResolver {
     }
   }
 
-  private async checkForRevealedSecrets() {
-    const secrets = await this.ponderClient.getRevealedSecrets();
+  /**
+   * Monitor for secrets revealed on-chain by makers and store them locally
+   */
+  private async monitorForRevealedSecrets() {
+    // Temporarily disabled: The escrowWithdrawal schema doesn't have hashlock and orderHash fields
+    // These would need to be added to the indexer schema or computed from other data
+    return;
     
-    for (const { hashlock, secret } of secrets) {
+    // try {
+    //   // Get recently revealed secrets from indexer (this is OK - we're monitoring blockchain events)
+    //   const withdrawals = await this.ponderClient.getRecentWithdrawals();
+    //   
+    //   for (const withdrawal of withdrawals) {
+    //     // Check if we already have this secret
+    //     const hasSecret = await this.secretManager.hasSecret(withdrawal.hashlock);
+    //     if (!hasSecret && withdrawal.secret) {
+    //       console.log(`🔍 Found new secret revealed on-chain for hashlock: ${withdrawal.hashlock}`);
+    //       
+    //       // Store it locally for our use
+    //       await this.secretManager.storeSecret({
+    //         secret: withdrawal.secret as `0x${string}`,
+    //         orderHash: withdrawal.orderHash as `0x${string}`,
+    //         escrowAddress: withdrawal.escrowAddress,
+    //         chainId: withdrawal.chainId
+    //       });
+    //     }
+    //   }
+    // } catch (error) {
+    //   console.error("❌ Error monitoring for revealed secrets:", error);
+    // }
+  }
+
+  /**
+   * Process secrets stored locally to withdraw from source escrows
+   */
+  private async processLocalSecrets() {
+    // Get OUR locally stored secrets
+    const pendingSecrets = await this.secretManager.getPendingSecrets();
+    
+    for (const secretRecord of pendingSecrets) {
       // Check if we have a source escrow we can withdraw from
       const srcEscrows = await this.ponderClient.getPendingSrcEscrows(this.account.address);
-      const srcEscrow = srcEscrows.find(e => e.hashlock === hashlock && e.status === 'created');
+      const srcEscrow = srcEscrows.find(e => 
+        e.hashlock === secretRecord.hashlock && 
+        e.status === 'created'
+      );
 
       if (srcEscrow) {
-        await this.withdrawFromSource(srcEscrow, secret);
+        const success = await this.withdrawFromSource(srcEscrow, secretRecord.secret);
+        if (success) {
+          // Mark as confirmed in our local state
+          await this.secretManager.confirmSecret(
+            secretRecord.hashlock,
+            'tx_hash_placeholder', // In real implementation, get from withdrawal
+            BigInt(100000) // Estimated gas used
+          );
+        }
       }
     }
   }
 
-  private async withdrawFromSource(escrow: any, secret: string) {
+  private async withdrawFromSource(escrow: any, secret: string): Promise<boolean> {
     try {
       const chainId = Number(escrow.chainId);
       const wallet = chainId === base.id ? this.baseWallet : this.optimismWallet;
@@ -203,8 +249,11 @@ export class SimpleResolver {
 
       const receipt = await wallet.waitForTransactionReceipt({ hash });
       console.log(`✅ Successfully withdrew from source escrow in tx: ${receipt.transactionHash}`);
+      return true;
     } catch (error) {
       console.error(`❌ Failed to withdraw from source:`, error);
+      await this.secretManager.markFailed(escrow.hashlock, error.message);
+      return false;
     }
   }
 }

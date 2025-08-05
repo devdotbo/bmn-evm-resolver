@@ -200,6 +200,46 @@ export class PonderClient {
     };
   }
 
+  /**
+   * Get recent withdrawals from blockchain events (legitimate indexer use)
+   * This monitors on-chain events, not resolver state
+   */
+  async getRecentWithdrawals(limit: number = 10): Promise<Array<{
+    hashlock: string;
+    secret: string;
+    orderHash: string;
+    escrowAddress: string;
+    chainId: number;
+    timestamp: bigint;
+  }>> {
+    try {
+      const results = await this.client.db
+        .select({
+          secret: schema.escrowWithdrawal.secret,
+          escrowAddress: schema.escrowWithdrawal.escrowAddress,
+          chainId: schema.escrowWithdrawal.chainId,
+          timestamp: schema.escrowWithdrawal.withdrawnAt
+        })
+        .from(schema.escrowWithdrawal)
+        .where(isNotNull(schema.escrowWithdrawal.secret))
+        .orderBy(desc(schema.escrowWithdrawal.withdrawnAt))
+        .limit(limit)
+        .execute();
+
+      return results.filter(r => r.secret !== null).map(r => ({
+        hashlock: '', // Not available in schema, will be computed from secret if needed
+        secret: r.secret!,
+        orderHash: '', // Not available in schema
+        escrowAddress: r.escrowAddress,
+        chainId: r.chainId,
+        timestamp: r.timestamp
+      }));
+    } catch (error) {
+      console.error("Error fetching recent withdrawals:", error);
+      return [];
+    }
+  }
+
   // Live query support for real-time updates
   subscribeToAtomicSwaps(
     resolverAddress: string, 
