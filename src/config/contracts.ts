@@ -8,11 +8,13 @@ export const PLACEHOLDER_ADDRESS: Address = "0x000000000000000000000000000000000
 
 // CREATE3-deployed contract addresses (deterministic across all chains)
 export const CREATE3_ADDRESSES = {
-  ESCROW_FACTORY: (Deno.env.get("MAINNET_ESCROW_FACTORY") || "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1") as Address, // CrossChainEscrowFactory
+  ESCROW_FACTORY: (Deno.env.get("MAINNET_ESCROW_FACTORY") || "0x2B2d52Cf0080a01f457A4f64F41cbca500f787b1") as Address, // CrossChainEscrowFactory v2 with enhanced events
   BMN_TOKEN: (Deno.env.get("MAINNET_BMN_TOKEN") || "0x8287CD2aC7E227D9D927F998EB600a0683a832A1") as Address, // BMN Token
   // Implementation addresses (for reference)
   ESCROW_SRC_IMPL: (Deno.env.get("MAINNET_ESCROW_SRC_IMPL") || "0x77CC1A51dC5855bcF0d9f1c1FceaeE7fb855a535") as Address,
   ESCROW_DST_IMPL: (Deno.env.get("MAINNET_ESCROW_DST_IMPL") || "0x36938b7899A17362520AA741C0E0dA0c8EfE5e3b") as Address,
+  // Legacy factory (for reference)
+  FACTORY_V1: (Deno.env.get("OLD_FACTORY_V1") || "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1") as Address, // v1 factory (deprecated)
 } as const;
 
 // BMN Token configuration
