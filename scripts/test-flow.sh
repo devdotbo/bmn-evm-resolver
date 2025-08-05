@@ -16,11 +16,15 @@ ENV_FILE="$PROJECT_ROOT/.env"
 
 # Load environment variables
 if [ -f "$ENV_FILE" ]; then
+    set -a  # automatically export all variables
     source "$ENV_FILE"
+    set +a  # turn off automatic export
 else
     echo -e "${RED}Error: .env file not found. Running setup script...${NC}"
     "$SCRIPT_DIR/setup-env.sh"
+    set -a
     source "$ENV_FILE"
+    set +a
 fi
 
 # Default values
@@ -28,18 +32,22 @@ MODE="${1:-mainnet}" # local or mainnet (default to mainnet)
 ALICE_AMOUNT="${2:-10}" # Amount Alice wants to swap (10 BMN for mainnet)
 BOB_PROFIT_BPS="${3:-50}" # Bob's profit in basis points (0.5%)
 
+# Use RESOLVER_PRIVATE_KEY as BOB_PRIVATE_KEY if not set
+BOB_PRIVATE_KEY="${BOB_PRIVATE_KEY:-$RESOLVER_PRIVATE_KEY}"
+
 # Set RPC URLs based on mode
 if [ "$MODE" = "mainnet" ]; then
     CHAIN_A_RPC="${BASE_RPC_URL:-http://localhost:8545}"
     CHAIN_B_RPC="${ETHERLINK_RPC_URL:-http://localhost:8546}"
-    TOKEN_A_ADDR="${BASE_TOKEN_BMN:-$CHAIN_A_TOKEN_TKA}"
-    TOKEN_B_ADDR="${ETHERLINK_TOKEN_BMN:-$CHAIN_B_TOKEN_TKB}"
-    ESCROW_FACTORY_A_ADDR="${BASE_ESCROW_FACTORY:-$CHAIN_A_ESCROW_FACTORY}"
-    ESCROW_FACTORY_B_ADDR="${ETHERLINK_ESCROW_FACTORY:-$CHAIN_B_ESCROW_FACTORY}"
-    LIMIT_ORDER_PROTOCOL_ADDR="${BASE_LIMIT_ORDER_PROTOCOL:-$CHAIN_A_LIMIT_ORDER_PROTOCOL}"
+    # BMN token is the same on both chains (CREATE3 deployed)
+    BMN_TOKEN_ADDR="${MAINNET_BMN_TOKEN:-0x8287CD2aC7E227D9D927F998EB600a0683a832A1}"
+    ESCROW_FACTORY_A_ADDR="${BASE_ESCROW_FACTORY:-$MAINNET_ESCROW_FACTORY}"
+    ESCROW_FACTORY_B_ADDR="${ETHERLINK_ESCROW_FACTORY:-$MAINNET_ESCROW_FACTORY}"
+    LIMIT_ORDER_PROTOCOL_ADDR="${BASE_LIMIT_ORDER_PROTOCOL:-0x1111111254EEB25477B68fb85Ed929f73A960582}"
 else
     CHAIN_A_RPC="${CHAIN_A_RPC_URL:-http://localhost:8545}"
     CHAIN_B_RPC="${CHAIN_B_RPC_URL:-http://localhost:8546}"
+    # For local testing, still use TKA/TKB
     TOKEN_A_ADDR="$CHAIN_A_TOKEN_TKA"
     TOKEN_B_ADDR="$CHAIN_B_TOKEN_TKB"
     ESCROW_FACTORY_A_ADDR="$CHAIN_A_ESCROW_FACTORY"
@@ -108,25 +116,36 @@ check_chains() {
 check_contracts() {
     print_header "Checking Contract Deployment"
     
-    # Check if addresses.json exists
-    local addresses_file="$CONTRACTS_DIR/test/addresses.json"
-    if [ ! -f "$addresses_file" ]; then
-        print_info "Contracts not deployed. Deploying now..."
-        cd "$CONTRACTS_DIR"
-        forge script script/Deploy.s.sol:DeployScript --broadcast --rpc-url http://localhost:8545
-        forge script script/Deploy.s.sol:DeployScript --broadcast --rpc-url http://localhost:8546
-        cd "$PROJECT_ROOT"
-        print_status "Contracts deployed"
+    if [ "$MODE" = "mainnet" ]; then
+        # For mainnet, use addresses from environment/config
+        export ESCROW_FACTORY_A="$ESCROW_FACTORY_A_ADDR"
+        export ESCROW_FACTORY_B="$ESCROW_FACTORY_B_ADDR"
+        export LIMIT_ORDER_PROTOCOL_A="$LIMIT_ORDER_PROTOCOL_ADDR"
+        export TOKEN_A="$BMN_TOKEN_ADDR"
+        export TOKEN_B="$BMN_TOKEN_ADDR"
+        
+        print_status "Using mainnet contract addresses"
     else
-        print_status "Contracts already deployed"
+        # For local mode, check if addresses.json exists
+        local addresses_file="$CONTRACTS_DIR/test/addresses.json"
+        if [ ! -f "$addresses_file" ]; then
+            print_info "Contracts not deployed. Deploying now..."
+            cd "$CONTRACTS_DIR"
+            forge script script/Deploy.s.sol:DeployScript --broadcast --rpc-url "$CHAIN_A_RPC"
+            forge script script/Deploy.s.sol:DeployScript --broadcast --rpc-url "$CHAIN_B_RPC"
+            cd "$PROJECT_ROOT"
+            print_status "Contracts deployed"
+        else
+            print_status "Contracts already deployed"
+        fi
+        
+        # Export contract addresses
+        export ESCROW_FACTORY_A=$(jq -r '.chainA.escrowFactory' "$addresses_file")
+        export ESCROW_FACTORY_B=$(jq -r '.chainB.escrowFactory' "$addresses_file")
+        export LIMIT_ORDER_PROTOCOL_A=$(jq -r '.chainA.limitOrderProtocol' "$addresses_file")
+        export TOKEN_A=$(jq -r '.chainA.tokenA' "$addresses_file")
+        export TOKEN_B=$(jq -r '.chainB.tokenB' "$addresses_file")
     fi
-    
-    # Export contract addresses
-    export ESCROW_FACTORY_A=$(jq -r '.chainA.escrowFactory' "$addresses_file")
-    export ESCROW_FACTORY_B=$(jq -r '.chainB.escrowFactory' "$addresses_file")
-    export LIMIT_ORDER_PROTOCOL_A=$(jq -r '.chainA.limitOrderProtocol' "$addresses_file")
-    export TOKEN_A=$(jq -r '.chainA.tokenA' "$addresses_file")
-    export TOKEN_B=$(jq -r '.chainB.tokenB' "$addresses_file")
     
     print_info "Contract addresses loaded:"
     echo "  - Escrow Factory A: $ESCROW_FACTORY_A"
@@ -140,8 +159,24 @@ check_contracts() {
 fund_accounts() {
     print_header "Funding Test Accounts"
     
-    local alice_addr=$(cast wallet address --private-key "$ALICE_PRIVATE_KEY")
-    local bob_addr=$(cast wallet address --private-key "$BOB_PRIVATE_KEY")
+    # Debug: check if keys are loaded
+    if [ -z "$ALICE_PRIVATE_KEY" ]; then
+        print_error "ALICE_PRIVATE_KEY not set!"
+        exit 1
+    fi
+    
+    local alice_addr=$(cast wallet address --private-key "$ALICE_PRIVATE_KEY" 2>&1)
+    local bob_addr=$(cast wallet address --private-key "${BOB_PRIVATE_KEY:-$RESOLVER_PRIVATE_KEY}" 2>&1)
+    
+    # Check for errors
+    if [[ "$alice_addr" == *"Error"* ]]; then
+        print_error "Failed to get Alice address: $alice_addr"
+        exit 1
+    fi
+    if [[ "$bob_addr" == *"Error"* ]]; then
+        print_error "Failed to get Bob address: $bob_addr"
+        exit 1
+    fi
     
     print_info "Alice address: $alice_addr"
     print_info "Bob address: $bob_addr"
@@ -149,20 +184,20 @@ fund_accounts() {
     # Fund Alice with Token A on Chain A
     print_info "Minting Token A for Alice..."
     cast send "$TOKEN_A" "mint(address,uint256)" "$alice_addr" "$(cast to-wei 1000)" \
-        --rpc-url http://localhost:8545 \
+        --rpc-url "$CHAIN_A_RPC" \
         --private-key "$ANVIL_PRIVATE_KEY_0" \
         > /dev/null 2>&1
     
     # Fund Bob with Token B on Chain B  
     print_info "Minting Token B for Bob..."
     cast send "$TOKEN_B" "mint(address,uint256)" "$bob_addr" "$(cast to-wei 1000)" \
-        --rpc-url http://localhost:8546 \
+        --rpc-url "$CHAIN_B_RPC" \
         --private-key "$ANVIL_PRIVATE_KEY_0" \
         > /dev/null 2>&1
     
     # Check balances
-    local alice_balance_a=$(cast call "$TOKEN_A" "balanceOf(address)(uint256)" "$alice_addr" --rpc-url http://localhost:8545)
-    local bob_balance_b=$(cast call "$TOKEN_B" "balanceOf(address)(uint256)" "$bob_addr" --rpc-url http://localhost:8546)
+    local alice_balance_a=$(cast call "$TOKEN_A" "balanceOf(address)(uint256)" "$alice_addr" --rpc-url "$CHAIN_A_RPC")
+    local bob_balance_b=$(cast call "$TOKEN_B" "balanceOf(address)(uint256)" "$bob_addr" --rpc-url "$CHAIN_B_RPC")
     
     print_status "Alice has $(cast from-wei "$alice_balance_a") Token A"
     print_status "Bob has $(cast from-wei "$bob_balance_b") Token B"
@@ -173,24 +208,56 @@ show_balances() {
     local title="${1:-Current Balances}"
     print_header "$title"
     
-    local alice_addr=$(cast wallet address --private-key "$ALICE_PRIVATE_KEY")
-    local bob_addr=$(cast wallet address --private-key "$BOB_PRIVATE_KEY")
+    # Debug: check if keys are loaded
+    if [ -z "$ALICE_PRIVATE_KEY" ]; then
+        print_error "ALICE_PRIVATE_KEY not set!"
+        exit 1
+    fi
+    
+    local alice_addr=$(cast wallet address --private-key "$ALICE_PRIVATE_KEY" 2>&1)
+    local bob_addr=$(cast wallet address --private-key "${BOB_PRIVATE_KEY:-$RESOLVER_PRIVATE_KEY}" 2>&1)
+    
+    # Check for errors
+    if [[ "$alice_addr" == *"Error"* ]]; then
+        print_error "Failed to get Alice address: $alice_addr"
+        exit 1
+    fi
+    if [[ "$bob_addr" == *"Error"* ]]; then
+        print_error "Failed to get Bob address: $bob_addr"
+        exit 1
+    fi
     
     # Alice balances
-    local alice_balance_a=$(cast call "$TOKEN_A" "balanceOf(address)(uint256)" "$alice_addr" --rpc-url http://localhost:8545)
-    local alice_balance_b=$(cast call "$TOKEN_B" "balanceOf(address)(uint256)" "$alice_addr" --rpc-url http://localhost:8546)
+    local alice_balance_a=$(cast call "$TOKEN_A" "balanceOf(address)(uint256)" "$alice_addr" --rpc-url "$CHAIN_A_RPC" 2>/dev/null || echo "0")
+    local alice_balance_b=$(cast call "$TOKEN_B" "balanceOf(address)(uint256)" "$alice_addr" --rpc-url "$CHAIN_B_RPC" 2>/dev/null || echo "0")
     
     # Bob balances
-    local bob_balance_a=$(cast call "$TOKEN_A" "balanceOf(address)(uint256)" "$bob_addr" --rpc-url http://localhost:8545)
-    local bob_balance_b=$(cast call "$TOKEN_B" "balanceOf(address)(uint256)" "$bob_addr" --rpc-url http://localhost:8546)
+    local bob_balance_a=$(cast call "$TOKEN_A" "balanceOf(address)(uint256)" "$bob_addr" --rpc-url "$CHAIN_A_RPC" 2>/dev/null || echo "0")
+    local bob_balance_b=$(cast call "$TOKEN_B" "balanceOf(address)(uint256)" "$bob_addr" --rpc-url "$CHAIN_B_RPC" 2>/dev/null || echo "0")
     
-    echo "Alice:"
-    echo "  - Token A: $(cast from-wei "$alice_balance_a")"
-    echo "  - Token B: $(cast from-wei "$alice_balance_b")"
-    echo ""
-    echo "Bob:"
-    echo "  - Token A: $(cast from-wei "$bob_balance_a")"
-    echo "  - Token B: $(cast from-wei "$bob_balance_b")"
+    # Remove any non-numeric characters (like error messages)
+    alice_balance_a=$(echo "$alice_balance_a" | grep -E '^[0-9]+$' || echo "0")
+    alice_balance_b=$(echo "$alice_balance_b" | grep -E '^[0-9]+$' || echo "0")
+    bob_balance_a=$(echo "$bob_balance_a" | grep -E '^[0-9]+$' || echo "0")
+    bob_balance_b=$(echo "$bob_balance_b" | grep -E '^[0-9]+$' || echo "0")
+    
+    if [ "$MODE" = "mainnet" ]; then
+        echo "Alice:"
+        echo "  - BMN on Base: $(cast from-wei "$alice_balance_a")"
+        echo "  - BMN on Etherlink: $(cast from-wei "$alice_balance_b")"
+        echo ""
+        echo "Bob:"
+        echo "  - BMN on Base: $(cast from-wei "$bob_balance_a")"
+        echo "  - BMN on Etherlink: $(cast from-wei "$bob_balance_b")"
+    else
+        echo "Alice:"
+        echo "  - Token A: $(cast from-wei "$alice_balance_a")"
+        echo "  - Token B: $(cast from-wei "$alice_balance_b")"
+        echo ""
+        echo "Bob:"
+        echo "  - Token A: $(cast from-wei "$bob_balance_a")"
+        echo "  - Token B: $(cast from-wei "$bob_balance_b")"
+    fi
 }
 
 # Function to create order
@@ -202,9 +269,15 @@ create_order() {
     local profit_factor=$((10000 + BOB_PROFIT_BPS))
     local dst_amount_wei=$((amount_wei * 10000 / profit_factor))
     
-    print_info "Alice wants to swap $ALICE_AMOUNT Token A for Token B"
-    print_info "Bob will receive $ALICE_AMOUNT Token A"
-    print_info "Alice will receive $(cast from-wei "$dst_amount_wei") Token B"
+    if [ "$MODE" = "mainnet" ]; then
+        print_info "Alice wants to swap $ALICE_AMOUNT BMN from Base to Etherlink"
+        print_info "Bob will receive $ALICE_AMOUNT BMN on Base"
+        print_info "Alice will receive $(cast from-wei "$dst_amount_wei") BMN on Etherlink"
+    else
+        print_info "Alice wants to swap $ALICE_AMOUNT Token A for Token B"
+        print_info "Bob will receive $ALICE_AMOUNT Token A"
+        print_info "Alice will receive $(cast from-wei "$dst_amount_wei") Token B"
+    fi
     print_info "Bob's profit: $BOB_PROFIT_BPS bps ($(echo "scale=2; $BOB_PROFIT_BPS / 100" | bc)%)"
     
     wait_for_input
@@ -214,7 +287,13 @@ create_order() {
     cd "$PROJECT_ROOT"
     
     # Create order and capture output
-    local order_output=$(deno task alice:create-order --amount "$ALICE_AMOUNT" --token-a TKA --token-b TKB 2>&1)
+    if [ "$MODE" = "mainnet" ]; then
+        # For mainnet, use BMN token on both chains
+        local order_output=$(deno task alice:create-order --amount "$ALICE_AMOUNT" --token-a BMN --token-b BMN 2>&1)
+    else
+        # For local testing, use TKA/TKB
+        local order_output=$(deno task alice:create-order --amount "$ALICE_AMOUNT" --token-a TKA --token-b TKB 2>&1)
+    fi
     
     # Extract order ID from output
     ORDER_ID=$(echo "$order_output" | grep -oP 'Order created with ID: \K[0-9]+' || echo "")
@@ -361,7 +440,11 @@ main() {
     
     print_header "Test Complete!"
     print_status "Atomic swap completed successfully"
-    print_info "Alice swapped Token A for Token B"
+    if [ "$MODE" = "mainnet" ]; then
+        print_info "Alice swapped BMN from Base to Etherlink"
+    else
+        print_info "Alice swapped Token A for Token B"
+    fi
     print_info "Bob earned profit by providing liquidity"
 }
 
