@@ -8,8 +8,9 @@ export const PLACEHOLDER_ADDRESS: Address = "0x000000000000000000000000000000000
 
 // CREATE3-deployed contract addresses (deterministic across all chains)
 export const CREATE3_ADDRESSES = {
-  ESCROW_FACTORY: (Deno.env.get("MAINNET_ESCROW_FACTORY") || "0x2B2d52Cf0080a01f457A4f64F41cbca500f787b1") as Address, // CrossChainEscrowFactory v2 with enhanced events
+  ESCROW_FACTORY: (Deno.env.get("MAINNET_ESCROW_FACTORY") || "0xB916C3edbFe574fFCBa688A6B92F72106479bD6c") as Address, // CrossChainEscrowFactory v1.1.0
   BMN_TOKEN: (Deno.env.get("MAINNET_BMN_TOKEN") || "0x8287CD2aC7E227D9D927F998EB600a0683a832A1") as Address, // BMN Token
+  RESOLVER_FACTORY: (Deno.env.get("MAINNET_RESOLVER_FACTORY") || "0xe767202fD26104267CFD8bD8cfBd1A44450DC343") as Address, // Resolver Factory
   // Implementation addresses (for reference)
   ESCROW_SRC_IMPL: (Deno.env.get("MAINNET_ESCROW_SRC_IMPL") || "0x77CC1A51dC5855bcF0d9f1c1FceaeE7fb855a535") as Address,
   ESCROW_DST_IMPL: (Deno.env.get("MAINNET_ESCROW_DST_IMPL") || "0x36938b7899A17362520AA741C0E0dA0c8EfE5e3b") as Address,
@@ -30,6 +31,7 @@ export const BMN_TOKEN_CONFIG = {
 export const CONTRACT_ADDRESSES_EXPORTS = {
   ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY,
   BMN_TOKEN: CREATE3_ADDRESSES.BMN_TOKEN,
+  RESOLVER_FACTORY: CREATE3_ADDRESSES.RESOLVER_FACTORY,
 } as const;
 
 // Contract addresses for each chain
@@ -66,12 +68,12 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
     },
   },
   
-  // Etherlink Mainnet
-  42793: {
-    escrowFactory: (Deno.env.get("ETHERLINK_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY) as Address, // CrossChainEscrowFactory - CREATE3 deterministic address (same on both chains)
-    limitOrderProtocol: (Deno.env.get("ETHERLINK_LIMIT_ORDER_PROTOCOL") || "0x1111111254EEB25477B68fb85Ed929f73A960582") as Address, // 1inch Limit Order Protocol v4
+  // Optimism Mainnet
+  10: {
+    escrowFactory: (Deno.env.get("OPTIMISM_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY) as Address, // CrossChainEscrowFactory - CREATE3 deterministic address (same on both chains)
+    limitOrderProtocol: (Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL") || "0x1111111254EEB25477B68fb85Ed929f73A960582") as Address, // 1inch Limit Order Protocol v4
     tokens: {
-      BMN: (Deno.env.get("ETHERLINK_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
+      BMN: (Deno.env.get("OPTIMISM_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
       // Add other tokens as needed
     },
   },
@@ -128,7 +130,7 @@ export function areContractsConfigured(chainId: number): boolean {
   if (!addresses) return false;
   
   // For mainnet chains, we only need escrowFactory and tokens
-  const isMainnet = chainId === 8453 || chainId === 42793;
+  const isMainnet = chainId === 8453 || chainId === 10;
   
   if (isMainnet) {
     return (
@@ -203,17 +205,17 @@ export function loadContractAddressesFromEnv(): void {
     });
   }
   
-  // Etherlink Mainnet addresses
-  const etherlinkFactory = Deno.env.get("ETHERLINK_ESCROW_FACTORY");
-  const etherlinkProtocol = Deno.env.get("ETHERLINK_LIMIT_ORDER_PROTOCOL");
-  const etherlinkBMN = Deno.env.get("ETHERLINK_TOKEN_BMN");
+  // Optimism Mainnet addresses
+  const optimismFactory = Deno.env.get("OPTIMISM_ESCROW_FACTORY");
+  const optimismProtocol = Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL");
+  const optimismBMN = Deno.env.get("OPTIMISM_TOKEN_BMN");
   
-  if (etherlinkFactory || etherlinkProtocol || etherlinkBMN) {
-    updateContractAddresses(42793, {
-      escrowFactory: (etherlinkFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY,
-      limitOrderProtocol: (etherlinkProtocol as Address) || PLACEHOLDER_ADDRESS,
+  if (optimismFactory || optimismProtocol || optimismBMN) {
+    updateContractAddresses(10, {
+      escrowFactory: (optimismFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY,
+      limitOrderProtocol: (optimismProtocol as Address) || PLACEHOLDER_ADDRESS,
       tokens: {
-        BMN: (etherlinkBMN as Address) || CREATE3_ADDRESSES.BMN_TOKEN,
+        BMN: (optimismBMN as Address) || CREATE3_ADDRESSES.BMN_TOKEN,
       },
     });
   }

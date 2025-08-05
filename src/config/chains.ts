@@ -6,6 +6,9 @@ import { CONTRACT_ADDRESSES_EXPORTS } from "./contracts.ts";
 export const ESCROW_FACTORY_ADDRESS = CONTRACT_ADDRESSES_EXPORTS.ESCROW_FACTORY;
 export const BMN_TOKEN_ADDRESS = CONTRACT_ADDRESSES_EXPORTS.BMN_TOKEN;
 
+// Get Ankr API key for mainnet
+const ANKR_API_KEY = Deno.env.get("ANKR_API_KEY") || "";
+
 export const chainA = defineChain({
   id: 1337,
   name: "Local Chain A",
@@ -51,8 +54,8 @@ export const baseMainnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [Deno.env.get("BASE_RPC_URL") || "https://mainnet.base.org"],
-      webSocket: [Deno.env.get("BASE_WS_URL") || "wss://base-mainnet.g.alchemy.com/v2/{your-api-key}"],
+      http: [Deno.env.get("BASE_RPC_URL") || `https://rpc.ankr.com/base/${ANKR_API_KEY}`],
+      webSocket: [Deno.env.get("BASE_WS_URL") || `wss://rpc.ankr.com/base/ws/${ANKR_API_KEY}`],
     },
   },
   testnet: false,
@@ -61,10 +64,10 @@ export const baseMainnet = defineChain({
   },
 });
 
-// Etherlink Mainnet
-export const etherlinkMainnet = defineChain({
-  id: 42793,
-  name: "Etherlink",
+// Optimism Mainnet
+export const optimismMainnet = defineChain({
+  id: 10,
+  name: "Optimism",
   nativeCurrency: {
     decimals: 18,
     name: "Ether",
@@ -72,13 +75,13 @@ export const etherlinkMainnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [Deno.env.get("ETHERLINK_RPC_URL") || "https://node.mainnet.etherlink.com"],
-      webSocket: [Deno.env.get("ETHERLINK_WS_URL") || "wss://node.mainnet.etherlink.com"],
+      http: [Deno.env.get("OPTIMISM_RPC_URL") || `https://rpc.ankr.com/optimism/${ANKR_API_KEY}`],
+      webSocket: [Deno.env.get("OPTIMISM_WS_URL") || `wss://rpc.ankr.com/optimism/ws/${ANKR_API_KEY}`],
     },
   },
   testnet: false,
   blockExplorers: {
-    default: { name: "Etherlink Explorer", url: "https://explorer.etherlink.com" },
+    default: { name: "Optimistic Etherscan", url: "https://optimistic.etherscan.io" },
   },
 });
 

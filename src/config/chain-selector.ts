@@ -1,5 +1,5 @@
 import { defineChain, type Chain } from "viem";
-import { chainA, chainB, baseMainnet, etherlinkMainnet } from "./chains.ts";
+import { chainA, chainB, baseMainnet, optimismMainnet } from "./chains.ts";
 import { getMainnetChains as getMainnetChainsConfig, useTestFactory } from "./mainnet.ts";
 
 export type NetworkMode = "testnet" | "mainnet";
@@ -30,7 +30,7 @@ export function getChains(): { srcChain: Chain; dstChain: Chain; srcChainId: num
   
   if (mode === "mainnet") {
     const testMode = useTestFactory() ? " (TEST FACTORY)" : "";
-    console.log(`🌐 Using MAINNET configuration (Base & Etherlink)${testMode}`);
+    console.log(`🌐 Using MAINNET configuration (Base & Optimism)${testMode}`);
     return getMainnetChainsConfig(false);
   } else {
     console.log("🧪 Using TESTNET configuration (Local Anvil chains)");
@@ -54,8 +54,8 @@ export function getChainById(chainId: number): Chain {
       return chainB;
     case 8453:
       return baseMainnet;
-    case 42793:
-      return etherlinkMainnet;
+    case 10:
+      return optimismMainnet;
     default:
       throw new Error(`Unknown chain ID: ${chainId}`);
   }
@@ -65,7 +65,7 @@ export function getChainById(chainId: number): Chain {
  * Check if a chain ID is a mainnet chain
  */
 export function isMainnetChain(chainId: number): boolean {
-  return chainId === 8453 || chainId === 42793;
+  return chainId === 8453 || chainId === 10;
 }
 
 /**
@@ -79,22 +79,22 @@ export function getChainName(chainId: number): string {
       return "Local Chain B";
     case 8453:
       return "Base";
-    case 42793:
-      return "Etherlink";
+    case 10:
+      return "Optimism";
     default:
       return `Chain ${chainId}`;
   }
 }
 
 /**
- * Get chains for reverse direction (Etherlink to Base)
+ * Get chains for reverse direction (Optimism to Base)
  */
 export function getReverseChains(): { srcChain: Chain; dstChain: Chain; srcChainId: number; dstChainId: number } {
   const mode = getNetworkMode();
   
   if (mode === "mainnet") {
     const testMode = useTestFactory() ? " (TEST FACTORY)" : "";
-    console.log(`🌐 Using MAINNET configuration (Etherlink → Base)${testMode}`);
+    console.log(`🌐 Using MAINNET configuration (Optimism → Base)${testMode}`);
     return getMainnetChainsConfig(true);
   } else {
     console.log("🧪 Using TESTNET configuration (Chain B → Chain A)");
