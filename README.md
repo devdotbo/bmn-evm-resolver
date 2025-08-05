@@ -153,6 +153,7 @@ Both files are automatically created and updated during execution.
 
 - [PLAN.md](./PLAN.md) - Detailed implementation plan
 - [CLAUDE.md](./CLAUDE.md) - Development guidance for Claude Code
+- [FACTORY_UPGRADE.md](./docs/FACTORY_UPGRADE.md) - Factory v2 upgrade with enhanced events
 
 ## Dependencies
 
