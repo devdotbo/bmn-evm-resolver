@@ -15,6 +15,9 @@ async function main() {
   });
 
   const alice = new SimpleAlice();
+  
+  // Initialize SecretManager
+  await alice.init();
 
   switch (args.action) {
     case "create":
@@ -60,6 +63,13 @@ async function main() {
       console.log("✅ Withdrawal complete!");
       break;
 
+    case "monitor":
+      console.log("🤖 Starting auto-monitor mode...");
+      console.log("   Alice will automatically withdraw when Bob deploys destination escrows");
+      console.log("   Press Ctrl+C to stop");
+      await alice.monitorAndWithdraw();
+      break;
+
     case "help":
     default:
       console.log(`
@@ -72,6 +82,7 @@ Actions:
   create    Create a new cross-chain swap order
   list      List all your orders
   withdraw  Withdraw from destination escrow (reveals secret)
+  monitor   Auto-monitor and withdraw when destination escrows are ready
 
 Options:
   --resolver <address>   Resolver address (for create)
@@ -89,6 +100,9 @@ Examples:
 
   # Withdraw from destination
   deno run alice.ts --action withdraw --order 0xabc...
+
+  # Auto-monitor and withdraw
+  deno run alice.ts --action monitor
       `);
   }
 }

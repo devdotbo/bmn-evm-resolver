@@ -1,7 +1,55 @@
 # Environment variables
 .env
+.env.*
+!.env.example
+!.env.*.example
 .env.local
 .env.*.local
+
+# Security - NEVER commit these
+# Private keys
+*.key
+*.pem
+*.p12
+*.pfx
+*.cert
+*.crt
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+*.priv
+*.private
+
+# Secrets and credentials
+secrets/
+.secrets/
+credentials/
+.credentials/
+private/
+.private/
+**/secrets.json
+**/credentials.json
+**/private.json
+*.secret
+*.secrets
+*api_key*
+*api_secret*
+*access_token*
+*auth_token*
+
+# Keystores and wallets
+*.keystore
+*.wallet
+keystore/
+wallets/
+
+# Backup files that might contain secrets
+*.backup
+*.bak
+*.old
+*.orig
+*~
 
 # State files
 resolver-state.json

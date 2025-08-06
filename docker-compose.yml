@@ -1,0 +1,41 @@
+services:
+  resolver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DENO_ENV=production
+      - DENO_KV_PATH=/app/data/kv.db
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./abis:/app/abis:ro
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    networks:
+      - bmn-network
+
+  alice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["deno", "task", "alice"]
+    environment:
+      - DENO_ENV=production
+      - DENO_KV_PATH=/app/data/alice-kv.db
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./abis:/app/abis:ro
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    depends_on:
+      - resolver
+    networks:
+      - bmn-network
+
+networks:
+  bmn-network:
+    driver: bridge
