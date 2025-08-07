@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Major Architectural Changes
+
+#### 1. **Unified Resolver Architecture**
+- Created single `UnifiedResolver` class combining all resolver functionality
+- Removed `demo-resolver.ts`, `base-resolver.ts`, `simple-resolver.ts` in favor of unified implementation
+- Full integration with SimpleLimitOrderProtocol for order filling
+- Uses factory v2.1.0 at 0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A
+
+#### 2. **Limit Order Protocol Integration**
+- Created `LimitOrderAlice` for EIP-712 signed order creation
+- Orders include postInteraction to trigger factory escrow creation
+- Removed `simple-alice.ts` in favor of limit order implementation
+- SimpleLimitOrderProtocol addresses:
+  - Base: 0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06
+  - Optimism: 0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7
+
+#### 3. **Documentation**
+- Created comprehensive ARCHITECTURE.md documenting complete system flow
+- Added UNIFIED_RESOLVER.md with usage instructions
+- Created CLEANUP_LOG.md tracking architectural improvements
+- Added LIMIT_ORDER_INTEGRATION.md for protocol integration details
+
+#### 4. **Testing Infrastructure**
+- Added `test-indexer-query.ts` for SQL/HTTP connectivity testing
+- Created `test-resolver.ts` for configuration verification
+- Added `test-limit-order.ts` for dry-run order testing
+- Added `test-manual-order.ts` for manual order processing
+
+#### 5. **Ready for Mainnet**
+- Resolver whitelisted at 0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5
+- All contracts deployed and verified on Base and Optimism mainnet
+- Complete flow: Alice → LimitOrder → Indexer → Resolver → Atomic Swap
+
 ### Added
 - Created deployment configuration files for local testing
   - `deployments/chainA.json` - Local chain A configuration (port 8545)
@@ -18,16 +51,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `scripts/stop-resolver.sh` - Cleanly stops resolver using PID
   - Logs are written to `logs/resolver.log` (gitignored)
 
+- Migration and validation scripts
+  - `migration-checklist.ts` - Validates resolver configuration
+  - `demo-complete-flow.ts` - End-to-end flow demonstration
+
 ### Changed
 - Modified default profit requirement from 0.5% (50 bps) to 0% (0 bps)
   - Updated `run-resolver.ts` line 22 and 33
   - Allows resolver to fill orders at break-even for testing
 
+- Migrated from GraphQL to SQL over HTTP architecture
+  - Resolver now uses SQL over HTTP via Ponder indexer
+  - Connects to Ponder SQL endpoint at `http://localhost:42069/sql`
+  - Queries atomic swap data using PonderClient
+
+### Security
+- Factory v2.1.0 with enhanced security features
+  - Resolver whitelist implementation
+  - Emergency pause functionality
+  - Signature verification improvements
+
 ### Technical Details
-- Resolver now uses SQL over HTTP via Ponder indexer
-- Connects to Ponder SQL endpoint at `http://localhost:42069/sql`
-- Queries atomic swap data using PonderClient
 - Uses Deno KV for local secret management
+- EIP-712 typed data signing for limit orders
+- PostInteraction hooks for factory escrow creation
+- Atomic swap execution through SimpleLimitOrderProtocol
 
 ## [0.3.0] - 2025-01-07 (Previous context)
 
