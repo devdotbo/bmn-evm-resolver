@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-env --allow-read --allow-write
 
-import { SimpleAlice } from "./src/alice/simple-alice.ts";
+import { LimitOrderAlice } from "./src/alice/limit-order-alice.ts";
 import { parseArgs } from "https://deno.land/std@0.208.0/cli/parse_args.ts";
 
 async function main() {
@@ -14,7 +14,7 @@ async function main() {
     },
   });
 
-  const alice = new SimpleAlice();
+  const alice = new LimitOrderAlice();
   
   // Initialize SecretManager
   await alice.init();
@@ -73,7 +73,7 @@ async function main() {
     case "help":
     default:
       console.log(`
-Bridge-Me-Not Alice Client (Simplified)
+Bridge-Me-Not Alice Client (Limit Order Protocol)
 =======================================
 
 Usage: deno run alice.ts --action <action> [options]
