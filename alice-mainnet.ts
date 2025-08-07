@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv
 
-import { MainnetAlice } from "./src/alice/mainnet-alice.ts";
+import { LimitOrderAlice } from "./src/alice/limit-order-alice.ts";
 import { parseArgs } from "https://deno.land/std@0.208.0/cli/parse_args.ts";
 
 async function main() {
@@ -15,15 +15,15 @@ async function main() {
     },
   });
 
-  const alice = new MainnetAlice();
+  const alice = new LimitOrderAlice();
   
   // Initialize SecretManager
   await alice.init();
 
   switch (args.action) {
     case "create":
-      console.log("🚀 Creating MAINNET atomic swap order");
-      console.log("=====================================");
+      console.log("🚀 Creating MAINNET atomic swap order via Limit Order Protocol");
+      console.log("===========================================================");
       
       const orderHash = await alice.createOrder({
         srcChainId: parseInt(args["src-chain"]),
@@ -80,8 +80,8 @@ async function main() {
     case "help":
     default:
       console.log(`
-Bridge-Me-Not MAINNET Alice Client
-===================================
+Bridge-Me-Not MAINNET Alice Client (Limit Order Protocol)
+=========================================================
 
 Usage: deno run alice-mainnet.ts --action <action> [options]
 
