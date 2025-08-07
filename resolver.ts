@@ -1,12 +1,12 @@
 #!/usr/bin/env -S deno run --allow-net --allow-env --allow-read --allow-write
 
-import { SimpleResolver } from "./src/resolver/simple-resolver.ts";
+import { UnifiedResolver } from "./src/resolver/resolver.ts";
 
 async function main() {
-  console.log("🚀 Bridge-Me-Not Resolver (Simplified)");
+  console.log("🚀 Bridge-Me-Not Resolver (Unified)");
   console.log("=====================================");
   
-  const resolver = new SimpleResolver();
+  const resolver = new UnifiedResolver();
 
   // Handle graceful shutdown
   const shutdown = async () => {
