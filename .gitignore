@@ -87,3 +87,6 @@ dist/
 build/
 # Runtime data storage
 data/
+
+# Crush working dir
+.crush/

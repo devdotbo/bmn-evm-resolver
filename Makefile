@@ -110,7 +110,7 @@ shell:
 # Run tests
 test:
 	@echo "Running tests..."
-	@docker-compose exec resolver deno task resolver:test
+	@docker-compose exec resolver deno task resolver:test:docker
 	@echo "Tests completed!"
 
 # Start in development mode

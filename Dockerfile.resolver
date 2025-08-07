@@ -83,5 +83,4 @@ CMD ["deno", "run", \
      "--allow-read", \
      "--allow-write", \
      "--unstable-kv", \
-     "--env-file=.env", \
      "resolver-service.ts"]
