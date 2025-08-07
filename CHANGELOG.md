@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Critical ABI Update**: Fixed function name mismatch in Alice implementations
+  - Replaced non-existent `postSourceEscrow` with correct `createSrcEscrow` function
+  - Updated both `limit-order-alice.ts` and `mainnet-alice.ts` to use SimplifiedEscrowFactory
+  - Copied latest ABIs from contract directories to ensure compatibility
+  - Changed from CrossChainEscrowFactory to SimplifiedEscrowFactory for direct escrow creation
+
+### Changed
+- **Updated ABIs from latest contract builds**
+  - `SimplifiedEscrowFactory.json` - Now using correct factory ABI with `createSrcEscrow`
+  - `SimpleLimitOrderProtocol.json` - Updated from limit order contracts
+  - `CrossChainEscrowFactory.json` - Refreshed from main contracts
+  - `EscrowSrc.json` and `EscrowDst.json` - Updated escrow contract ABIs
+
+### Known Issues
+- **createSrcEscrow Transaction Reverting**: Currently facing transaction reversion when calling `createSrcEscrow`
+  - Factory address: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
+  - Possible causes:
+    - Maker address (`0x240E2588e35FB9D3D60B283B45108a49972FFFd8`) may need whitelisting
+    - Resolver address (`0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5`) may need whitelisting
+    - Factory contract might be paused or have additional security restrictions
+    - Immutables structure format may need adjustment for the specific factory implementation
+  - Next steps: Check factory contract state, whitelist requirements, and parameter formats
+
 ### Major Architectural Changes
 
 #### 1. **Unified Resolver Architecture**

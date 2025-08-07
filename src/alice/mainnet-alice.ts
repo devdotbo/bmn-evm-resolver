@@ -3,7 +3,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
-import CrossChainEscrowFactoryAbi from "../../abis/CrossChainEscrowFactory.json" with { type: "json" };
+import SimplifiedEscrowFactoryAbi from "../../abis/SimplifiedEscrowFactory.json" with { type: "json" };
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
 import IERC20Abi from "../../abis/IERC20.json" with { type: "json" };
 
@@ -137,23 +137,29 @@ export class MainnetAlice {
       })
     );
 
+    // Create immutables structure for the escrow
+    const immutables = {
+      orderHash: orderHash,
+      hashlock: hashlock,
+      maker: this.account.address,
+      taker: params.resolverAddress, 
+      token: BMN_TOKEN_ADDRESS,
+      amount: params.srcAmount,
+      safetyDeposit: params.srcSafetyDeposit || 0n,
+      timelocks: timelocks,
+    };
+
     try {
       const { request } = await client.simulateContract({
         account: this.account,
         address: FACTORY_ADDRESS,
-        abi: CrossChainEscrowFactoryAbi.abi,
-        functionName: "postSourceEscrow",
+        abi: SimplifiedEscrowFactoryAbi.abi,
+        functionName: "createSrcEscrow",
         args: [
-          hashlock,
-          BMN_TOKEN_ADDRESS,
-          params.srcAmount,
-          params.srcSafetyDeposit || 0n,
-          params.resolverAddress,
-          BMN_TOKEN_ADDRESS, // dstToken (same token for simplicity)
-          params.dstAmount,
-          params.dstSafetyDeposit || 0n,
-          params.dstChainId,
-          timelocks,
+          immutables,
+          this.account.address, // maker
+          BMN_TOKEN_ADDRESS,    // token
+          params.srcAmount,     // amount
         ],
       });
 

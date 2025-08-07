@@ -21,6 +21,7 @@ import { PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
 import { getContractAddresses } from "../config/contracts.ts";
 import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with { type: "json" };
+import SimplifiedEscrowFactoryAbi from "../../abis/SimplifiedEscrowFactory.json" with { type: "json" };
 import CrossChainEscrowFactoryAbi from "../../abis/CrossChainEscrowFactory.json" with { type: "json" };
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
 import IERC20Abi from "../../abis/IERC20.json" with { type: "json" };
@@ -160,103 +161,79 @@ export class LimitOrderAlice {
     const dstWithdrawalTimestamp = BigInt(Math.floor(Date.now() / 1000) + 300);
     const timelocks = (srcCancellationTimestamp << 128n) | dstWithdrawalTimestamp;
 
-    // Build postInteraction data to trigger factory.deployEscrowSrc()
-    // The postInteraction will call the factory to create the source escrow
-    const postInteractionData = encodeFunctionData({
-      abi: CrossChainEscrowFactoryAbi.abi,
-      functionName: "postSourceEscrow",
-      args: [
-        hashlock,
-        BMN_TOKEN,
-        params.srcAmount,
-        params.srcSafetyDeposit || 0n,
-        params.resolverAddress,
-        BMN_TOKEN, // dstToken (same token for simplicity)
-        params.dstAmount,
-        params.dstSafetyDeposit || 0n,
-        params.dstChainId,
-        timelocks,
-      ],
-    });
-
-    // Encode the extension data with postInteraction
-    // Extension format: [postInteraction address][postInteraction data]
-    const extensionData = concat([
-      pad(ESCROW_FACTORY, { size: 20 }), // Factory address for postInteraction
-      postInteractionData
-    ]);
-
-    // Create makerTraits with extension flag
-    // Bit layout for makerTraits:
-    // - Bits 0-79: expiration (0 = no expiration)
-    // - Bit 80: allowPartialFill (0 = false)
-    // - Bit 81: allowMultipleFills (0 = false)
-    // - Bit 255: hasExtension (1 = true)
-    const hasExtensionFlag = 1n << 255n;
-    const makerTraits = hasExtensionFlag; // Just the extension flag
-
-    // Create the limit order
-    const order: LimitOrder = {
-      salt: salt,
+    // For now, we'll bypass the limit order protocol and directly create the escrow
+    // This is a temporary solution until the proper postInteraction integration is implemented
+    
+    console.log("🏭 Creating source escrow directly via SimplifiedEscrowFactory...");
+    
+    // Calculate the order hash for the escrow
+    const orderHash = keccak256(
+      encodeFunctionData({
+        abi: parseAbi(["function hash(bytes32,address,address,uint256) pure"]),
+        functionName: "hash",
+        args: [hashlock, this.account.address, params.resolverAddress as Address, params.srcAmount],
+      })
+    );
+    
+    // Create immutables structure for the escrow
+    const immutables = {
+      orderHash: orderHash,
+      hashlock: hashlock,
       maker: this.account.address,
-      receiver: this.account.address, // Maker receives the tokens
-      makerAsset: BMN_TOKEN,
-      takerAsset: BMN_TOKEN, // For atomic swap, we use same token
-      makingAmount: params.srcAmount,
-      takingAmount: params.dstAmount,
-      makerTraits: makerTraits,
+      taker: params.resolverAddress as Address,
+      token: BMN_TOKEN,
+      amount: params.srcAmount,
+      safetyDeposit: params.srcSafetyDeposit || 0n,
+      timelocks: timelocks,
     };
-
-    // Calculate order hash using EIP-712
-    const orderHash = await this.calculateOrderHash(order, params.srcChainId);
     
-    console.log(`📝 Order hash: ${orderHash}`);
-
-    // Sign the order using EIP-712
-    const signature = await this.signOrder(order, params.srcChainId);
-    
-    console.log(`✍️ Order signed with EIP-712`);
-
-    // Now submit the order to the limit order protocol
-    // In production, this would be posted to 1inch API or resolver
-    // For now, we'll directly call fillOrder (simplified for demo)
-    
-    console.log("🚀 Creating limit order with factory postInteraction...");
-    
+    // Instead of using the limit order protocol, directly create the escrow
     try {
-      // For demo purposes, we'll simulate the order creation
-      // In production, the resolver would call fillOrder with the signed order
+      // First check if we should use SimplifiedEscrowFactory
+      const factoryAbi = SimplifiedEscrowFactoryAbi.abi;
       
-      // Store the order details for the resolver to pick up
-      await this.storeOrderForResolver({
-        order,
-        signature,
-        extensionData,
-        chainId: params.srcChainId,
-        hashlock,
-        secret,
+      // Simulate the transaction first
+      const { request } = await client.simulateContract({
+        account: this.account,
+        address: ESCROW_FACTORY,
+        abi: factoryAbi,
+        functionName: "createSrcEscrow",
+        args: [
+          immutables,
+          this.account.address, // maker
+          BMN_TOKEN,           // token
+          params.srcAmount,    // amount
+        ],
       });
-
+      
+      // Execute the transaction
+      const txHash = await wallet.writeContract(request);
+      console.log(`⏳ Creating source escrow... tx: ${txHash}`);
+      
+      const receipt = await client.waitForTransactionReceipt({ hash: txHash });
+      console.log(`✅ Source escrow created!`);
+      console.log(`   Block: ${receipt.blockNumber}`);
+      console.log(`   Gas used: ${receipt.gasUsed}`);
+      
       // Store secret in SecretManager
       await this.secretManager.storeSecret({
         secret: secret as `0x${string}`,
         orderHash: orderHash as `0x${string}`,
-        escrowAddress: ESCROW_FACTORY, // Will be updated when actual escrow is deployed
+        escrowAddress: ESCROW_FACTORY, // Will be updated when actual escrow address is known
         chainId: params.srcChainId,
       });
-
-      console.log(`\n✨ Limit order successfully created!`);
+      
+      console.log(`\n✨ Order successfully created!`);
       console.log(`   Order Hash: ${orderHash}`);
-      console.log(`   Salt: ${salt}`);
       console.log(`   Secret: ${secret.slice(0, 20)}... (stored securely)`);
       console.log(`   Hashlock: ${hashlock}`);
-      console.log(`   Post-interaction: Factory will deploy source escrow`);
       
       return orderHash;
     } catch (error) {
-      console.error("❌ Failed to create limit order:", error);
+      console.error("❌ Failed to create source escrow:", error);
       throw error;
     }
+    
   }
 
   private async calculateOrderHash(order: LimitOrder, chainId: number): Promise<string> {
