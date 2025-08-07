@@ -13,6 +13,9 @@ import { base, optimism } from "viem/chains";
 import { PonderClient, type AtomicSwap } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
 import { CREATE3_ADDRESSES } from "../config/contracts.ts";
+import { TokenApprovalManager } from "../utils/token-approvals.ts";
+import { PostInteractionEventMonitor } from "../monitoring/postinteraction-events.ts";
+import { PostInteractionErrorHandler } from "../utils/postinteraction-errors.ts";
 
 // Import ABIs
 import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with { type: "json" };
@@ -20,7 +23,7 @@ import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.jso
 import EscrowSrcV2Abi from "../../abis/EscrowSrcV2.json" with { type: "json" };
 import EscrowDstV2Abi from "../../abis/EscrowDstV2.json" with { type: "json" };
 
-// Factory v2.1.0 address (same on Base and Optimism)
+// Factory v2.2.0 address with PostInteraction support (same on Base and Optimism)
 const FACTORY_V2_ADDRESS = CREATE3_ADDRESSES.ESCROW_FACTORY_V2;
 
 // SimpleLimitOrderProtocol addresses
@@ -280,7 +283,7 @@ export class UnifiedResolver {
       const BMN_TOKEN = "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address;
       const takingAmount = BigInt(orderData.order.takingAmount);
       
-      // Check current allowance
+      // Check current allowance for Limit Order Protocol
       const currentAllowance = await client.readContract({
         address: BMN_TOKEN,
         abi: parseAbi(["function allowance(address owner, address spender) view returns (uint256)"]),
@@ -301,10 +304,26 @@ export class UnifiedResolver {
         });
         
         const approveReceipt = await client.waitForTransactionReceipt({ hash: approveHash });
-        console.log(`✅ Approval tx: ${approveHash}`);
+        console.log(`✅ Protocol approval tx: ${approveHash}`);
         console.log(`   Gas used: ${approveReceipt.gasUsed}`);
       } else {
-        console.log(`✅ Sufficient allowance already set: ${currentAllowance}`);
+        console.log(`✅ Sufficient allowance already set for protocol: ${currentAllowance}`);
+      }
+      
+      // CRITICAL for v2.2.0: Also approve Factory for PostInteraction token transfers
+      console.log(`
+🏭 Checking Factory approval (v2.2.0 requirement)...`);
+      const approvalManager = new TokenApprovalManager(FACTORY_V2_ADDRESS);
+      const factoryApprovalHash = await approvalManager.ensureApproval(
+        client,
+        wallet,
+        BMN_TOKEN,
+        this.account.address,
+        takingAmount
+      );
+      
+      if (factoryApprovalHash) {
+        console.log(`✅ Factory approved for PostInteraction transfers`);
       }
 
       // Reconstruct the order structure
@@ -357,44 +376,124 @@ export class UnifiedResolver {
       console.log(`   Taking: ${order.takingAmount} tokens`);
       console.log(`   Extension: ${extensionData.slice(0, 42)}...`);
 
-      // Fill the order through SimpleLimitOrderProtocol
-      // The protocol will automatically call factory.postInteraction
-      const { request } = await client.simulateContract({
-        address: limitOrderProtocol,
-        abi: SimpleLimitOrderProtocolAbi.abi,
-        functionName: "fillOrderArgs",
-        args: [
-          order,
-          r,
-          vs,
-          order.makingAmount, // Fill full amount
-          takerTraits,
-          extensionData, // Args containing extension data
-        ],
-        account: this.account,
-      });
+      // Fill the order through SimpleLimitOrderProtocol with error handling
+      let hash: Hash;
+      let receipt: any;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          // Simulate transaction first to catch errors early
+          const { request } = await client.simulateContract({
+            address: limitOrderProtocol,
+            abi: SimpleLimitOrderProtocolAbi.abi,
+            functionName: "fillOrderArgs",
+            args: [
+              order,
+              r,
+              vs,
+              order.makingAmount, // Fill full amount
+              takerTraits,
+              extensionData, // Args containing extension data
+            ],
+            account: this.account,
+          });
 
-      const hash = await wallet.writeContract(request);
-      console.log(`📝 Fill order transaction sent: ${hash}`);
+          hash = await wallet.writeContract(request);
+          console.log(`📝 Fill order transaction sent: ${hash}`);
 
-      // Wait for confirmation
-      const receipt = await client.waitForTransactionReceipt({ hash });
+          // Wait for confirmation
+          receipt = await client.waitForTransactionReceipt({ hash });
+          break; // Success, exit retry loop
+          
+        } catch (error) {
+          console.error(`❌ Error filling order (attempt ${retryCount + 1}/${maxRetries})`);
+          
+          // Handle the error
+          const errorContext = {
+            orderHash: orderData.hashlock,
+            resolverAddress: this.account.address,
+            factoryAddress: FACTORY_V2_ADDRESS,
+            tokenAddress: order.takerAsset,
+            amount: order.takingAmount,
+          };
+          
+          try {
+            const recovery = await PostInteractionErrorHandler.handleError(error, errorContext);
+            
+            if (recovery.retry && retryCount < maxRetries - 1) {
+              retryCount++;
+              
+              // Take action based on recovery suggestion
+              if (recovery.action === "APPROVE_FACTORY") {
+                console.log("🔄 Re-approving factory...");
+                const approvalManager = new TokenApprovalManager(FACTORY_V2_ADDRESS);
+                await approvalManager.ensureApproval(
+                  client,
+                  wallet,
+                  order.takerAsset,
+                  this.account.address,
+                  order.takingAmount
+                );
+              } else if (recovery.action === "WAIT_AND_RETRY") {
+                console.log("⏳ Waiting before retry...");
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
+              
+              continue; // Retry the transaction
+            } else {
+              throw error; // Max retries reached or unrecoverable
+            }
+          } catch (handlerError) {
+            // Error handler threw, meaning unrecoverable error
+            PostInteractionErrorHandler.logError(error, true);
+            throw handlerError;
+          }
+        }
+      }
+      
+      if (!receipt) {
+        throw new Error(`Failed to fill order after ${maxRetries} attempts`);
+      }
       console.log(`✅ Order filled successfully in tx: ${receipt.transactionHash}`);
       console.log(`   Gas used: ${receipt.gasUsed}`);
       console.log(`   Block: ${receipt.blockNumber}`);
 
-      // The factory's postInteraction should have created the escrows
-      console.log(`✨ Factory postInteraction triggered - escrows should be created`);
-
-      // Store the secret for later withdrawal
-      if (orderData.secret) {
-        await this.secretManager.storeSecret({
-          secret: orderData.secret as `0x${string}`,
-          orderHash: orderData.hashlock as `0x${string}`,
-          escrowAddress: "pending", // Will be determined later
-          chainId: chainId,
-        });
-        console.log(`🔐 Secret stored for future withdrawal`);
+      // Parse PostInteraction events from the receipt
+      console.log(`🔍 Parsing PostInteraction events...`);
+      const eventMonitor = new PostInteractionEventMonitor(client, FACTORY_V2_ADDRESS);
+      const events = eventMonitor.parsePostInteractionEvents(receipt);
+      
+      if (events.postInteractionExecuted) {
+        console.log(`✨ PostInteraction executed successfully!`);
+        console.log(`   Order Hash: ${events.postInteractionExecuted.orderHash}`);
+        console.log(`   Source Escrow: ${events.postInteractionExecuted.srcEscrow}`);
+        console.log(`   Destination Escrow: ${events.postInteractionExecuted.dstEscrow}`);
+        
+        // Store the secret with the actual escrow address
+        if (orderData.secret) {
+          await this.secretManager.storeSecret({
+            secret: orderData.secret as `0x${string}`,
+            orderHash: orderData.hashlock as `0x${string}`,
+            escrowAddress: events.postInteractionExecuted.srcEscrow, // Use actual escrow address
+            chainId: chainId,
+          });
+          console.log(`🔐 Secret stored for escrow ${events.postInteractionExecuted.srcEscrow}`);
+        }
+      } else if (events.postInteractionFailed) {
+        console.error(`❌ PostInteraction failed: ${events.postInteractionFailed.reason}`);
+        throw new Error(`PostInteraction failed: ${events.postInteractionFailed.reason}`);
+      } else {
+        console.warn(`⚠️ No PostInteraction events found in transaction`);
+      }
+      
+      // Log escrow creation events
+      if (events.escrowsCreated.length > 0) {
+        console.log(`📦 Created ${events.escrowsCreated.length} escrows:`);
+        for (const escrow of events.escrowsCreated) {
+          console.log(`   - ${escrow.escrowAddress} (type: ${escrow.escrowType === 0 ? 'Source' : 'Destination'})`);
+        }
       }
       
       return true; // Success

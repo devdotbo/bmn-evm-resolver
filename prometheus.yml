@@ -1,0 +1,55 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'bmn-monitor'
+    environment: 'production'
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # BMN Resolver Service
+  - job_name: 'bmn-resolver'
+    static_configs:
+      - targets: ['resolver:8000']
+        labels:
+          service: 'resolver'
+          role: 'coordinator'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # BMN Alice Service
+  - job_name: 'bmn-alice'
+    static_configs:
+      - targets: ['alice:8001']
+        labels:
+          service: 'alice'
+          role: 'initiator'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # BMN Bob Service
+  - job_name: 'bmn-bob'
+    static_configs:
+      - targets: ['bob:8002']
+        labels:
+          service: 'bob'
+          role: 'acceptor'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Redis monitoring (if redis_exporter is added)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+        labels:
+          service: 'redis'
+          role: 'cache'

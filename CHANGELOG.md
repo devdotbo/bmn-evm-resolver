@@ -7,6 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - 2025-08-07 (Complete Docker Success)
+- **Alice service now runs continuously** instead of exiting after showing help
+  - Created `alice-service.ts` with monitoring loop and health server
+  - Alice monitors orders and auto-withdraws when destination escrows are ready
+- **Health check endpoints implemented** for all services (resolver, alice, bob)
+  - Created service wrappers with integrated health servers on ports 8000, 8001, 8002
+  - All services now report healthy status to Docker
+- **Prometheus configuration mounting fixed** for macOS Docker Desktop
+  - Created custom Dockerfiles embedding configurations
+  - Prometheus successfully scraping metrics from all services
+- **Grafana provisioning working** with auto-configured datasources and dashboards
+  - BMN Services Overview dashboard available at /d/bmn-overview
+
+### Added - 2025-08-07 (Service Infrastructure)
+- `alice-service.ts` - Alice service wrapper with health monitoring
+- `resolver-service.ts` - Resolver service wrapper with health monitoring  
+- `bob-service.ts` - Bob service wrapper with health monitoring
+- `Dockerfile.prometheus` - Custom Prometheus image with embedded config
+- `Dockerfile.grafana` - Custom Grafana image with provisioning
+- `grafana-provisioning/` - Grafana datasources and dashboard configurations
+- Complete monitoring stack with Prometheus metrics and Grafana dashboards
+
+### Fixed - 2025-01-08
+- Docker build failures due to Deno version mismatch (upgraded from 2.1.4 to 2.4.3)
+- Dockerfile permission issues with deno user and cache directories
+- Docker volume mounting issues on macOS by switching to named volumes
+- Import map validation errors by removing unsupported nodeModulesDir field
+- Container networking issues with indexer connection using host.docker.internal
+
+### Changed - 2025-01-08
+- Simplified docker-compose.yml configuration with named volumes
+- Updated all Dockerfiles to use Deno 2.4.3 and proper cache permissions
+- Removed deprecated version field from docker-compose.yml
+- Updated INDEXER_URL environment variable to use host.docker.internal
+
+### Added - 2025-01-08
+- prometheus.yml configuration file for metrics collection
+- Grafana provisioning directory structure
+- Named volumes for better data persistence (bmn-data, redis-data)
+
+### Known Issues - 2025-01-08
+- Alice service exits immediately (needs to be converted to long-running service)
+- Health check endpoints not implemented for resolver and bob services
+- Prometheus service fails to start due to configuration mounting issues
+
+### Added - 2025-08-07 (Docker Infrastructure)
+- Comprehensive Docker-based infrastructure for all services
+- Multi-stage Dockerfiles for optimized builds:
+  - `Dockerfile.resolver`: Main resolver service
+  - `Dockerfile.alice`: Alice swap initiator service
+  - `Dockerfile.bob`: Bob swap acceptor service
+- Docker Compose orchestration with supporting services:
+  - Redis for distributed caching and pub/sub
+  - Prometheus for metrics collection
+  - Grafana for visualization dashboards
+- Shared `./data` directory for persistent storage across all services
+- `init-docker.sh` script for first-time setup and initialization
+- `docker-compose.prod.yml` for production deployments
+- Makefile with convenient commands for Docker operations
+- Health check endpoints for all services
+- `.dockerignore` for optimized Docker build context
+- Docker workflow documentation in CLAUDE.md
+
+### Changed - 2025-08-07 (Docker Infrastructure)
+- Updated docker-compose.yml with complete service orchestration
+- Enhanced CLAUDE.md with comprehensive Docker workflow instructions
+- All Docker builds use caching by default (never --no-cache)
+
+### Added - 2025-08-07 (v2.2.0 Integration)
+- PostInteraction v2.2.0 support with SimplifiedEscrowFactory
+- New utility modules:
+  - `postinteraction-v2.ts`: Extension data encoder for v2.2.0 format
+  - `token-approvals.ts`: Token approval manager for factory
+  - `postinteraction-events.ts`: Event monitoring for PostInteractionExecuted
+  - `postinteraction-errors.ts`: Comprehensive error handling with retry logic
+- Factory approval logic (resolver must approve factory for token transfers)
+- PostInteractionExecuted event monitoring and parsing
+- Automatic retry logic for recoverable PostInteraction failures
+- Coordination documentation for indexer team (`INDEXER_RESOLVER_COORDINATION_V2.2.md`)
+
+### Changed - 2025-08-07 (v2.2.0 Integration)  
+- Updated factory address to v2.2.0: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+- Refactored extension data encoding for new PostInteraction parameters
+- Enhanced alice implementations with proper v2.2.0 escrow parameters
+- Improved error handling with specific recovery strategies
+- Added dual approval system (both protocol and factory need approvals)
+
 ### Fixed - 2025-08-07
 - Resolved PrivateOrder error by setting makerTraits to 0 for public orders
 - Fixed MakingAmountTooLow error with correct takerTraits configuration  

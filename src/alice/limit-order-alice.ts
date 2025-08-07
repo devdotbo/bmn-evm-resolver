@@ -19,7 +19,14 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
-import { getContractAddresses } from "../config/contracts.ts";
+import { getContractAddresses, CREATE3_ADDRESSES } from "../config/contracts.ts";
+import { 
+  encodePostInteractionData, 
+  packTimelocks,
+  MAKER_TRAITS,
+  generateNonce,
+  type EscrowParams 
+} from "../utils/postinteraction-v2.ts";
 import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with { type: "json" };
 import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with { type: "json" };
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
@@ -154,38 +161,41 @@ export class LimitOrderAlice {
     await client.waitForTransactionReceipt({ hash: approveHash });
     console.log(`✅ Approval tx: ${approveHash}`);
 
-    // Calculate timelocks (current time + 1 hour for cancellation, 5 minutes for withdrawal)
-    const srcCancellationTimestamp = BigInt(Math.floor(Date.now() / 1000) + 3600);
-    const dstWithdrawalTimestamp = BigInt(Math.floor(Date.now() / 1000) + 300);
-    const timelocks = (srcCancellationTimestamp << 128n) | dstWithdrawalTimestamp;
+    // Calculate timelocks (1 hour for cancellation, 5 minutes for withdrawal)
+    const timelocks = packTimelocks(3600, 300);
+    
+    // Generate unique nonce for escrow creation
+    const nonce = generateNonce();
 
-    // Build the ExtraDataArgs for postInteraction
-    // This is what the factory's postInteraction expects
-    const extraDataArgs = encodeAbiParameters(
-      parseAbiParameters('bytes32 hashlockInfo, uint256 dstChainId, address dstToken, uint256 deposits, uint256 timelocks'),
-      [
-        hashlock,
-        BigInt(params.dstChainId),
-        DST_TOKEN as Address,
-        (params.dstSafetyDeposit || 0n) << 128n | (params.srcSafetyDeposit || 0n), // deposits packed
-        timelocks
-      ]
+    // Build escrow parameters for v2.2.0 PostInteraction
+    const escrowParams: EscrowParams = {
+      srcImplementation: CREATE3_ADDRESSES.ESCROW_SRC_IMPL,
+      dstImplementation: CREATE3_ADDRESSES.ESCROW_DST_IMPL,
+      timelocks: timelocks,
+      hashlock: hashlock as Hex,
+      srcMaker: this.account.address,
+      srcTaker: params.resolverAddress as Address, // Resolver will be the taker
+      srcToken: BMN_TOKEN,
+      srcAmount: params.srcAmount,
+      srcSafetyDeposit: params.srcSafetyDeposit || 0n,
+      dstReceiver: this.account.address, // Alice receives on destination
+      dstToken: DST_TOKEN,
+      dstAmount: params.dstAmount,
+      dstSafetyDeposit: params.dstSafetyDeposit || 0n,
+      nonce: nonce,
+    };
+
+    // Build the extension data for v2.2.0 PostInteraction
+    const extensionData = encodePostInteractionData(
+      ESCROW_FACTORY as Address,
+      escrowParams
     );
-
-    // Build the extension data for the order
-    // The extension should contain the factory address (20 bytes) + the extraDataArgs
-    const extensionData = concat([
-      ESCROW_FACTORY as Hex, // Factory address to call postInteraction on
-      extraDataArgs         // Data to pass to postInteraction
-    ]);
 
     // Create the limit order structure
     const salt = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
     
-    // Build maker traits - NO FLAGS means anyone can fill (public order)
-    // We don't set any restriction flags, making this a fully public order
-    // The extension data will be passed via fillOrderArgs' args parameter
-    const makerTraits = 0n; // Public order - anyone can fill
+    // Build maker traits with POST_INTERACTION flag enabled for v2.2.0
+    const makerTraits = MAKER_TRAITS.forPostInteraction();
 
     const order: LimitOrder = {
       salt: salt,

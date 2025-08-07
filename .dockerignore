@@ -1,0 +1,82 @@
+# Docker ignore file - excludes files from Docker build context
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Environment files (except example)
+.env
+.env.*
+!.env.example
+
+# Data directory (runtime data)
+data/
+logs/
+*.log
+
+# Node modules (if any)
+node_modules/
+
+# Documentation
+*.md
+docs/
+atomic-swap-docs/
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test files
+test/
+tests/
+*.test.ts
+*.spec.ts
+
+# Build artifacts
+dist/
+build/
+coverage/
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.orig
+*~
+backup-*.tar.gz
+
+# Docker files (not needed in build context)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Scripts that aren't needed in container
+scripts/
+init-docker.sh
+Makefile
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+tmp/
+
+# Cache (will be created in container)
+.deno/
+.cache/
+
+# Orders (runtime data)
+pending-orders/
+completed-orders/
+
+# Memory dumps
+memory/
+
+# Proposals and misc
+proposals/
+untitled folder/

@@ -8,8 +8,8 @@ export const PLACEHOLDER_ADDRESS: Address = "0x000000000000000000000000000000000
 
 // CREATE3-deployed contract addresses (deterministic across all chains)
 export const CREATE3_ADDRESSES = {
-  // UPDATED: Factory v2.1.0 addresses (secure with whitelist and pause features)
-  ESCROW_FACTORY_V2: (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") || "0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A") as Address, // CrossChainEscrowFactory v2.1.0 (SECURE)
+  // UPDATED: Factory v2.2.0 addresses (PostInteraction support)
+  ESCROW_FACTORY_V2: (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") || "0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68") as Address, // SimplifiedEscrowFactory v2.2.0 (PostInteraction)
   
   // Legacy factory addresses (INSECURE - TO BE DEPRECATED)
   ESCROW_FACTORY_V1_BASE: "0x2B2d52Cf0080a01f457A4f64F41cbca500f787b1" as Address, // v1.1.0 Base (INSECURE)
@@ -41,7 +41,7 @@ export const BMN_TOKEN_CONFIG = {
 
 // Export for convenience
 export const CONTRACT_ADDRESSES_EXPORTS = {
-  ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY_V2, // Updated to v2.1.0
+  ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY_V2, // Updated to v2.2.0
   BMN_TOKEN: CREATE3_ADDRESSES.BMN_TOKEN,
   RESOLVER_FACTORY: CREATE3_ADDRESSES.RESOLVER_FACTORY,
   // Limit Order Protocol addresses

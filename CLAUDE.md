@@ -1,3 +1,129 @@
+# 🐳 DOCKER INFRASTRUCTURE
+
+## Quick Start
+
+```bash
+# First-time setup
+./init-docker.sh
+
+# Start all services (ALWAYS rebuild and show logs without following)
+docker-compose up -d --build && docker-compose logs
+
+# Stop all services
+docker-compose down
+```
+
+## Architecture
+
+The BMN resolver system uses Docker Compose for orchestration with the following services:
+
+### Core Services
+- **resolver**: Main coordination service (port 8000)
+- **alice**: Swap initiator service (port 8001)
+- **bob**: Swap acceptor/taker service (port 8002)
+
+### Supporting Services
+- **redis**: Distributed caching and pub/sub (port 6379)
+- **prometheus**: Metrics collection (port 9090)
+- **grafana**: Visualization dashboards (port 3000)
+
+## Data Persistence
+
+All services share a `./data` directory for persistent storage:
+```
+data/
+├── secrets/      # Secret storage (encrypted keys, credentials)
+├── orders/       # Pending order storage
+├── logs/         # Application logs
+├── cache/        # Deno cache directory
+├── kv/          # Deno KV databases
+├── redis/       # Redis persistence
+├── prometheus/  # Metrics data
+└── grafana/     # Dashboard configurations
+```
+
+## Docker Commands
+
+```bash
+# Build and start services (STANDARD COMMAND - ALWAYS USE THIS)
+docker-compose up -d --build && docker-compose logs
+
+# Build images (with cache - default)
+docker-compose build
+
+# Start services without rebuild
+docker-compose up -d
+
+# View logs (without following)
+docker-compose logs [service-name]
+
+# Restart specific service
+docker-compose restart resolver
+
+# Execute command in container
+docker-compose exec resolver deno task test
+
+# View service status
+docker-compose ps
+
+# Clean everything
+docker-compose down -v && rm -rf data/
+```
+
+## Environment Configuration
+
+Create `.env` from `.env.example`:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+## Development Workflow
+
+1. **Local Development**: Edit code locally
+2. **Rebuild & Start**: `docker-compose up -d --build && docker-compose logs`
+3. **Check Service Logs**: `docker-compose logs [service]`
+4. **Restart Specific Service**: `docker-compose restart [service]`
+
+## Monitoring
+
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Service Health**: 
+  - Resolver: http://localhost:8000/health
+  - Alice: http://localhost:8001/health
+  - Bob: http://localhost:8002/health
+
+## Docker Build Optimization
+
+All Dockerfiles use multi-stage builds for:
+- Efficient caching (dependencies cached separately)
+- Smaller final images (only runtime requirements)
+- Security (non-root user execution)
+- Signal handling (tini for proper shutdown)
+
+**IMPORTANT**: Never use `--no-cache` in builds unless absolutely necessary. Cache usage is critical for fast rebuilds.
+
+## Troubleshooting
+
+```bash
+# Check container health
+docker-compose ps
+
+# View detailed logs
+docker-compose logs --tail=100 resolver
+
+# Access container shell
+docker-compose exec resolver sh
+
+# Reset everything
+docker-compose down -v
+rm -rf data/
+./init-docker.sh
+```
+
+---
+
 # 📝 CHANGELOG MAINTENANCE
 
 **IMPORTANT**: Always update CHANGELOG.md when making significant changes to the codebase. Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format. Document all notable changes under the [Unreleased] section including:

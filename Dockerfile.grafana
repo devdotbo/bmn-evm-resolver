@@ -1,0 +1,8 @@
+FROM grafana/grafana:latest
+
+# Copy provisioning configurations as root
+USER root
+COPY --chown=472:0 grafana-provisioning /etc/grafana/provisioning
+
+# Switch back to grafana user (uid 472)
+USER 472
