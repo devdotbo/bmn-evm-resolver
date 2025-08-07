@@ -202,29 +202,29 @@ class MigrationChecklist {
       check: async () => {
         try {
           await import("../src/utils/factory-security.ts");
-          await import("../src/resolver/base-resolver.ts");
+          await import("../src/resolver/resolver.ts");
           return true;
         } catch {
           return false;
         }
       },
       critical: true,
-      help: "Ensure factory-security.ts and base-resolver.ts exist",
+      help: "Ensure factory-security.ts and resolver.ts exist",
     });
 
     this.items.push({
       category: "Implementation",
-      task: "Error handling for security reverts",
+      task: "Unified resolver implementation",
       check: async () => {
         try {
-          const module = await import("../src/resolver/base-resolver.ts");
-          return !!(module.NotWhitelistedError && module.FactoryPausedError);
+          const module = await import("../src/resolver/resolver.ts");
+          return !!(module.UnifiedResolver);
         } catch {
           return false;
         }
       },
       critical: true,
-      help: "Implement NotWhitelistedError and FactoryPausedError classes",
+      help: "Ensure UnifiedResolver class is properly implemented",
     });
 
     // Scripts and tools
