@@ -1,5 +1,5 @@
 import type { Chain } from "viem";
-import { baseMainnet, etherlinkMainnet } from "./chains.ts";
+import { baseMainnet, optimismMainnet } from "./chains.ts";
 import { CREATE3_ADDRESSES } from "./contracts.ts";
 import { SAFETY_DEPOSIT_ETH } from "./constants.ts";
 
@@ -11,18 +11,20 @@ export const MAINNET_CONFIG = {
   BASE: {
     chainId: 8453,
     chain: baseMainnet,
-    rpcUrl: Deno.env.get("BASE_RPC_URL") || "https://mainnet.base.org",
-    wsUrl: Deno.env.get("BASE_WS_URL") || "wss://base-mainnet.g.alchemy.com/v2/{your-api-key}",
+    rpcUrl: Deno.env.get("BASE_RPC_URL") || `https://rpc.ankr.com/base/${Deno.env.get("ANKR_API_KEY") || ""}`,
+    wsUrl: Deno.env.get("BASE_WS_URL") || `wss://rpc.ankr.com/base/ws/${Deno.env.get("ANKR_API_KEY") || ""}`,
     explorer: "https://basescan.org",
+    deploymentBlock: parseInt(Deno.env.get("BASE_DEPLOYMENT_BLOCK") || "33809842"),
   },
   
-  // Etherlink Mainnet (destination chain for normal flow)
-  ETHERLINK: {
-    chainId: 42793,
-    chain: etherlinkMainnet,
-    rpcUrl: Deno.env.get("ETHERLINK_RPC_URL") || "https://node.mainnet.etherlink.com",
-    wsUrl: Deno.env.get("ETHERLINK_WS_URL") || "wss://node.mainnet.etherlink.com",
-    explorer: "https://explorer.etherlink.com",
+  // Optimism Mainnet (destination chain for normal flow)
+  OPTIMISM: {
+    chainId: 10,
+    chain: optimismMainnet,
+    rpcUrl: Deno.env.get("OPTIMISM_RPC_URL") || `https://rpc.ankr.com/optimism/${Deno.env.get("ANKR_API_KEY") || ""}`,
+    wsUrl: Deno.env.get("OPTIMISM_WS_URL") || `wss://rpc.ankr.com/optimism/ws/${Deno.env.get("ANKR_API_KEY") || ""}`,
+    explorer: "https://optimistic.etherscan.io",
+    deploymentBlock: parseInt(Deno.env.get("OPTIMISM_DEPLOYMENT_BLOCK") || "139404873"),
   },
   
   // Contract addresses (same on both chains via CREATE3)
@@ -35,6 +37,9 @@ export const MAINNET_CONFIG = {
     
     // BMN Token (same on both chains via CREATE3)
     bmnToken: CREATE3_ADDRESSES.BMN_TOKEN,
+    
+    // Resolver Factory
+    resolverFactory: CREATE3_ADDRESSES.RESOLVER_FACTORY,
   },
   
   // Timelock configuration (in seconds)
@@ -70,18 +75,18 @@ export function getMainnetChains(reverse = false): {
 } {
   if (reverse) {
     return {
-      srcChainId: MAINNET_CONFIG.ETHERLINK.chainId,
+      srcChainId: MAINNET_CONFIG.OPTIMISM.chainId,
       dstChainId: MAINNET_CONFIG.BASE.chainId,
-      srcChain: etherlinkMainnet,
+      srcChain: optimismMainnet,
       dstChain: baseMainnet,
     };
   }
   
   return {
     srcChainId: MAINNET_CONFIG.BASE.chainId,
-    dstChainId: MAINNET_CONFIG.ETHERLINK.chainId,
+    dstChainId: MAINNET_CONFIG.OPTIMISM.chainId,
     srcChain: baseMainnet,
-    dstChain: etherlinkMainnet,
+    dstChain: optimismMainnet,
   };
 }
 

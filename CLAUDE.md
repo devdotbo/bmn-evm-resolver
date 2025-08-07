@@ -1,101 +1,472 @@
-# CLAUDE.md
+# 🐳 DOCKER INFRASTRUCTURE
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Quick Start
 
-## Project Overview
-
-Bridge-Me-Not Resolver - A cross-chain atomic swap resolver implementation using viem and Deno for the 1inch cross-chain-swap protocol.
-
-## Key Commands
-
-### Development Tasks
 ```bash
-# Start the resolver (Bob - liquidity provider)
-deno task resolver:start
+# First-time setup
+./init-docker.sh
 
-# Check resolver status
-deno task resolver:status
+# Start all services (ALWAYS rebuild and show logs without following)
+docker-compose up -d --build && docker-compose logs
 
-# Create an order (Alice - test client)
-deno task alice:create-order --amount 100 --token-a TKA --token-b TKB
-
-# List Alice's orders
-deno task alice:list-orders
-
-# Withdraw from an order
-deno task alice:withdraw --order-id <id>
-
-# Development mode with file watching
-deno task dev
+# Stop all services
+docker-compose down
 ```
 
-### Before Running
-1. Start the EVM chains in the bmn-evm-contracts directory:
+## Architecture
+
+The BMN resolver system uses Docker Compose for orchestration with the following services:
+
+### Core Services
+- **resolver**: Main coordination service (port 8000)
+- **alice**: Swap initiator service (port 8001)
+- **bob**: Swap acceptor/taker service (port 8002)
+
+### Supporting Services
+- None (monitoring stack removed; use service health endpoints).
+
+## Data Persistence
+
+All services share a `./data` directory for persistent storage:
+```
+data/
+├── secrets/      # Secret storage (encrypted keys, credentials)
+├── orders/       # Pending order storage
+├── logs/         # Application logs
+├── cache/        # Deno cache directory
+└── kv/           # Deno KV databases
+```
+
+## Docker Commands
+
+```bash
+# Build and start services (STANDARD COMMAND - ALWAYS USE THIS)
+docker-compose up -d --build && docker-compose logs
+
+# Build images (with cache - default)
+docker-compose build
+
+# Start services without rebuild
+docker-compose up -d
+
+# View logs (without following)
+docker-compose logs [service-name]
+
+# Restart specific service
+docker-compose restart resolver
+
+# Execute command in container
+docker-compose exec resolver deno task test
+
+# View service status
+docker-compose ps
+
+# Clean everything
+docker-compose down -v && rm -rf data/
+```
+
+## Environment Configuration
+
+Create `.env` from `.env.example`:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+## Development Workflow
+
+1. **Local Development**: Edit code locally
+2. **Rebuild & Start**: `docker-compose up -d --build && docker-compose logs`
+3. **Check Service Logs**: `docker-compose logs [service]`
+4. **Restart Specific Service**: `docker-compose restart [service]`
+
+## Monitoring
+
+- **Service Health**:
+  - Resolver: http://localhost:8000/health
+  - Alice: http://localhost:8001/health
+  - Bob: http://localhost:8002/health
+
+## Docker Build Optimization
+
+All Dockerfiles use multi-stage builds for:
+- Efficient caching (dependencies cached separately)
+- Smaller final images (only runtime requirements)
+- Security (non-root user execution)
+- Signal handling (tini for proper shutdown)
+
+**IMPORTANT**: Never use `--no-cache` in builds unless absolutely necessary. Cache usage is critical for fast rebuilds.
+
+## Troubleshooting
+
+```bash
+# Check container health
+docker-compose ps
+
+# View detailed logs
+docker-compose logs --tail=100 resolver
+
+# Access container shell
+docker-compose exec resolver sh
+
+# Reset everything
+docker-compose down -v
+rm -rf data/
+./init-docker.sh
+```
+
+---
+
+# 📝 CHANGELOG MAINTENANCE
+
+**IMPORTANT**: Always update CHANGELOG.md when making significant changes to the codebase. Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format. Document all notable changes under the [Unreleased] section including:
+- Added (new features)
+- Changed (changes in existing functionality)
+- Deprecated (soon-to-be removed features)
+- Removed (removed features)
+- Fixed (bug fixes)
+- Security (vulnerability fixes)
+
+# 🔧 ABI INSPECTION TOOL
+
+**Use `abi2human` to efficiently read Ethereum ABIs without consuming excessive tokens:**
+
+```bash
+# Quick ABI inspection (human-readable)
+abi2human contract.json -o
+
+# Ultra-compact format (minimal tokens)
+abi2human contract.json -oc
+
+# Raw text format (most readable)
+abi2human contract.json -or
+
+# Check function signatures in an ABI
+abi2human abis/CrossChainEscrowFactoryV2.json -oc
+
+# Batch convert all ABIs for inspection
+abi2human ./abis/ -d ./readable/
+```
+
+This tool is essential when you need to:
+- Verify ABI functions match what you're calling
+- Check if specific functions exist (like whitelist, pause, etc.)
+- Compare different ABI versions
+- Understand contract interfaces quickly
+
+# 📊 BMN INDEXER EVENT MONITORING
+
+**Check indexed blockchain events and system status:**
+
+```bash
+# Check all indexed events from bmn-evm-contracts-indexer
+make -C ../bmn-evm-contracts-indexer check-events
+
+# This command displays:
+# - Event counts by table (BMN transfers, holders, approvals, limit orders, etc.)
+# - Recent BMN token transfers with chain, addresses, amounts, and blocks
+# - Top BMN token holders across chains
+# - Limit order details and status
+# - System status including active chains, total event tables, and database size
+```
+
+This command is useful for:
+- Monitoring BMN token activity across chains
+- Tracking limit order status
+- Verifying indexer is capturing events correctly
+- Getting a quick overview of system metrics
+
+# 🔄 POSTINTERACTION INTEGRATION STATUS
+
+**Critical Issue**: SimplifiedEscrowFactory on mainnet lacks IPostInteraction interface
+**Solution**: Contract has been updated in bmn-evm-contracts repository with postInteraction method
+**Status**: Ready for deployment
+
+Key changes made:
+1. SimplifiedEscrowFactory now implements IPostInteraction interface
+2. postInteraction method added to handle escrow creation after order fills
+3. Token flow fixed: transfers from resolver to escrow after protocol execution
+
+See `LIMIT_ORDER_POSTINTERACTION_ISSUE.md` for technical details.
+See `../bmn-evm-contracts/POSTINTERACTION_INTEGRATION_PLAN.md` for implementation guide.
+
+# 🔒 CRITICAL SECURITY GUIDELINES - PREVENT SECRET EXPOSURE
+
+## ⚠️ MANDATORY PRE-COMMIT SECURITY SCAN
+
+**ALWAYS run these commands BEFORE any commit or code changes:**
+
+```bash
+# Quick security scan - RUN THIS FIRST!
+./scripts/security-check.sh 2>/dev/null || (
+  echo "=== Running manual security scan ==="
+  
+  # 1. Check for private keys in staged files
+  git diff --cached | grep -E "0x[a-fA-F0-9]{64}" | grep -v "0x0000000000000000000000000000000000000000" && echo "❌ PRIVATE KEY DETECTED!" || echo "✅ No private keys in staged files"
+  
+  # 2. Check for API keys
+  git diff --cached | grep -E "(api[_-]?key|apikey|api_secret|access[_-]?token|auth[_-]?token|bearer|secret)[\s]*[=:]\s*['\"]?[a-zA-Z0-9_\-\/\+]{20,}" && echo "❌ API KEY DETECTED!" || echo "✅ No API keys in staged files"
+  
+  # 3. Check environment files
+  git diff --cached --name-only | grep -E "\.env" && echo "⚠️ WARNING: .env file in commit! Verify it's an example file only"
+  
+  # 4. Final verification
+  echo "=== Checking all staged files for secrets ==="
+  git diff --cached --name-only | while read f; do 
+    git show ":$f" 2>/dev/null | grep -E "[a-fA-F0-9]{32,64}|0x[a-fA-F0-9]{64}" | grep -v "0x0000000000000000000000000000000000000000\|your_.*_here\|YOUR_.*_HERE" && echo "⚠️ Potential secret in $f"
+  done
+)
+```
+
+## 🚨 SECRET PATTERNS TO DETECT
+
+### High Priority Patterns (NEVER commit these):
+```regex
+# Ethereum Private Keys
+0x[a-fA-F0-9]{64}
+
+# API Keys (generic)
+[a-zA-Z0-9_\-]{32,}  # When preceded by "key", "token", "secret"
+
+# Ankr API Keys
+[a-fA-F0-9]{64}  # When after ankr.com/
+
+# AWS Keys
+AKIA[0-9A-Z]{16}
+
+# GitHub Tokens
+gh[psr]_[0-9a-zA-Z]{36,}
+
+# Mnemonic Phrases
+\b(abandon|ability|able|about|above|absent|absorb|abstract|absurd|abuse|access|accident|account|accuse|achieve|acid|acoustic|acquire|across|act|action|actor|actress|actual|adapt|add|addict|address|adjust|admit|adult|advance|advice|aerobic|affair|afford|afraid|again|age|agent|agree|ahead|aim|air|airport|aisle|alarm|album|alcohol|alert|alien|all|alley|allow|almost|alone|alpha|already|also|alter|always|amateur|amazing|among|amount|amused|analyst|anchor|ancient|anger|angle|angry|animal|ankle|announce|annual|another|answer|antenna|antique|anxiety|any|apart|apology|appear|apple|approve|april|arch|arctic|area|arena|argue|arm|armed|armor|army|around|arrange|arrest|arrive|arrow|art|artefact|artist|artwork|ask|aspect|assault|asset|assist|assume|asthma|athlete|atom|attack|attend|attitude|attract|auction|audit|august|aunt|author|auto|autumn|average|avocado|avoid|awake|aware)\s+){11,24}
+```
+
+### Safe Patterns (OK to commit):
+- Anvil/Hardhat test keys: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+- Zero addresses: `0x0000000000000000000000000000000000000000`
+- Contract addresses (40 hex chars): `0x[a-fA-F0-9]{40}`
+- Placeholders: `your_*_here`, `YOUR_*_HERE`, empty strings
+
+## 📋 PRE-COMMIT CHECKLIST
+
+Before EVERY commit, verify:
+
+1. **Run security scan** (command above)
+2. **Check files being committed:**
    ```bash
-   ./scripts/multi-chain-setup.sh
+   git status
+   git diff --cached --name-only
    ```
-2. Chains run on:
-   - Chain A: http://localhost:8545 (ID: 1337)
-   - Chain B: http://localhost:8546 (ID: 1338)
 
-## Architecture Overview
+3. **Verify .env files:**
+   ```bash
+   # Ensure .env is NOT being committed
+   git diff --cached --name-only | grep "^\.env$" && echo "❌ STOP! .env file staged!" || echo "✅ .env not staged"
+   
+   # Check .env.example only has placeholders
+   git diff --cached -- .env.example | grep -E "=[a-fA-F0-9]{32,}" && echo "⚠️ Check .env.example for real values"
+   ```
 
-The system implements a trustless cross-chain swap protocol with two main actors:
+4. **Scan TypeScript/JavaScript files:**
+   ```bash
+   git diff --cached --name-only | grep -E "\.(ts|js|tsx|jsx)$" | while read f; do
+     git show ":$f" | grep -E "=\s*['\"]0x[a-fA-F0-9]{64}['\"]" && echo "⚠️ Hardcoded key in $f"
+   done
+   ```
 
-### Components
-- **Bob (Resolver)**: Liquidity provider that monitors orders, deploys destination escrows, and executes swaps
-- **Alice (Test Client)**: Creates orders and withdraws funds by revealing secrets
+5. **Check configuration files:**
+   ```bash
+   git diff --cached --name-only | grep -E "\.(json|yaml|yml|toml)$" | while read f; do
+     git show ":$f" | grep -E "\"(key|token|secret|password)\":\s*\"[^\"]{20,}\"" && echo "⚠️ Check $f for secrets"
+   done
+   ```
 
-### Flow
-1. Alice creates an order with a hashlock on the source chain
-2. Bob monitors for profitable orders and deploys a matching escrow on the destination chain
-3. Alice withdraws from the destination escrow, revealing the secret
-4. Bob uses the revealed secret to claim funds from the source escrow
+## 🔍 REGULAR SECURITY AUDITS
 
-### Contract Interaction
-The resolver interacts with Bridge-Me-Not EVM contracts:
-- `EscrowFactory`: Deploys escrow contracts on both chains
-- `EscrowSrc`: Source chain escrow holding Alice's tokens
-- `EscrowDst`: Destination chain escrow holding Bob's tokens
-- `LimitOrderProtocol`: Manages order creation on source chain
+Run these commands weekly or before major commits:
 
-### Key Implementation Files
-- `src/resolver/`: Bob's monitoring and execution logic
-- `src/alice/`: Alice's order creation and withdrawal logic
-- `src/config/chains.ts`: Chain configurations and test accounts
-- `abis/`: Contract ABIs from bmn-evm-contracts
-
-### Security Model
-- Uses hashlocks for atomic swaps (secret reveal mechanism)
-- Timelocks ensure funds can be recovered if counterparty fails
-- Safety deposits protect against griefing attacks
-
-## Security Principles
-
-**The key principle: Never hardcode sensitive data, even for test environments. Always use environment variables to maintain good security practices.**
-
-### Configuration Management
-- All sensitive configuration (private keys, API keys, contract addresses) must be stored in `.env` files
-- Use `.env.example` as a template - it contains safe default values for local development
-- The `.env` file is gitignored to prevent accidental commits of sensitive data
-- Even test private keys should only be defined in environment files, not in source code
-
-### Best Practices
-1. Copy `.env.example` to `.env` before running the application
-2. Modify values in `.env` as needed for your environment
-3. Never commit `.env` files to version control
-4. For production deployments, use secure secret management systems
-5. Always validate that sensitive values are loaded from environment variables, not hardcoded
-
-### Environment Setup
-Run the setup script to automatically create your `.env` file from the template:
+### Full Repository Scan
 ```bash
-./scripts/setup-env.sh
+# Complete security audit
+echo "=== Starting Full Security Audit ==="
+
+# 1. Check git history for secrets
+echo "Scanning git history..."
+git log --all -p | grep -E "(api[_-]?key|secret|token|password|private[_-]?key).*=.*['\"]?[a-zA-Z0-9_\-]{20,}" | head -10
+
+# 2. Check for private keys in history
+git log --all -p | grep -E "0x[a-fA-F0-9]{64}" | grep -v "0x0000000000000000000000000000000000000000" | head -10
+
+# 3. Scan current files
+find . -type f \( -name "*.ts" -o -name "*.js" -o -name "*.json" -o -name "*.env*" \) -not -path "./node_modules/*" -not -path "./.git/*" -exec grep -l "[a-fA-F0-9]{32,64}" {} \;
+
+# 4. Check .gitignore
+grep -E "\.env|\.key|\.pem|secret|private" .gitignore || echo "⚠️ Update .gitignore!"
 ```
 
-## Important Notes
+## 🛡️ PREVENTIVE MEASURES
 
-- Uses Anvil test accounts loaded from environment variables (see `.env.example` for local development defaults)
-- Private keys in `.env.example` are standard Anvil test keys - only use these for local development
-- Timelocks are shortened for demo purposes (5-20 minutes)
-- Currently configured for mock tokens (TKA, TKB) on local test chains
+### 1. Environment Variable Best Practices
+```typescript
+// ❌ NEVER DO THIS
+const apiKey = "c24c691d7aaa31977e3454a97a599f261ad7e9b0a4fd750503167ab6db1293e9";
+
+// ✅ ALWAYS DO THIS
+const apiKey = Deno.env.get("ANKR_API_KEY");
+if (!apiKey) throw new Error("ANKR_API_KEY not set");
+```
+
+### 2. Required .gitignore Entries
+```gitignore
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Private keys
+*.key
+*.pem
+*.p12
+*.pfx
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+
+# Secrets
+secrets/
+.secrets/
+credentials/
+**/secrets.json
+**/credentials.json
+```
+
+### 3. Pre-commit Hook Installation
+```bash
+# Install pre-commit hook
+cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+echo "🔒 Running security scan..."
+
+# Check for private keys
+if git diff --cached | grep -qE "0x[a-fA-F0-9]{64}" | grep -v "0x0000000000000000000000000000000000000000"; then
+  echo "❌ ERROR: Private key detected in staged files!"
+  echo "Run: git diff --cached | grep -E '0x[a-fA-F0-9]{64}'"
+  exit 1
+fi
+
+# Check for API keys
+if git diff --cached | grep -qE "api[_-]?key.*=.*[a-zA-Z0-9]{32,}"; then
+  echo "❌ ERROR: API key detected in staged files!"
+  exit 1
+fi
+
+echo "✅ Security scan passed"
+EOF
+chmod +x .git/hooks/pre-commit
+```
+
+## 🚨 EMERGENCY: IF SECRETS ARE EXPOSED
+
+If you accidentally commit secrets:
+
+### 1. Immediate Actions
+```bash
+# DO NOT PUSH! If already pushed, consider the key compromised
+
+# Reset the commit (if not pushed)
+git reset --soft HEAD~1
+
+# Remove the file from staging
+git reset HEAD <file-with-secret>
+```
+
+### 2. Clean Git History (if pushed)
+```bash
+# Install BFG Repo-Cleaner
+brew install bfg
+
+# Create secrets.txt with the exposed secrets
+echo "YOUR_EXPOSED_SECRET" > secrets.txt
+
+# Clean the repository
+bfg --replace-text secrets.txt
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+
+# Force push (coordinate with team!)
+git push --force
+```
+
+### 3. Rotate All Exposed Credentials
+- Generate new API keys immediately
+- Update all services using the old keys
+- Monitor for unauthorized usage
+
+## 📊 AUTOMATED SCANNING SCRIPT
+
+Create `scripts/security-check.sh`:
+```bash
+#!/bin/bash
+set -e
+
+echo "🔒 Security Check Starting..."
+
+ERRORS=0
+
+# Check staged files for secrets
+if git diff --cached | grep -qE "0x[a-fA-F0-9]{64}|api[_-]?key.*=.*[a-zA-Z0-9]{32,}"; then
+  echo "❌ Secrets detected in staged files!"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# Check for .env in staging
+if git diff --cached --name-only | grep -q "^\.env$"; then
+  echo "❌ .env file is staged!"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# Verify .gitignore
+if ! grep -q "^\.env$" .gitignore; then
+  echo "⚠️ .env not in .gitignore!"
+  ERRORS=$((ERRORS + 1))
+fi
+
+if [ $ERRORS -eq 0 ]; then
+  echo "✅ All security checks passed!"
+  exit 0
+else
+  echo "❌ Security check failed with $ERRORS errors"
+  exit 1
+fi
+```
+
+## 🎯 QUICK COMMANDS
+
+```bash
+# Before ANY commit
+git diff --cached | grep -E "0x[a-fA-F0-9]{64}|[a-zA-Z0-9_\-]{32,64}"
+
+# Check specific file
+grep -E "private|secret|key|token|password" <filename>
+
+# Scan entire repo
+find . -type f -exec grep -l "0x[a-fA-F0-9]{64}" {} \; 2>/dev/null
+
+# Check git history
+git log --all -p | grep -E "secret|private|token|key|password"
+```
+
+## ⚡ REMEMBER
+
+1. **NEVER** commit real private keys or API keys
+2. **ALWAYS** use environment variables for sensitive data
+3. **RUN** security scan before EVERY commit
+4. **CHECK** .env.example contains only placeholders
+5. **VERIFY** .gitignore includes all sensitive file patterns
+6. **ROTATE** any accidentally exposed credentials immediately
+
+---
+Last Security Audit: 2025-01-06
+Next Scheduled Audit: Weekly

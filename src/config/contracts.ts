@@ -8,11 +8,26 @@ export const PLACEHOLDER_ADDRESS: Address = "0x000000000000000000000000000000000
 
 // CREATE3-deployed contract addresses (deterministic across all chains)
 export const CREATE3_ADDRESSES = {
-  ESCROW_FACTORY: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory
-  BMN_TOKEN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token
+  // UPDATED: Factory v2.2.0 addresses (PostInteraction support)
+  ESCROW_FACTORY_V2: (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") || "0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68") as Address, // SimplifiedEscrowFactory v2.2.0 (PostInteraction)
+  
+  // Legacy factory addresses (INSECURE - TO BE DEPRECATED)
+  ESCROW_FACTORY_V1_BASE: "0x2B2d52Cf0080a01f457A4f64F41cbca500f787b1" as Address, // v1.1.0 Base (INSECURE)
+  ESCROW_FACTORY_V1_OPTIMISM: "0xB916C3edbFe574fFCBa688A6B92F72106479bD6c" as Address, // v1.1.0 Optimism (INSECURE)
+  
+  BMN_TOKEN: (Deno.env.get("MAINNET_BMN_TOKEN") || "0x8287CD2aC7E227D9D927F998EB600a0683a832A1") as Address, // BMN Token
+  RESOLVER_FACTORY: (Deno.env.get("MAINNET_RESOLVER_FACTORY") || "0xe767202fD26104267CFD8bD8cfBd1A44450DC343") as Address, // Resolver Factory
+  
+  // Limit Order Protocol addresses (from bmn-evm-contracts-limit-order)
+  LIMIT_ORDER_PROTOCOL_OPTIMISM: "0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7" as Address,
+  LIMIT_ORDER_PROTOCOL_BASE: "0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06" as Address,
+  
   // Implementation addresses (for reference)
-  ESCROW_SRC_IMPL: "0x77CC1A51dC5855bcF0d9f1c1FceaeE7fb855a535" as Address,
-  ESCROW_DST_IMPL: "0x36938b7899A17362520AA741C0E0dA0c8EfE5e3b" as Address,
+  ESCROW_SRC_IMPL: (Deno.env.get("MAINNET_ESCROW_SRC_IMPL") || "0x77CC1A51dC5855bcF0d9f1c1FceaeE7fb855a535") as Address,
+  ESCROW_DST_IMPL: (Deno.env.get("MAINNET_ESCROW_DST_IMPL") || "0x36938b7899A17362520AA741C0E0dA0c8EfE5e3b") as Address,
+  
+  // Old v1 factory (deprecated)
+  FACTORY_V1: (Deno.env.get("OLD_FACTORY_V1") || "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1") as Address, // v1 factory (deprecated)
 } as const;
 
 // BMN Token configuration
@@ -26,8 +41,12 @@ export const BMN_TOKEN_CONFIG = {
 
 // Export for convenience
 export const CONTRACT_ADDRESSES_EXPORTS = {
-  ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY,
+  ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY_V2, // Updated to v2.2.0
   BMN_TOKEN: CREATE3_ADDRESSES.BMN_TOKEN,
+  RESOLVER_FACTORY: CREATE3_ADDRESSES.RESOLVER_FACTORY,
+  // Limit Order Protocol addresses
+  LIMIT_ORDER_PROTOCOL_OPTIMISM: CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM,
+  LIMIT_ORDER_PROTOCOL_BASE: CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE,
 } as const;
 
 // Contract addresses for each chain
@@ -56,20 +75,20 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   
   // Base Mainnet
   8453: {
-    escrowFactory: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory - CREATE3 deterministic address
-    limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
+    escrowFactory: (Deno.env.get("BASE_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // CrossChainEscrowFactory v2.1.0 (SECURE)
+    limitOrderProtocol: (Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL") || CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE) as Address, // SimpleLimitOrderProtocol (deployed)
     tokens: {
-      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
+      BMN: (Deno.env.get("BASE_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
       // Add other tokens as needed
     },
   },
   
-  // Etherlink Mainnet
-  42793: {
-    escrowFactory: "0x75ee15F6BfDd06Aee499ed95e8D92a114659f4d1" as Address, // CrossChainEscrowFactory - CREATE3 deterministic address (same on both chains)
-    limitOrderProtocol: PLACEHOLDER_ADDRESS, // To be configured when deployed
+  // Optimism Mainnet
+  10: {
+    escrowFactory: (Deno.env.get("OPTIMISM_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // CrossChainEscrowFactory v2.1.0 (SECURE)
+    limitOrderProtocol: (Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL") || CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM) as Address, // SimpleLimitOrderProtocol (deployed)
     tokens: {
-      BMN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
+      BMN: (Deno.env.get("OPTIMISM_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
       // Add other tokens as needed
     },
   },
@@ -126,7 +145,7 @@ export function areContractsConfigured(chainId: number): boolean {
   if (!addresses) return false;
   
   // For mainnet chains, we only need escrowFactory and tokens
-  const isMainnet = chainId === 8453 || chainId === 42793;
+  const isMainnet = chainId === 8453 || chainId === 10;
   
   if (isMainnet) {
     return (
@@ -193,25 +212,25 @@ export function loadContractAddressesFromEnv(): void {
   
   if (baseFactory || baseProtocol || baseBMN) {
     updateContractAddresses(8453, {
-      escrowFactory: (baseFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY,
-      limitOrderProtocol: (baseProtocol as Address) || PLACEHOLDER_ADDRESS,
+      escrowFactory: (baseFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
+      limitOrderProtocol: (baseProtocol as Address) || CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE,
       tokens: {
         BMN: (baseBMN as Address) || CREATE3_ADDRESSES.BMN_TOKEN,
       },
     });
   }
   
-  // Etherlink Mainnet addresses
-  const etherlinkFactory = Deno.env.get("ETHERLINK_ESCROW_FACTORY");
-  const etherlinkProtocol = Deno.env.get("ETHERLINK_LIMIT_ORDER_PROTOCOL");
-  const etherlinkBMN = Deno.env.get("ETHERLINK_TOKEN_BMN");
+  // Optimism Mainnet addresses
+  const optimismFactory = Deno.env.get("OPTIMISM_ESCROW_FACTORY");
+  const optimismProtocol = Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL");
+  const optimismBMN = Deno.env.get("OPTIMISM_TOKEN_BMN");
   
-  if (etherlinkFactory || etherlinkProtocol || etherlinkBMN) {
-    updateContractAddresses(42793, {
-      escrowFactory: (etherlinkFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY,
-      limitOrderProtocol: (etherlinkProtocol as Address) || PLACEHOLDER_ADDRESS,
+  if (optimismFactory || optimismProtocol || optimismBMN) {
+    updateContractAddresses(10, {
+      escrowFactory: (optimismFactory as Address) || CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
+      limitOrderProtocol: (optimismProtocol as Address) || CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM,
       tokens: {
-        BMN: (etherlinkBMN as Address) || CREATE3_ADDRESSES.BMN_TOKEN,
+        BMN: (optimismBMN as Address) || CREATE3_ADDRESSES.BMN_TOKEN,
       },
     });
   }

@@ -1,33 +1,17 @@
 {
   "tasks": {
-    "dev": "deno run --watch main.ts",
-    "resolver:start": "deno run --allow-net --allow-read --allow-write --allow-env --env-file src/resolver/index.ts",
-    "resolver:status": "deno run --allow-net --allow-read --allow-env --env-file src/resolver/status.ts",
-    "alice:create-order": "deno run --allow-net --allow-read --allow-write --allow-env --env-file src/alice/create-order.ts",
-    "alice:list-orders": "deno run --allow-net --allow-read --allow-env --env-file src/alice/list-orders.ts",
-    "alice:withdraw": "deno run --allow-net --allow-read --allow-write --allow-env --env-file src/alice/withdraw.ts",
-    "state:sync": "deno run --allow-read --allow-write --allow-env src/utils/state-sync.ts",
-    "state:watch": "deno run --allow-read --allow-write --allow-env src/utils/state-sync.ts --watch",
-    "mprocs": "./scripts/run-mprocs.sh",
-    "demo": "./scripts/run-mprocs.sh",
-    "mainnet:resolver": "./scripts/run-mainnet-resolver.sh",
-    "mainnet:check-balances": "./scripts/check-mainnet-balances.sh",
-    "mainnet:create-order": "deno run --allow-net --allow-read --allow-write --allow-env --env-file scripts/create-mainnet-order.ts",
-    "mainnet:create-order-reverse": "deno run --allow-net --allow-read --allow-write --allow-env --env-file scripts/create-mainnet-order-reverse.ts",
-    "test:integration": "./scripts/test-flow.sh",
-    "test:setup": "deno run --allow-all scripts/setup-test-environment.ts",
-    "test:flow": "deno run --allow-all scripts/integration-test-flow.ts"
+    "resolver": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env run-resolver.ts",
+    "resolver:test": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env test-resolver.ts",
+    "alice": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env alice.ts",
+    "resolver:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv run-resolver.ts",
+    "resolver:test:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv test-resolver.ts",
+    "alice:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv alice.ts"
   },
   "imports": {
-    "@std/assert": "jsr:@std/assert@1",
     "viem": "npm:viem@^2.21.0",
-    "viem/chains": "npm:viem@^2.21.0/chains",
     "viem/accounts": "npm:viem@^2.21.0/accounts",
-    "@ponder/client": "npm:@ponder/client@^0.4.0"
-  },
-  "compilerOptions": {
-    "allowJs": true,
-    "strict": true,
-    "lib": ["deno.window", "dom", "deno.unstable"]
+    "viem/chains": "npm:viem@^2.21.0/chains",
+    "@ponder/client": "npm:@ponder/client@^0.12.0",
+    "ponder": "npm:ponder@^0.12.0"
   }
 }
