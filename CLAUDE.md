@@ -23,9 +23,7 @@ The BMN resolver system uses Docker Compose for orchestration with the following
 - **bob**: Swap acceptor/taker service (port 8002)
 
 ### Supporting Services
-- **redis**: Distributed caching and pub/sub (port 6379)
-- **prometheus**: Metrics collection (port 9090)
-- **grafana**: Visualization dashboards (port 3000)
+- None (monitoring stack removed; use service health endpoints).
 
 ## Data Persistence
 
@@ -36,10 +34,7 @@ data/
 ├── orders/       # Pending order storage
 ├── logs/         # Application logs
 ├── cache/        # Deno cache directory
-├── kv/          # Deno KV databases
-├── redis/       # Redis persistence
-├── prometheus/  # Metrics data
-└── grafana/     # Dashboard configurations
+└── kv/           # Deno KV databases
 ```
 
 ## Docker Commands
@@ -87,9 +82,7 @@ cp .env.example .env
 
 ## Monitoring
 
-- **Grafana**: http://localhost:3000 (admin/admin)
-- **Prometheus**: http://localhost:9090
-- **Service Health**: 
+- **Service Health**:
   - Resolver: http://localhost:8000/health
   - Alice: http://localhost:8001/health
   - Bob: http://localhost:8002/health
