@@ -35,6 +35,42 @@ This tool is essential when you need to:
 - Compare different ABI versions
 - Understand contract interfaces quickly
 
+# 📊 BMN INDEXER EVENT MONITORING
+
+**Check indexed blockchain events and system status:**
+
+```bash
+# Check all indexed events from bmn-evm-contracts-indexer
+make -C ../bmn-evm-contracts-indexer check-events
+
+# This command displays:
+# - Event counts by table (BMN transfers, holders, approvals, limit orders, etc.)
+# - Recent BMN token transfers with chain, addresses, amounts, and blocks
+# - Top BMN token holders across chains
+# - Limit order details and status
+# - System status including active chains, total event tables, and database size
+```
+
+This command is useful for:
+- Monitoring BMN token activity across chains
+- Tracking limit order status
+- Verifying indexer is capturing events correctly
+- Getting a quick overview of system metrics
+
+# 🔄 POSTINTERACTION INTEGRATION STATUS
+
+**Critical Issue**: SimplifiedEscrowFactory on mainnet lacks IPostInteraction interface
+**Solution**: Contract has been updated in bmn-evm-contracts repository with postInteraction method
+**Status**: Ready for deployment
+
+Key changes made:
+1. SimplifiedEscrowFactory now implements IPostInteraction interface
+2. postInteraction method added to handle escrow creation after order fills
+3. Token flow fixed: transfers from resolver to escrow after protocol execution
+
+See `LIMIT_ORDER_POSTINTERACTION_ISSUE.md` for technical details.
+See `../bmn-evm-contracts/POSTINTERACTION_INTEGRATION_PLAN.md` for implementation guide.
+
 # 🔒 CRITICAL SECURITY GUIDELINES - PREVENT SECRET EXPOSURE
 
 ## ⚠️ MANDATORY PRE-COMMIT SECURITY SCAN

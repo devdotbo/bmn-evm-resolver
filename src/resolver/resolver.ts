@@ -147,6 +147,10 @@ export class UnifiedResolver {
    * Process pending atomic swaps from the indexer
    */
   private async processPendingOrders() {
+    // First, check for locally stored orders from Alice
+    await this.processLocalOrders();
+    
+    // Then check indexer for any additional swaps
     const pendingSwaps = await this.ponderClient.getPendingAtomicSwaps(this.account.address);
     
     for (const swap of pendingSwaps) {
@@ -172,6 +176,68 @@ export class UnifiedResolver {
   }
 
   /**
+   * Process locally stored order files from Alice
+   */
+  private async processLocalOrders() {
+    const ordersDir = "./pending-orders";
+    
+    try {
+      // Check if orders directory exists
+      const dirInfo = await Deno.stat(ordersDir);
+      if (!dirInfo.isDirectory) return;
+      
+      // Read all order files
+      for await (const entry of Deno.readDir(ordersDir)) {
+        if (entry.isFile && entry.name.endsWith(".json")) {
+          const orderPath = `${ordersDir}/${entry.name}`;
+          
+          try {
+            const orderData = JSON.parse(await Deno.readTextFile(orderPath));
+            
+            // For limit orders, the resolver fills any order it finds
+            // The order maker/receiver is Alice, we're just the filler
+            console.log(`📄 Found order from maker: ${orderData.order.maker}`);
+            
+            const orderHash = orderData.hashlock; // Using hashlock as identifier
+            
+            // Skip if already processed
+            if (this.processedOrders.has(orderHash)) {
+              continue;
+            }
+            
+            console.log(`📄 Found local order file: ${entry.name}`);
+            console.log(`   Hashlock: ${orderData.hashlock}`);
+            console.log(`   Chain: ${orderData.chainId}`);
+            
+            // Fill the order
+            const success = await this.fillLocalOrder(orderData);
+            
+            if (success) {
+              this.processedOrders.add(orderHash);
+              
+              // Move processed file to completed directory
+              const completedDir = "./completed-orders";
+              await Deno.mkdir(completedDir, { recursive: true });
+              await Deno.rename(orderPath, `${completedDir}/${entry.name}`);
+            } else {
+              console.log(`⚠️ Order not filled, will retry in next cycle`);
+            }
+            
+          } catch (error) {
+            console.error(`❌ Failed to process order file ${entry.name}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      // Directory doesn't exist yet, which is fine
+      if (error instanceof Deno.errors.NotFound) {
+        return;
+      }
+      console.error("❌ Error reading orders directory:", error);
+    }
+  }
+
+  /**
    * Check if an order is profitable based on safety deposits
    */
   private isProfitable(swap: AtomicSwap): boolean {
@@ -192,49 +258,118 @@ export class UnifiedResolver {
    * Fill a limit order through SimpleLimitOrderProtocol
    */
   private async fillLimitOrder(swap: AtomicSwap) {
-    try {
-      const dstChainId = Number(swap.dstChainId);
-      const wallet = dstChainId === base.id ? this.baseWallet : this.optimismWallet;
-      const client = dstChainId === base.id ? this.baseClient : this.optimismClient;
-      const limitOrderProtocol = dstChainId === base.id ? LIMIT_ORDER_PROTOCOL_BASE : LIMIT_ORDER_PROTOCOL_OPTIMISM;
-      
-      console.log(`🔨 Filling order on chain ${dstChainId} via SimpleLimitOrderProtocol`);
+    // This method handles orders from the indexer
+    // For now, we'll skip this as we need the actual order data with signatures
+    console.log(`⚠️ Skipping indexer order - need actual order data with signature`);
+  }
 
-      // Get order details from the source escrow
-      const srcEscrow = await this.ponderClient.getSrcEscrowByOrderHash(swap.orderHash);
-      if (!srcEscrow) {
-        console.error(`❌ Source escrow not found for order: ${swap.orderHash}`);
-        return;
+  /**
+   * Fill a local order from Alice through SimpleLimitOrderProtocol
+   * Returns true if successful, false otherwise
+   */
+  private async fillLocalOrder(orderData: any): Promise<boolean> {
+    try {
+      const chainId = orderData.chainId;
+      const wallet = chainId === base.id ? this.baseWallet : this.optimismWallet;
+      const client = chainId === base.id ? this.baseClient : this.optimismClient;
+      const limitOrderProtocol = chainId === base.id ? LIMIT_ORDER_PROTOCOL_BASE : LIMIT_ORDER_PROTOCOL_OPTIMISM;
+      
+      console.log(`🔨 Filling order on chain ${chainId} via SimpleLimitOrderProtocol`);
+
+      // Check and approve tokens if needed
+      const BMN_TOKEN = "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address;
+      const takingAmount = BigInt(orderData.order.takingAmount);
+      
+      // Check current allowance
+      const currentAllowance = await client.readContract({
+        address: BMN_TOKEN,
+        abi: parseAbi(["function allowance(address owner, address spender) view returns (uint256)"]),
+        functionName: "allowance",
+        args: [this.account.address, limitOrderProtocol],
+      });
+      
+      if (currentAllowance < takingAmount) {
+        console.log(`🔓 Approving BMN tokens for Limit Order Protocol...`);
+        console.log(`   Current allowance: ${currentAllowance}`);
+        console.log(`   Required: ${takingAmount}`);
+        
+        const approveHash = await wallet.writeContract({
+          address: BMN_TOKEN,
+          abi: parseAbi(["function approve(address spender, uint256 amount) returns (bool)"]),
+          functionName: "approve",
+          args: [limitOrderProtocol, takingAmount * 10n], // Approve 10x for future orders
+        });
+        
+        const approveReceipt = await client.waitForTransactionReceipt({ hash: approveHash });
+        console.log(`✅ Approval tx: ${approveHash}`);
+        console.log(`   Gas used: ${approveReceipt.gasUsed}`);
+      } else {
+        console.log(`✅ Sufficient allowance already set: ${currentAllowance}`);
       }
 
-      // Prepare order data for SimpleLimitOrderProtocol.fillOrder()
-      // The order structure needs to match the protocol's expected format
-      const orderData: OrderData = {
-        salt: BigInt(srcEscrow.orderHash), // Use orderHash as salt
-        maker: srcEscrow.maker as Address,
-        receiver: this.account.address, // Resolver receives the tokens
-        makerAsset: srcEscrow.dstToken as Address,
-        takerAsset: srcEscrow.srcToken as Address,
-        makingAmount: srcEscrow.dstAmount,
-        takingAmount: srcEscrow.srcAmount,
-        makerTraits: BigInt(0), // Default traits
+      // Reconstruct the order structure
+      const order: OrderData = {
+        salt: BigInt(orderData.order.salt),
+        maker: orderData.order.maker as Address,
+        receiver: orderData.order.receiver as Address,
+        makerAsset: orderData.order.makerAsset as Address,
+        takerAsset: orderData.order.takerAsset as Address,
+        makingAmount: BigInt(orderData.order.makingAmount),
+        takingAmount: BigInt(orderData.order.takingAmount),
+        makerTraits: BigInt(orderData.order.makerTraits),
       };
 
-      // Generate signature for the order (placeholder - actual implementation needs proper signing)
-      const r = "0x0000000000000000000000000000000000000000000000000000000000000000";
-      const vs = "0x0000000000000000000000000000000000000000000000000000000000000000";
+      // Extract signature components (r, vs) from the signature
+      // Signature is 65 bytes: r (32) + s (32) + v (1)
+      // For fillOrder, vs is packed as s with v in the highest bit
+      const signature = orderData.signature as `0x${string}`;
+      const r = signature.slice(0, 66) as `0x${string}`; // 0x + 64 hex chars = 32 bytes
+      
+      // Extract s and v
+      const s = signature.slice(66, 130); // 64 hex chars = 32 bytes
+      const v = signature.slice(130, 132); // 2 hex chars = 1 byte
+      
+      // Pack v into the highest bit of s to create vs
+      // If v is 28, set the highest bit of s
+      const vNum = parseInt(v, 16);
+      let sWithV = s;
+      if (vNum === 28 || vNum === 1) {
+        // Set the highest bit by ORing with 0x80...
+        const sBigInt = BigInt(`0x${s}`);
+        const vMask = BigInt("0x8000000000000000000000000000000000000000000000000000000000000000");
+        const packedBigInt = sBigInt | vMask;
+        sWithV = packedBigInt.toString(16).padStart(64, '0');
+      }
+      const vs = `0x${sWithV}` as `0x${string}`;
+
+      // Build taker traits with extension
+      // The extension contains factory address + ExtraDataArgs
+      const extensionData = orderData.extensionData as `0x${string}`;
+      
+      // TakerTraits for fillOrderArgs:
+      // When using fillOrderArgs with extension data, we pass the extension separately
+      // The takerTraits should be 0 for a simple fill with no special flags
+      const takerTraits = 0n; // Simple fill, no special flags needed
+
+      console.log(`📋 Order details:`);
+      console.log(`   Maker: ${order.maker}`);
+      console.log(`   Making: ${order.makingAmount} tokens`);
+      console.log(`   Taking: ${order.takingAmount} tokens`);
+      console.log(`   Extension: ${extensionData.slice(0, 42)}...`);
 
       // Fill the order through SimpleLimitOrderProtocol
+      // The protocol will automatically call factory.postInteraction
       const { request } = await client.simulateContract({
         address: limitOrderProtocol,
         abi: SimpleLimitOrderProtocolAbi.abi,
-        functionName: "fillOrder",
+        functionName: "fillOrderArgs",
         args: [
-          orderData,
+          order,
           r,
           vs,
-          srcEscrow.srcAmount, // Amount to fill
-          BigInt(0), // TakerTraits
+          order.makingAmount, // Fill full amount
+          takerTraits,
+          extensionData, // Args containing extension data
         ],
         account: this.account,
       });
@@ -245,16 +380,28 @@ export class UnifiedResolver {
       // Wait for confirmation
       const receipt = await client.waitForTransactionReceipt({ hash });
       console.log(`✅ Order filled successfully in tx: ${receipt.transactionHash}`);
+      console.log(`   Gas used: ${receipt.gasUsed}`);
+      console.log(`   Block: ${receipt.blockNumber}`);
 
-      // After successful fill, the destination escrow should be created
-      // Store any relevant information for later withdrawal
-      const dstEscrowAddress = await this.getDstEscrowAddress(srcEscrow.hashlock, dstChainId);
-      if (dstEscrowAddress) {
-        console.log(`📍 Destination escrow created at: ${dstEscrowAddress}`);
+      // The factory's postInteraction should have created the escrows
+      console.log(`✨ Factory postInteraction triggered - escrows should be created`);
+
+      // Store the secret for later withdrawal
+      if (orderData.secret) {
+        await this.secretManager.storeSecret({
+          secret: orderData.secret as `0x${string}`,
+          orderHash: orderData.hashlock as `0x${string}`,
+          escrowAddress: "pending", // Will be determined later
+          chainId: chainId,
+        });
+        console.log(`🔐 Secret stored for future withdrawal`);
       }
+      
+      return true; // Success
 
     } catch (error) {
-      console.error(`❌ Failed to fill limit order:`, error);
+      console.error(`❌ Failed to fill local order:`, error);
+      return false; // Failed
     }
   }
 

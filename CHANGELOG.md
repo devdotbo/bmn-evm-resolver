@@ -7,7 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Critical Architecture Discovery - 2025-01-07
+### Fixed - 2025-08-07
+- Resolved PrivateOrder error by setting makerTraits to 0 for public orders
+- Fixed MakingAmountTooLow error with correct takerTraits configuration  
+- Added automatic token approval in resolver before filling orders
+- Identified root cause: SimplifiedEscrowFactory lacks IPostInteraction interface
+- Created comprehensive plan for contract fixes in bmn-evm-contracts
+
+### Added - 2025-08-07
+- Automatic token approval logic in resolver (checks allowance first)
+- `LIMIT_ORDER_POSTINTERACTION_ISSUE.md` documenting the integration problem
+- Archive folder for historical documentation
+- Integration plan in bmn-evm-contracts repository
+
+### Changed - 2025-08-07
+- Simplified makerTraits to 0n for public order filling
+- Reorganized documentation structure (archived 7 old docs)
+- Updated CLAUDE.md with postInteraction integration status
+
+### Fixed - 2025-08-05
+- **CRITICAL ARCHITECTURE FIX IMPLEMENTED**: Completely refactored system to use correct architecture
+  - **Root Cause**: System was trying to call `createSrcEscrow` which doesn't exist on deployed CrossChainEscrowFactory
+  - **Solution**: Implemented proper limit order flow with postInteraction mechanism
+  - **Files Updated**:
+    - `limit-order-alice.ts`: Now creates proper limit orders with postInteraction extension data
+    - `mainnet-alice.ts`: Updated to use same correct limit order approach
+    - `resolver.ts`: Fixed to fill orders via SimpleLimitOrderProtocol, not direct factory calls
+  - **Key Changes**:
+    - Alice now creates EIP-712 signed limit orders with postInteraction extension
+    - Extension data includes factory address and ExtraDataArgs for escrow creation
+    - Resolver fills orders through protocol, which triggers factory.postInteraction
+    - Factory creates escrows via postInteraction, not direct calls
+  - **Removed**: SimplifiedEscrowFactory.json ABI (wrong contract, not deployed)
+
+### Critical Architecture Discovery - 2025-08-04
 - **CRITICAL ISSUE FOUND**: The entire system architecture is misaligned
   - The deployed CrossChainEscrowFactory at `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` does NOT have `createSrcEscrow`
   - Previous "fix" was incorrect - `createSrcEscrow` only exists in SimplifiedEscrowFactory (not deployed)

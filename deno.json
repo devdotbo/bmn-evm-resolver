@@ -2,8 +2,7 @@
   "tasks": {
     "resolver": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env run-resolver.ts",
     "resolver:test": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env test-resolver.ts",
-    "alice": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env alice.ts",
-    "alice-mainnet": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env alice-mainnet.ts"
+    "alice": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env alice.ts"
   },
   "imports": {
     "viem": "npm:viem@^2.21.0",
