@@ -8,6 +8,33 @@
 - Fixed (bug fixes)
 - Security (vulnerability fixes)
 
+# 🔧 ABI INSPECTION TOOL
+
+**Use `abi2human` to efficiently read Ethereum ABIs without consuming excessive tokens:**
+
+```bash
+# Quick ABI inspection (human-readable)
+abi2human contract.json -o
+
+# Ultra-compact format (minimal tokens)
+abi2human contract.json -oc
+
+# Raw text format (most readable)
+abi2human contract.json -or
+
+# Check function signatures in an ABI
+abi2human abis/CrossChainEscrowFactoryV2.json -oc
+
+# Batch convert all ABIs for inspection
+abi2human ./abis/ -d ./readable/
+```
+
+This tool is essential when you need to:
+- Verify ABI functions match what you're calling
+- Check if specific functions exist (like whitelist, pause, etc.)
+- Compare different ABI versions
+- Understand contract interfaces quickly
+
 # 🔒 CRITICAL SECURITY GUIDELINES - PREVENT SECRET EXPOSURE
 
 ## ⚠️ MANDATORY PRE-COMMIT SECURITY SCAN
