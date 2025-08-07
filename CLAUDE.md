@@ -1,3 +1,13 @@
+# 📝 CHANGELOG MAINTENANCE
+
+**IMPORTANT**: Always update CHANGELOG.md when making significant changes to the codebase. Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format. Document all notable changes under the [Unreleased] section including:
+- Added (new features)
+- Changed (changes in existing functionality)
+- Deprecated (soon-to-be removed features)
+- Removed (removed features)
+- Fixed (bug fixes)
+- Security (vulnerability fixes)
+
 # 🔒 CRITICAL SECURITY GUIDELINES - PREVENT SECRET EXPOSURE
 
 ## ⚠️ MANDATORY PRE-COMMIT SECURITY SCAN
