@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Critical Architecture Discovery - 2025-01-07
+- **CRITICAL ISSUE FOUND**: The entire system architecture is misaligned
+  - The deployed CrossChainEscrowFactory at `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` does NOT have `createSrcEscrow`
+  - Previous "fix" was incorrect - `createSrcEscrow` only exists in SimplifiedEscrowFactory (not deployed)
+  - System should use limit order protocol's `postInteraction` flow, not direct factory calls
+  - Created `CRITICAL_ARCHITECTURE_FIX.md` documenting the correct approach
+  - Both Alice and Bob implementations need complete refactoring to use limit orders properly
+
 ### Fixed
 - **Critical ABI Update**: Fixed function name mismatch in Alice implementations
-  - Replaced non-existent `postSourceEscrow` with correct `createSrcEscrow` function
-  - Updated both `limit-order-alice.ts` and `mainnet-alice.ts` to use SimplifiedEscrowFactory
+  - ~~Replaced non-existent `postSourceEscrow` with correct `createSrcEscrow` function~~ (INCORRECT - see above)
+  - ~~Updated both `limit-order-alice.ts` and `mainnet-alice.ts` to use SimplifiedEscrowFactory~~ (WRONG APPROACH)
   - Copied latest ABIs from contract directories to ensure compatibility
-  - Changed from CrossChainEscrowFactory to SimplifiedEscrowFactory for direct escrow creation
+  - ~~Changed from CrossChainEscrowFactory to SimplifiedEscrowFactory for direct escrow creation~~ (INCORRECT)
 
 ### Changed
 - **Updated ABIs from latest contract builds**
