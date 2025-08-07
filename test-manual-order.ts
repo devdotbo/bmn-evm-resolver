@@ -5,14 +5,14 @@
  * This simulates what would happen if proper on-chain events were emitted
  */
 
-import { SimpleResolver } from "./src/resolver/simple-resolver.ts";
+import { UnifiedResolver } from "./src/resolver/resolver.ts";
 import { keccak256, toHex } from "viem";
 
 async function createManualOrder() {
   console.log("🔧 Creating manual test order for resolver...");
   
   // Initialize resolver
-  const resolver = new SimpleResolver();
+  const resolver = new UnifiedResolver();
   
   // Create test order data matching what Alice created
   const secret = "0x307861373938363435313664366435393539653161313939633439333066353630333434666666383865643863663062613065343966623234313464613864323764";
