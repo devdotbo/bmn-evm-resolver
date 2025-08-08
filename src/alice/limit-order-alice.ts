@@ -21,7 +21,8 @@ import { PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
 import { getContractAddresses, CREATE3_ADDRESSES } from "../config/contracts.ts";
 import { 
-  encodePostInteractionData, 
+  encodePostInteractionData,
+  encode1inchExtension,
   packTimelocks,
   MAKER_TRAITS,
   generateNonce,
@@ -185,14 +186,22 @@ export class LimitOrderAlice {
       nonce: nonce,
     };
 
-    // Build the extension data for v2.2.0 PostInteraction
-    const extensionData = encodePostInteractionData(
+    // Build the PostInteraction data for v2.2.0
+    const postInteractionData = encodePostInteractionData(
       ESCROW_FACTORY as Address,
       escrowParams
     );
-
-    // Create the limit order structure
-    const salt = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+    
+    // Build the full extension with proper 1inch format
+    const extension = encode1inchExtension(postInteractionData);
+    
+    // Calculate extension hash (last 160 bits for salt)
+    const extensionHash = keccak256(extension);
+    const extensionHashLast160 = BigInt(extensionHash) & ((1n << 160n) - 1n);
+    
+    // Create salt with extension hash (upper bits random, lower 160 bits extension hash)
+    const randomSalt = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) << 160n;
+    const salt = randomSalt | extensionHashLast160;
     
     // Build maker traits with POST_INTERACTION flag enabled for v2.2.0
     const makerTraits = MAKER_TRAITS.forPostInteraction();
@@ -220,7 +229,7 @@ export class LimitOrderAlice {
     await this.storeOrderForResolver({
       order: order,
       signature: signature,
-      extensionData: extensionData,
+      extensionData: extension, // Use the properly formatted extension
       chainId: params.srcChainId,
       hashlock: hashlock,
       secret: secret,

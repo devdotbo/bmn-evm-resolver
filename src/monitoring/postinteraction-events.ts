@@ -222,61 +222,64 @@ export class PostInteractionEventMonitor {
         continue;
       }
 
+      // Attempt to decode the log against each known event type.
+      // We intentionally do not pre-filter by topic hash to avoid mistakes; decoding will throw if not matching.
       try {
-        // Try to decode as PostInteractionExecuted
-        if (log.topics[0] === POST_INTERACTION_EXECUTED_EVENT.inputs?.[0]?.indexed) {
-          const decoded = decodeEventLog({
-            abi: [POST_INTERACTION_EXECUTED_EVENT],
-            data: log.data,
-            topics: log.topics,
-          });
-          
-          postInteractionExecuted = {
-            orderHash: decoded.args.orderHash as `0x${string}`,
-            taker: decoded.args.taker as Address,
-            srcEscrow: decoded.args.srcEscrow as Address,
-            dstEscrow: decoded.args.dstEscrow as Address,
-            blockNumber: receipt.blockNumber,
-            transactionHash: receipt.transactionHash,
-          };
-        }
+        const decoded = decodeEventLog({
+          abi: [POST_INTERACTION_EXECUTED_EVENT],
+          data: log.data,
+          topics: log.topics,
+        });
 
-        // Try to decode as EscrowCreated
-        if (log.topics[0] === ESCROW_CREATED_EVENT.inputs?.[0]?.indexed) {
-          const decoded = decodeEventLog({
-            abi: [ESCROW_CREATED_EVENT],
-            data: log.data,
-            topics: log.topics,
-          });
-          
-          escrowsCreated.push({
-            escrowAddress: decoded.args.escrowAddress as Address,
-            escrowType: Number(decoded.args.escrowType),
-            immutablesHash: decoded.args.immutablesHash as `0x${string}`,
-            blockNumber: receipt.blockNumber,
-            transactionHash: receipt.transactionHash,
-          });
-        }
+        postInteractionExecuted = {
+          orderHash: decoded.args.orderHash as `0x${string}`,
+          taker: decoded.args.taker as Address,
+          srcEscrow: decoded.args.srcEscrow as Address,
+          dstEscrow: decoded.args.dstEscrow as Address,
+          blockNumber: receipt.blockNumber,
+          transactionHash: receipt.transactionHash,
+        };
+        // Successfully decoded; move to next log
+        continue;
+      } catch (_) {
+        // Not a PostInteractionExecuted log; try next event type
+      }
 
-        // Try to decode as PostInteractionFailed
-        if (log.topics[0] === POST_INTERACTION_FAILED_EVENT.inputs?.[0]?.indexed) {
-          const decoded = decodeEventLog({
-            abi: [POST_INTERACTION_FAILED_EVENT],
-            data: log.data,
-            topics: log.topics,
-          });
-          
-          postInteractionFailed = {
-            orderHash: decoded.args.orderHash as `0x${string}`,
-            taker: decoded.args.taker as Address,
-            reason: decoded.args.reason as string,
-            blockNumber: receipt.blockNumber,
-            transactionHash: receipt.transactionHash,
-          };
-        }
-      } catch (error) {
-        // Log couldn't be decoded, skip it
-        console.debug(`Could not decode log: ${error}`);
+      try {
+        const decoded = decodeEventLog({
+          abi: [ESCROW_CREATED_EVENT],
+          data: log.data,
+          topics: log.topics,
+        });
+
+        escrowsCreated.push({
+          escrowAddress: decoded.args.escrowAddress as Address,
+          escrowType: Number(decoded.args.escrowType),
+          immutablesHash: decoded.args.immutablesHash as `0x${string}`,
+          blockNumber: receipt.blockNumber,
+          transactionHash: receipt.transactionHash,
+        });
+        continue;
+      } catch (_) {
+        // Not an EscrowCreated log; try next
+      }
+
+      try {
+        const decoded = decodeEventLog({
+          abi: [POST_INTERACTION_FAILED_EVENT],
+          data: log.data,
+          topics: log.topics,
+        });
+
+        postInteractionFailed = {
+          orderHash: decoded.args.orderHash as `0x${string}`,
+          taker: decoded.args.taker as Address,
+          reason: decoded.args.reason as string,
+          blockNumber: receipt.blockNumber,
+          transactionHash: receipt.transactionHash,
+        };
+      } catch (_) {
+        // Not a PostInteractionFailed log; ignore
       }
     }
 
