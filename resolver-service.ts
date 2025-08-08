@@ -100,13 +100,17 @@ async function main() {
     // Cleanup on error
     try {
       await resolver.stop();
-    } catch {}
+    } catch {
+      // Ignore cleanup errors during shutdown
+    }
     
     try {
       if (healthServer) {
         await healthServer.shutdown();
       }
-    } catch {}
+    } catch {
+      // Ignore cleanup errors during shutdown
+    }
     
     Deno.exit(1);
   }

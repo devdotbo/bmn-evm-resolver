@@ -1,0 +1,14 @@
+{
+  "imports": {
+    "viem": "npm:viem@^2.21.21",
+    "viem/accounts": "npm:viem@^2.21.21/accounts",
+    "viem/chains": "npm:viem@^2.21.21/chains",
+    "viem/actions": "npm:viem@^2.21.21/actions",
+    "viem/utils": "npm:viem@^2.21.21/utils",
+    "abitype": "npm:abitype@^1.0.6",
+    "@noble/hashes": "npm:@noble/hashes@^1.6.1",
+    "@noble/hashes/sha256": "npm:@noble/hashes@^1.6.1/sha256",
+    "@t3-oss/env-core": "npm:@t3-oss/env-core@^0.11.1",
+    "@ponder/client": "npm:@ponder/client@^0.1.14"
+  }
+}

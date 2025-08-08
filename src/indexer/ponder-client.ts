@@ -53,13 +53,13 @@ export interface DstEscrow {
 export interface AtomicSwap {
   id: string;
   orderHash: string;
-  srcChainId: bigint;
-  dstChainId: bigint;
+  hashlock: string;
+  srcChainId: number;
+  dstChainId: number;
   srcToken: string;
   dstToken: string;
   srcAmount: bigint;
   dstAmount: bigint;
-  deadline: bigint;
   srcMaker: string;
   srcTaker: string;
   dstMaker?: string;
@@ -73,8 +73,18 @@ export interface AtomicSwap {
   dstWithdrawnAt?: bigint;
 }
 
+export interface ChainStatistics {
+  totalSrcEscrows: number;
+  totalDstEscrows: number;
+  totalWithdrawals: number;
+  totalCancellations: number;
+}
+
+// Type for Ponder SQL client
+type PonderSQLClient = ReturnType<typeof createClient>;
+
 export class PonderClient {
-  private client: any;
+  private client: PonderSQLClient;
   private baseUrl: string;
 
   constructor(config: IndexerConfig) {
@@ -106,7 +116,7 @@ export class PonderClient {
     const results = await this.client.db
       .select()
       .from(schema.srcEscrow)
-      .where(eq(schema.srcEscrow.orderHash, orderHash))
+      .where(eq(schema.srcEscrow.orderHash, orderHash as `0x${string}`))
       .limit(1)
       .execute();
     
@@ -117,7 +127,7 @@ export class PonderClient {
     const results = await this.client.db
       .select()
       .from(schema.dstEscrow)
-      .where(eq(schema.dstEscrow.hashlock, hashlock))
+      .where(eq(schema.dstEscrow.hashlock, hashlock as `0x${string}`))
       .limit(1)
       .execute();
     
@@ -128,7 +138,7 @@ export class PonderClient {
     const results = await this.client.db
       .select()
       .from(schema.atomicSwap)
-      .where(eq(schema.atomicSwap.orderHash, orderHash))
+      .where(eq(schema.atomicSwap.orderHash, orderHash as `0x${string}`))
       .limit(1)
       .execute();
     
@@ -162,12 +172,12 @@ export class PonderClient {
     }
   }
 
-  async getRevealedSecrets(): Promise<Array<{ hashlock: string; secret: string }>> {
+  getRevealedSecrets(): Promise<Array<{ hashlock: string; secret: string }>> {
     // Note: escrowWithdrawal doesn't have hashlock, we need to get it from atomicSwap
     // For now, return empty array since we can't properly correlate secrets to hashlocks
     // This would need to be fixed by joining with atomicSwap or srcEscrow tables
     console.log("⚠️ getRevealedSecrets: Not implemented - escrowWithdrawal doesn't have hashlock field");
-    return [];
+    return Promise.resolve([]);
   }
 
   async getWithdrawalByEscrow(escrowAddress: string): Promise<{ secret: string } | null> {
@@ -184,11 +194,11 @@ export class PonderClient {
     return withdrawal?.secret ? { secret: withdrawal.secret } : null;
   }
 
-  async getChainStatistics(chainId: number): Promise<any> {
+  async getChainStatistics(chainId: number): Promise<ChainStatistics> {
     const results = await this.client.db
       .select()
       .from(schema.chainStatistics)
-      .where(eq(schema.chainStatistics.chain, BigInt(chainId)))
+      .where(eq(schema.chainStatistics.chainId, chainId))
       .limit(1)
       .execute();
     
@@ -213,27 +223,36 @@ export class PonderClient {
     timestamp: bigint;
   }>> {
     try {
+      // Join withdrawals with srcEscrow by escrowAddress to derive hashlock and orderHash
       const results = await this.client.db
         .select({
           secret: schema.escrowWithdrawal.secret,
           escrowAddress: schema.escrowWithdrawal.escrowAddress,
           chainId: schema.escrowWithdrawal.chainId,
-          timestamp: schema.escrowWithdrawal.withdrawnAt
+          timestamp: schema.escrowWithdrawal.withdrawnAt,
+          hashlock: schema.srcEscrow.hashlock,
+          orderHash: schema.srcEscrow.orderHash,
         })
         .from(schema.escrowWithdrawal)
+        .leftJoin(
+          schema.srcEscrow,
+          eq(schema.srcEscrow.escrowAddress, schema.escrowWithdrawal.escrowAddress)
+        )
         .where(isNotNull(schema.escrowWithdrawal.secret))
         .orderBy(desc(schema.escrowWithdrawal.withdrawnAt))
         .limit(limit)
         .execute();
 
-      return results.filter(r => r.secret !== null).map(r => ({
-        hashlock: '', // Not available in schema, will be computed from secret if needed
-        secret: r.secret!,
-        orderHash: '', // Not available in schema
-        escrowAddress: r.escrowAddress,
-        chainId: r.chainId,
-        timestamp: r.timestamp
-      }));
+      return results
+        .filter((r: any) => r.secret)
+        .map((r: any) => ({
+          hashlock: r.hashlock || '',
+          secret: r.secret,
+          orderHash: r.orderHash || '',
+          escrowAddress: r.escrowAddress,
+          chainId: r.chainId,
+          timestamp: r.timestamp,
+        }));
     } catch (error) {
       console.error("Error fetching recent withdrawals:", error);
       return [];

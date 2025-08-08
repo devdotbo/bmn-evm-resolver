@@ -6,7 +6,7 @@
  */
 
 import { UnifiedResolver } from "./src/resolver/resolver.ts";
-import { keccak256, toHex } from "viem";
+// import { keccak256, toHex } from "viem";
 
 async function createManualOrder() {
   console.log("🔧 Creating manual test order for resolver...");
@@ -15,7 +15,7 @@ async function createManualOrder() {
   const resolver = new UnifiedResolver();
   
   // Create test order data matching what Alice created
-  const secret = "0x307861373938363435313664366435393539653161313939633439333066353630333434666666383865643863663062613065343966623234313464613864323764";
+  // const secret = "0x307861373938363435313664366435393539653161313939633439333066353630333434666666383865643863663062613065343966623234313464613864323764";
   const hashlock = "0xda974201617bc68d29fe2ff211f725a55dcfad0dcbdab5347cb171404e8e0841";
   const orderHash = "0x6bc85fea9ec88eea7ff09e304db4ef2d6139b3660203f7e48353c2ce780f9109";
   

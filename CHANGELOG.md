@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - 2025-01-10
+- **Inlined import map into deno.json** to support `deno install` command
+  - Removed separate `import_map.json` file
+  - Migrated all imports to `deno.json` under `"imports"` field
+  - Updated all Dockerfiles to remove `--import-map` flag references
+  - This fixes the error: "`deno install` is not supported when configuration file contains an 'importMap' field"
+
+### Added - 2025-01-10
+- **@ponder/client dependency** for enhanced Ponder indexer integration
+- **.cursorrules file** for Cursor IDE configuration
+
+### Changed - 2025-08-08
+- **Improved type safety** in indexer client by replacing `any` types with proper TypeScript interfaces
+  - Added `ChainStatistics` interface for chain metrics
+  - Added `PonderSQLClient` type for Ponder SQL client
+  - Fixed async/await issues in `getRevealedSecrets` method
+- **Reorganized import mappings** to resolve Deno warnings
+  - Created dedicated `import_map.json` file
+  - Moved import definitions from `deno.json` to centralized import map
+  - Added explicit mappings for viem submodules (accounts, chains, actions, utils)
+- **Enhanced error handling** in service shutdown routines
+  - Added descriptive comments to empty catch blocks in `resolver-service.ts`
+  - Improved cleanup error handling during service shutdown
+
+### Fixed - 2025-08-08
+- **Resolved linting violations** in core modules
+  - Removed unused imports (`createPublicClient`, `createWalletClient`) from `token-approvals.ts`
+  - Eliminated unnecessary `any` type casts in wallet transaction calls
+  - Fixed unused variable warnings in test files
+- **Fixed Ponder client schema alignment** with database
+  - Updated `AtomicSwap` interface to match actual DB schema
+  - Added missing `hashlock` field, corrected chain ID types
+  - Improved withdrawal correlation with proper JOIN operations
 
 ### Changed - 2025-08-07 (Container env and tasks)
 - Docker entrypoints no longer pass `--env-file=.env`; Docker Compose now supplies env vars

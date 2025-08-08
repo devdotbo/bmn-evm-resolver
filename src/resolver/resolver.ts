@@ -261,9 +261,25 @@ export class UnifiedResolver {
    * Fill a limit order through SimpleLimitOrderProtocol
    */
   private async fillLimitOrder(swap: AtomicSwap) {
-    // This method handles orders from the indexer
-    // For now, we'll skip this as we need the actual order data with signatures
-    console.log(`⚠️ Skipping indexer order - need actual order data with signature`);
+    // Attempt to resolve the signed order payload by hashlock from local storage
+    try {
+      const localPath = `./pending-orders/${swap.hashlock}.json`;
+      const fileInfo = await Deno.stat(localPath).catch(() => null);
+      if (!fileInfo || !fileInfo.isFile) {
+        console.log(`⚠️ No local payload found for ${swap.orderHash} (${swap.hashlock}). Skipping.`);
+        return;
+      }
+
+      const raw = await Deno.readTextFile(localPath);
+      const orderData = JSON.parse(raw);
+      console.log(`📦 Loaded local order payload for ${swap.orderHash}. Proceeding to fill…`);
+      const success = await this.fillLocalOrder(orderData);
+      if (!success) {
+        console.log(`⚠️ Failed to fill order ${swap.orderHash} from local payload`);
+      }
+    } catch (error) {
+      console.error(`❌ fillLimitOrder error for ${swap.orderHash}:`, error);
+    }
   }
 
   /**
@@ -280,7 +296,7 @@ export class UnifiedResolver {
       console.log(`🔨 Filling order on chain ${chainId} via SimpleLimitOrderProtocol`);
 
       // Check and approve tokens if needed
-      const BMN_TOKEN = "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address;
+      const BMN_TOKEN = CREATE3_ADDRESSES.BMN_TOKEN as Address;
       const takingAmount = BigInt(orderData.order.takingAmount);
       
       // Check current allowance for Limit Order Protocol

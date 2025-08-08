@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-env --allow-read
 
-import { createClient, eq } from "@ponder/client";
+import { createClient } from "@ponder/client";
 import * as schema from "./src/indexer/ponder.schema.ts";
 
 const INDEXER_URL = Deno.env.get("INDEXER_URL") || "http://localhost:42069";

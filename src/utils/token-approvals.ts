@@ -1,6 +1,4 @@
 import {
-  createPublicClient,
-  createWalletClient,
   type Address,
   type Hash,
   type PublicClient,
@@ -116,9 +114,12 @@ export class TokenApprovalManager {
       abi: ERC20_ABI,
       functionName: "approve",
       args: [this.factoryAddress, amount],
+      // viem v2 requires chain when wallet was constructed with a chain
+      chain: wallet.chain || undefined,
+      account: wallet.account!,
     });
     
-    return hash;
+    return hash as Hash;
   }
 
   /**
@@ -202,9 +203,11 @@ export class TokenApprovalManager {
       abi: ERC20_ABI,
       functionName: "approve",
       args: [this.factoryAddress, 0n],
+      chain: wallet.chain || undefined,
+      account: wallet.account!,
     });
     
-    return hash;
+    return hash as Hash;
   }
 }
 
