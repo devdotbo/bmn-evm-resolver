@@ -1,6 +1,18 @@
 # Limit Order Protocol PostInteraction Issue - Context Summary
 
-## Executive Summary
+> **⚠️ HISTORICAL DOCUMENT - ISSUE RESOLVED**
+> 
+> **This document describes an issue that was FIXED on 2025-08-08.**
+> 
+> The PostInteraction integration is now fully operational. For details on the solution, see:
+> - **Fix Documentation**: [docs/POSTINTERACTION_FIX_2025-08-08.md](docs/POSTINTERACTION_FIX_2025-08-08.md)
+> - **Current Status**: ✅ WORKING - PostInteraction callbacks trigger correctly after limit order fills
+> 
+> This document is preserved for historical reference only.
+
+---
+
+## Executive Summary (Historical Context - Pre-Fix)
 Successfully implemented limit order filling through 1inch SimpleLimitOrderProtocol, but the factory's `postInteraction` is NOT being called, preventing atomic swap escrow creation.
 
 ## Current Status
