@@ -1,6 +1,19 @@
 # Limit Order Protocol Integration
 
-## Overview
+> **📚 ARCHIVED DOCUMENTATION - FOR HISTORICAL REFERENCE**
+> 
+> **This document describes the integration approach before the PostInteraction fix on 2025-08-08.**
+> 
+> The PostInteraction functionality described here had implementation issues that have since been resolved.
+> 
+> For current implementation details, see:
+> - **Fix Documentation**: [../POSTINTERACTION_FIX_2025-08-08.md](../POSTINTERACTION_FIX_2025-08-08.md)
+> - **Troubleshooting Guide**: [../POSTINTERACTION_TROUBLESHOOTING.md](../POSTINTERACTION_TROUBLESHOOTING.md)
+> - **Current Status**: ✅ FULLY OPERATIONAL
+
+---
+
+## Overview (Historical Context)
 
 This implementation integrates Bridge-Me-Not with the 1inch SimpleLimitOrderProtocol to enable cross-chain atomic swaps using EIP-712 signed limit orders with post-interaction hooks that trigger escrow creation.
 
