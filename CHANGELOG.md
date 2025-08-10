@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - 2025-08-10
+- Eliminated `drizzle-orm` runtime resolution errors inside containers by switching `PonderClient` to direct SQL-over-HTTP (POST /sql) and updating Docker config
+  - Replaced `@ponder/client` usage at runtime with lightweight HTTP client in `src/indexer/ponder-client.ts`
+  - Set `DENO_NODE_MODULES_DIR=none` and removed `/app/node_modules` to avoid npm bin/symlink issues
+  - Relaxed Docker `deno cache` to avoid strict lockfile failures
+  - Result: `docker compose build` and `up` start cleanly; Bob-Resolver runs healthy
+
+### Changed - 2025-08-10
+- Unified Dockerfile with multi-stage targets `alice` and `bob`; compose now builds from a single Dockerfile
+- Pruned monitoring/Redis artifacts (Prometheus, Grafana, Redis) from init and compose docs
+
 ### Changed - 2025-08-10
 - **Major refactoring: Consolidated PonderClient and cleaned up deprecated files**
   - Removed 10 deprecated files including old service wrappers and duplicate implementations
@@ -18,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed unused service files: alice.ts, resolver.ts, bob-service.ts, resolver-service.ts
   - Active services now: alice-service.ts and bob-resolver-service.ts (used by Docker)
   - All services now use @ponder/client library for SQL over HTTP
+- **Optimized Docker builds following Deno best practices**
+  - Added production environment variables: `DENO_NO_UPDATE_CHECK=1` and `DENO_NO_PROMPT=1`
+  - Simplified Dockerfiles to single-stage builds for consistency
+  - Fixed npm module version conflicts by using deno.json import map
+  - Added `--frozen` flag to prevent lockfile modifications during Docker builds
+  - Services build successfully with proper dependency caching
+  - **Known Issue**: Runtime module resolution error with drizzle-orm path mismatch
+    - @ponder/client@0.12.3 looks for drizzle-orm in wrong cache location
+    - This appears to be a Deno npm module resolution issue
 
 ### Fixed - 2025-08-10
 - **Fixed SQL over HTTP implementation to use @ponder/client library**

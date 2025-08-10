@@ -9,7 +9,7 @@
  * Run: deno run --allow-net --allow-env --allow-read scripts/test-live-subscription.deno.ts
  */
 
-import { createClient, eq, desc, and, or } from "npm:@ponder/client@0.12.0";
+import { createClient, eq, desc, and, or } from "@ponder/client";
 import * as schema from "../src/indexer/ponder.schema.ts";
 
 const INDEXER_URL = Deno.env.get("INDEXER_URL") || "http://localhost:42069";

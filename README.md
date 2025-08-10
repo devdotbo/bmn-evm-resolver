@@ -48,6 +48,7 @@ deno task alice --action withdraw --order 0xOrderHash
   - Claims source funds when secrets are revealed
 - **Alice**: Creates orders, withdraws from destination by revealing secret
 - **Indexer**: Ponder-based indexer tracking on-chain events (SQL over HTTP)
+  - Client uses direct HTTP POST to `/sql` (no `@ponder/client` at runtime in containers)
 
 ## Contract Addresses (CREATE3 - same on all chains)
 

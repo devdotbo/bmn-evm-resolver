@@ -8,7 +8,7 @@ docker-compose up -d
 
 # 2. Start resolver services
 cd ../bmn-evm-resolver
-docker-compose up -d --build
+docker compose up -d --build
 
 # 3. Check everything is running
 docker ps
@@ -18,23 +18,21 @@ docker ps
 - Alice API: http://localhost:8001
 - Bob-Resolver API: http://localhost:8002
 - Indexer: http://localhost:42069
-- Grafana: http://localhost:3000 (admin/admin)
-- Redis: localhost:6379
 
 ## Common Commands
 ```bash
 # View logs
-docker-compose logs -f bob
+docker compose logs -f bob
 
 # Restart a service
-docker-compose restart bob
+docker compose restart bob
 
 # Stop everything
-docker-compose down
+docker compose down
 
 # Clean restart
-docker-compose down -v
-docker-compose up -d --build
+docker compose down -v
+docker compose up -d --build
 ```
 
 ## Troubleshooting
@@ -46,12 +44,9 @@ docker-compose up -d --build
 ## What Works
 ✅ Docker builds successfully  
 ✅ Services connect to indexer  
-✅ Redis and PostgreSQL running  
 ✅ Basic infrastructure operational  
 
 ## What Needs Fixing
-❌ Alice service (exits immediately)  
-❌ Prometheus configuration  
 ✅ Health check endpoints (implemented)  
 
 ## Environment Setup

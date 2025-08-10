@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@ponder/client": "npm:@ponder/client@^0.12.3",
+    "@ponder/client": "npm:@ponder/client@0.12.0",
     "viem": "npm:viem@^2.21.21",
     "viem/accounts": "npm:viem@^2.21.21/accounts",
     "viem/chains": "npm:viem@^2.21.21/chains",
@@ -11,6 +11,7 @@
     "@noble/hashes/sha256": "npm:@noble/hashes@^1.6.1/sha256",
     "@t3-oss/env-core": "npm:@t3-oss/env-core@^0.11.1"
   },
+  "nodeModulesDir": "none",
   "tasks": {
     "resolver": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env run-resolver.ts",
     "resolver:test": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env test-resolver.ts",

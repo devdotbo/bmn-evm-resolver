@@ -56,9 +56,6 @@ directories=(
     "data/logs"
     "data/cache"
     "data/kv"
-    "data/redis"
-    "data/prometheus"
-    "data/grafana"
 )
 
 for dir in "${directories[@]}"; do
@@ -96,7 +93,7 @@ if [ ! -f ".env" ]; then
         echo "  - ANKR_API_KEY"
         echo "  - INDEXER_URL"
         echo "  - LOG_LEVEL"
-        echo "  - GRAFANA_PASSWORD"
+        # Optional extras removed (Grafana/Prometheus/Redis)
         exit 1
     fi
 else
@@ -148,73 +145,7 @@ EOF
     print_success "Created .env.example template"
 fi
 
-# Create Prometheus configuration if it doesn't exist
-if [ ! -f "prometheus.yml" ]; then
-    print_info "Creating Prometheus configuration..."
-    cat > prometheus.yml << 'EOF'
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
-
-scrape_configs:
-  - job_name: 'alice'
-    static_configs:
-      - targets: ['alice:8001']
-        labels:
-          service: 'alice'
-          
-  - job_name: 'bob-resolver'
-    static_configs:
-      - targets: ['bob:8002']
-        labels:
-          service: 'bob-resolver'
-          
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis:6379']
-        labels:
-          service: 'redis'
-EOF
-    print_success "Created prometheus.yml"
-fi
-
-# Create Grafana provisioning directories
-if [ ! -d "grafana-provisioning" ]; then
-    print_info "Creating Grafana provisioning structure..."
-    mkdir -p grafana-provisioning/dashboards
-    mkdir -p grafana-provisioning/datasources
-    
-    # Create datasource configuration
-    cat > grafana-provisioning/datasources/prometheus.yml << 'EOF'
-apiVersion: 1
-
-datasources:
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    url: http://prometheus:9090
-    isDefault: true
-    editable: true
-EOF
-    
-    # Create dashboard configuration
-    cat > grafana-provisioning/dashboards/dashboard.yml << 'EOF'
-apiVersion: 1
-
-providers:
-  - name: 'BMN Resolver Dashboards'
-    orgId: 1
-    folder: ''
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 10
-    allowUiUpdates: true
-    options:
-      path: /etc/grafana/provisioning/dashboards
-EOF
-    
-    print_success "Created Grafana provisioning structure"
-fi
+## Monitoring stack (Prometheus/Grafana/Redis) intentionally not provisioned
 
 # Create a docker-compose override file for development
 if [ ! -f "docker-compose.override.yml" ]; then
@@ -277,7 +208,4 @@ echo ""
 echo "Service URLs (when running):"
 echo "  Alice API:        http://localhost:8001"
 echo "  Bob-Resolver API: http://localhost:8002"
-echo "  Grafana:       http://localhost:3000 (admin/admin)"
-echo "  Prometheus:    http://localhost:9090"
-echo "  Redis:         localhost:6379"
 echo ""

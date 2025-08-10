@@ -1,75 +1,33 @@
-# Multi-stage build for optimized caching and smaller image
+# Single-stage build for consistency
 # Unified Bob-Resolver service: acts as both coordinator and taker/acceptor
-FROM denoland/deno:alpine-2.4.3 AS base
+FROM denoland/deno:alpine-2.4.3
 
 # Install necessary system dependencies
-RUN apk add --no-cache \
-    tini \
-    curl \
-    jq
+RUN apk add --no-cache tini curl jq
 
-# Stage 1: Dependencies
-FROM base AS deps
-
+# Set working directory
 WORKDIR /app
 
-# Set DENO_DIR for proper cache location
-ENV DENO_DIR=/home/deno/.cache/deno
+# Set production environment variables
+ENV DENO_NO_UPDATE_CHECK=1
+ENV DENO_NO_PROMPT=1
+ENV NODE_ENV=production
+ENV SERVICE_MODE=bob-resolver
+ENV DENO_KV_PATH=/app/data/kv/bob.db
 
-# Copy dependency files first for better caching
-COPY deno.json deno.lock* ./
+# Copy all source code
+COPY --chown=deno:deno . .
 
-# Change ownership to deno user
-RUN chown -R deno:deno /app
-
-# Cache dependencies as deno user
-USER deno
-RUN deno cache --unstable-kv --reload \
-    https://deno.land/x/dotenv@v3.2.2/mod.ts
-USER root
-
-# Stage 2: Build
-FROM deps AS build
-
-WORKDIR /app
-
-# Set DENO_DIR for proper cache location
-ENV DENO_DIR=/home/deno/.cache/deno
-
-# Copy source code
-COPY . .
-
-# Pre-cache all TypeScript files for faster startup as deno user
-USER deno
-RUN deno cache --unstable-kv \
-    resolver.ts \
-    run-resolver.ts \
-    bob-resolver-service.ts \
-    src/**/*.ts
-USER root
-
-# Stage 3: Runtime
-FROM base AS runtime
-
-WORKDIR /app
-
-# Copy from build stage
-COPY --from=build --chown=deno:deno /app /app
-COPY --from=deps --chown=deno:deno /home/deno/.cache/deno /home/deno/.cache/deno
-
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/data/secrets /app/data/orders /app/data/logs /app/data/cache /app/data/kv \
+# Create necessary directories
+RUN mkdir -p /app/data/secrets /app/data/orders /app/data/logs /app/data/kv \
     /app/pending-orders /app/completed-orders && \
     chown -R deno:deno /app/data /app/pending-orders /app/completed-orders
 
-# Switch to non-root user
-USER deno
+# Cache dependencies as root first
+RUN deno cache --unstable-kv --frozen bob-resolver-service.ts
 
-# Set environment variables for unified Bob-Resolver mode
-ENV DENO_DIR=/app/data/cache \
-    DENO_KV_PATH=/app/data/kv/bob.db \
-    NODE_ENV=production \
-    SERVICE_MODE=bob-resolver
+# Then switch to non-root user
+USER deno
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -78,7 +36,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Use tini to handle signals properly
 ENTRYPOINT ["/sbin/tini", "--"]
 
-# Default command - Unified Bob-Resolver service with health checks
+# Default command
 CMD ["deno", "run", \
      "--allow-net", \
      "--allow-env", \

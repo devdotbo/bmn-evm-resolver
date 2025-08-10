@@ -47,8 +47,8 @@ init:
 
 # Build all images (with cache)
 build:
-	@echo "Building Docker images..."
-	@docker-compose build
+    @echo "Building Docker images..."
+    @docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1
 
 # Rebuild specific service
 rebuild:
@@ -57,13 +57,13 @@ rebuild:
 		exit 1; \
 	fi
 	@echo "Rebuilding $(SERVICE)..."
-	@docker-compose build $(SERVICE)
+    @docker-compose build --build-arg BUILDKIT_INLINE_CACHE=1 $(SERVICE)
 	@docker-compose restart $(SERVICE)
 
 # Start all services (STANDARD COMMAND - always rebuild and show logs)
 up:
 	@echo "Building and starting all services..."
-	@docker-compose up -d --build && docker-compose logs
+    @docker-compose up -d --build && docker-compose logs
 	@echo ""
 	@echo "Services started successfully!"
 	@echo "Alice:        http://localhost:8001"

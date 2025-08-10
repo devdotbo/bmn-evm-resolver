@@ -1,12 +1,10 @@
 /**
- * PonderClient V2 - SQL over HTTP client using @ponder/client
- * 
- * This client uses the official @ponder/client library to query the Ponder indexer.
- * It provides type-safe queries with the Drizzle ORM query builder.
+ * PonderClient - SQL over HTTP client (no @ponder/client dependency)
+ *
+ * Performs direct HTTP POST to the Ponder `/sql` endpoint to avoid npm runtime
+ * resolution issues inside Deno containers.
  */
 
-import { createClient, eq, desc, and, or, gte, lte } from "npm:@ponder/client@0.12.0";
-import * as schema from "./ponder.schema.ts";
 import { getIndexerConfig } from "../config/indexer.ts";
 
 export interface IndexerConfig {
@@ -44,8 +42,8 @@ export interface AtomicSwap {
 }
 
 export class PonderClient {
-  private client: any;
   private baseUrl: string;
+  private sqlEndpoint: string;
   
   constructor(config: IndexerConfig = {}) {
     // Get full configuration
@@ -59,12 +57,31 @@ export class PonderClient {
       this.baseUrl = this.baseUrl.slice(0, -4);
     }
     
-    // Create @ponder/client instance
-    this.client = createClient(`${this.baseUrl}/sql`, { schema });
+    this.sqlEndpoint = `${this.baseUrl}/sql`;
     
     console.log("🔧 Initialized PonderClient with:");
     console.log("  Base URL:", this.baseUrl);
-    console.log("  SQL endpoint:", `${this.baseUrl}/sql`);
+    console.log("  SQL endpoint:", this.sqlEndpoint);
+  }
+  
+  private async postSql<T = any>(query: string): Promise<T[]> {
+    try {
+      const res = await fetch(this.sqlEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sql: query })
+      });
+      if (!res.ok) {
+        console.error("SQL error status:", res.status, res.statusText);
+        return [] as T[];
+      }
+      const json = await res.json();
+      const rows = (json?.data ?? json?.rows ?? []) as T[];
+      return rows;
+    } catch (e) {
+      console.error("HTTP SQL request failed:", e);
+      return [] as T[];
+    }
   }
   
   /**
@@ -72,18 +89,10 @@ export class PonderClient {
    */
   async getPendingSrcEscrows(resolverAddress: string) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.srcEscrow)
-        .where(
-          and(
-            eq(schema.srcEscrow.taker, resolverAddress.toLowerCase()),
-            eq(schema.srcEscrow.status, "created")
-          )
-        )
-        .execute();
-      
-      return result || [];
+      const taker = resolverAddress.toLowerCase();
+      const q = `SELECT * FROM src_escrow WHERE taker = '${taker}' AND status = 'created'`;
+      const result = await this.postSql(q);
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getPendingSrcEscrows:", error);
       return [];
@@ -95,14 +104,9 @@ export class PonderClient {
    */
   async getSrcEscrowByOrderHash(orderHash: string) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.srcEscrow)
-        .where(eq(schema.srcEscrow.orderHash, orderHash))
-        .limit(1)
-        .execute();
-      
-      return result?.[0] || null;
+      const q = `SELECT * FROM src_escrow WHERE order_hash = '${orderHash}' LIMIT 1`;
+      const result = await this.postSql(q);
+      return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getSrcEscrowByOrderHash:", error);
       return null;
@@ -114,14 +118,9 @@ export class PonderClient {
    */
   async getDstEscrowByHashlock(hashlock: string) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.dstEscrow)
-        .where(eq(schema.dstEscrow.hashlock, hashlock))
-        .limit(1)
-        .execute();
-      
-      return result?.[0] || null;
+      const q = `SELECT * FROM dst_escrow WHERE hashlock = '${hashlock}' LIMIT 1`;
+      const result = await this.postSql(q);
+      return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getDstEscrowByHashlock:", error);
       return null;
@@ -133,14 +132,9 @@ export class PonderClient {
    */
   async getAtomicSwapByOrderHash(orderHash: string) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.atomicSwap)
-        .where(eq(schema.atomicSwap.orderHash, orderHash))
-        .limit(1)
-        .execute();
-      
-      return result?.[0] || null;
+      const q = `SELECT * FROM atomic_swap WHERE order_hash = '${orderHash}' LIMIT 1`;
+      const result = await this.postSql(q);
+      return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getAtomicSwapByOrderHash:", error);
       return null;
@@ -152,22 +146,11 @@ export class PonderClient {
    */
   async getPendingAtomicSwaps(resolverAddress: string) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.atomicSwap)
-        .where(
-          and(
-            eq(schema.atomicSwap.srcTaker, resolverAddress.toLowerCase()),
-            or(
-              eq(schema.atomicSwap.status, "pending"),
-              eq(schema.atomicSwap.status, "src_created")
-            )
-          )
-        )
-        .execute();
-      
+      const taker = resolverAddress.toLowerCase();
+      const q = `SELECT * FROM atomic_swap WHERE src_taker = '${taker}' AND status IN ('pending','src_created')`;
+      const result = await this.postSql(q);
       console.log(`✅ Found ${result.length} pending swaps for ${resolverAddress}`);
-      return result || [];
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getPendingAtomicSwaps:", error);
       return [];
@@ -179,20 +162,9 @@ export class PonderClient {
    */
   async getActiveSwaps() {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.atomicSwap)
-        .where(
-          or(
-            eq(schema.atomicSwap.status, "pending"),
-            eq(schema.atomicSwap.status, "src_created")
-          )
-        )
-        .limit(100)
-        .execute();
-      
-      // Filter for swaps without dst escrow
-      return (result || []).filter(swap => !swap.dstEscrowAddress);
+      const q = `SELECT * FROM atomic_swap WHERE status IN ('pending','src_created') AND (dst_escrow_address IS NULL OR dst_escrow_address = '') LIMIT 100`;
+      const result = await this.postSql(q);
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getActiveSwaps:", error);
       return [];
@@ -204,13 +176,9 @@ export class PonderClient {
    */
   async getSwapsByHashlock(hashlock: string) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.atomicSwap)
-        .where(eq(schema.atomicSwap.hashlock, hashlock))
-        .execute();
-      
-      return result || [];
+      const q = `SELECT * FROM atomic_swap WHERE hashlock = '${hashlock}'`;
+      const result = await this.postSql(q);
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getSwapsByHashlock:", error);
       return [];
@@ -222,14 +190,9 @@ export class PonderClient {
    */
   async getCompletedSwaps(limit: number = 10) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.atomicSwap)
-        .where(eq(schema.atomicSwap.status, "completed"))
-        .limit(limit)
-        .execute();
-      
-      return result || [];
+      const q = `SELECT * FROM atomic_swap WHERE status = 'completed' LIMIT ${limit}`;
+      const result = await this.postSql(q);
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getCompletedSwaps:", error);
       return [];
@@ -241,25 +204,9 @@ export class PonderClient {
    */
   async getRevealedSecrets() {
     try {
-      const result = await this.client.db
-        .select({
-          hashlock: schema.atomicSwap.hashlock,
-          secret: schema.atomicSwap.secret,
-        })
-        .from(schema.atomicSwap)
-        .where(
-          and(
-            schema.atomicSwap.secret !== null,
-            or(
-              eq(schema.atomicSwap.status, "completed"),
-              eq(schema.atomicSwap.status, "dst_created")
-            )
-          )
-        )
-        .limit(100)
-        .execute();
-      
-      return (result || []).filter(item => item.hashlock && item.secret);
+      const q = `SELECT hashlock, secret FROM atomic_swap WHERE secret IS NOT NULL AND status IN ('completed','dst_created') LIMIT 100`;
+      const result = await this.postSql(q);
+      return (result ?? []).filter((r: any) => r.hashlock && r.secret);
     } catch (error) {
       console.error("❌ Error in getRevealedSecrets:", error);
       return [];
@@ -271,16 +218,10 @@ export class PonderClient {
    */
   async getWithdrawalByEscrow(escrowAddress: string) {
     try {
-      const result = await this.client.db
-        .select({
-          secret: schema.escrowWithdrawal.secret,
-        })
-        .from(schema.escrowWithdrawal)
-        .where(eq(schema.escrowWithdrawal.escrowAddress, escrowAddress.toLowerCase()))
-        .limit(1)
-        .execute();
-      
-      return result?.[0] || null;
+      const addr = escrowAddress.toLowerCase();
+      const q = `SELECT secret FROM escrow_withdrawal WHERE escrow_address = '${addr}' LIMIT 1`;
+      const result = await this.postSql(q);
+      return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getWithdrawalByEscrow:", error);
       return null;
@@ -292,37 +233,20 @@ export class PonderClient {
    */
   async getChainStatistics(chainId: number) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.chainStatistics)
-        .where(eq(schema.chainStatistics.chainId, chainId))
-        .limit(1)
-        .execute();
-      
+      const q = `SELECT * FROM chain_statistics WHERE chain_id = ${chainId} LIMIT 1`;
+      const result = await this.postSql(q);
       if (result?.[0]) {
         return {
-          totalSrcEscrows: Number(result[0].totalSrcEscrows),
-          totalDstEscrows: Number(result[0].totalDstEscrows),
-          totalWithdrawals: Number(result[0].totalWithdrawals),
-          totalCancellations: Number(result[0].totalCancellations),
+          totalSrcEscrows: Number(result[0].total_src_escrows ?? 0),
+          totalDstEscrows: Number(result[0].total_dst_escrows ?? 0),
+          totalWithdrawals: Number(result[0].total_withdrawals ?? 0),
+          totalCancellations: Number(result[0].total_cancellations ?? 0),
         };
       }
-      
-      // If no statistics exist, return zeros
-      return {
-        totalSrcEscrows: 0,
-        totalDstEscrows: 0,
-        totalWithdrawals: 0,
-        totalCancellations: 0,
-      };
+      return { totalSrcEscrows: 0, totalDstEscrows: 0, totalWithdrawals: 0, totalCancellations: 0 };
     } catch (error) {
       console.error("❌ Error in getChainStatistics:", error);
-      return {
-        totalSrcEscrows: 0,
-        totalDstEscrows: 0,
-        totalWithdrawals: 0,
-        totalCancellations: 0,
-      };
+      return { totalSrcEscrows: 0, totalDstEscrows: 0, totalWithdrawals: 0, totalCancellations: 0 };
     }
   }
   
@@ -331,38 +255,16 @@ export class PonderClient {
    */
   async getRecentWithdrawals(limit: number = 10) {
     try {
-      // First get withdrawals
-      const withdrawals = await this.client.db
-        .select()
-        .from(schema.escrowWithdrawal)
-        .limit(limit)
-        .execute();
-      
-      // Then get matching escrows for hashlocks and order hashes
-      const results = [];
-      for (const withdrawal of withdrawals) {
-        // Try to find the source escrow for this withdrawal
-        const srcEscrow = await this.client.db
-          .select({
-            hashlock: schema.srcEscrow.hashlock,
-            orderHash: schema.srcEscrow.orderHash,
-          })
-          .from(schema.srcEscrow)
-          .where(eq(schema.srcEscrow.escrowAddress, withdrawal.escrowAddress))
-          .limit(1)
-          .execute();
-        
-        results.push({
-          hashlock: srcEscrow?.[0]?.hashlock || "",
-          secret: withdrawal.secret,
-          orderHash: srcEscrow?.[0]?.orderHash || "",
-          escrowAddress: withdrawal.escrowAddress,
-          chainId: withdrawal.chainId,
-          timestamp: withdrawal.withdrawnAt,
-        });
-      }
-      
-      return results;
+      const q = `
+        SELECT w.escrow_address, w.chain_id, w.withdrawn_at AS timestamp, w.secret,
+               s.hashlock, s.order_hash
+        FROM escrow_withdrawal w
+        LEFT JOIN src_escrow s ON s.escrow_address = w.escrow_address
+        ORDER BY w.withdrawn_at DESC
+        LIMIT ${limit}
+      `;
+      const result = await this.postSql(q);
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getRecentWithdrawals:", error);
       return [];
@@ -374,13 +276,9 @@ export class PonderClient {
    */
   async getBMNHolders(limit: number = 10) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.bmnTokenHolder)
-        .limit(limit)
-        .execute();
-      
-      return result || [];
+      const q = `SELECT * FROM bmn_token_holder LIMIT ${limit}`;
+      const result = await this.postSql(q);
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getBMNHolders:", error);
       return [];
@@ -392,14 +290,9 @@ export class PonderClient {
    */
   async getActiveLimitOrders(limit: number = 10) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.limitOrder)
-        .where(eq(schema.limitOrder.status, "active"))
-        .limit(limit)
-        .execute();
-      
-      return result || [];
+      const q = `SELECT * FROM limit_order WHERE status = 'active' LIMIT ${limit}`;
+      const result = await this.postSql(q);
+      return result ?? [];
     } catch (error) {
       console.error("❌ Error in getActiveLimitOrders:", error);
       return [];
@@ -411,20 +304,10 @@ export class PonderClient {
    */
   async isResolverWhitelisted(resolver: string, chainId: number) {
     try {
-      const result = await this.client.db
-        .select()
-        .from(schema.resolverWhitelist)
-        .where(
-          and(
-            eq(schema.resolverWhitelist.resolver, resolver.toLowerCase()),
-            eq(schema.resolverWhitelist.chainId, chainId),
-            eq(schema.resolverWhitelist.isWhitelisted, true)
-          )
-        )
-        .limit(1)
-        .execute();
-      
-      return result?.length > 0;
+      const addr = resolver.toLowerCase();
+      const q = `SELECT 1 FROM resolver_whitelist WHERE resolver = '${addr}' AND chain_id = ${chainId} AND is_whitelisted = true LIMIT 1`;
+      const result = await this.postSql(q);
+      return (result ?? []).length > 0;
     } catch (error) {
       console.error("❌ Error in isResolverWhitelisted:", error);
       return false;
@@ -440,61 +323,25 @@ export class PonderClient {
     onUpdate: (swaps: any[]) => void,
     onError?: (error: Error) => void
   ): () => void {
-    try {
-      // Attempt to use live query
-      const { unsubscribe } = this.client.live(
-        (db) => db
-          .select()
-          .from(schema.atomicSwap)
-          .where(
-            and(
-              eq(schema.atomicSwap.srcTaker, resolverAddress.toLowerCase()),
-              or(
-                eq(schema.atomicSwap.status, "pending"),
-                eq(schema.atomicSwap.status, "src_created")
-              )
-            )
-          )
-          .execute(),
-        onUpdate,
-        onError || ((error) => console.error("Live query error:", error))
-      );
-      
-      return unsubscribe;
-    } catch (error) {
-      console.error("❌ Live queries not supported, falling back to polling");
-      
-      // Fallback to polling
-      let intervalId: number | undefined;
-      let isSubscribed = true;
-      
-      const poll = async () => {
-        if (!isSubscribed) return;
-        
-        try {
-          const swaps = await this.getPendingAtomicSwaps(resolverAddress);
-          onUpdate(swaps);
-        } catch (error) {
-          if (onError) {
-            onError(error as Error);
-          }
-        }
-      };
-      
-      // Initial poll
-      poll();
-      
-      // Poll every 5 seconds
-      intervalId = setInterval(poll, 5000);
-      
-      // Return unsubscribe function
-      return () => {
-        isSubscribed = false;
-        if (intervalId) {
-          clearInterval(intervalId);
-        }
-      };
-    }
+    // Polling-based subscription
+    let intervalId: number | undefined;
+    let isSubscribed = true;
+
+    const poll = async () => {
+      if (!isSubscribed) return;
+      try {
+        const swaps = await this.getPendingAtomicSwaps(resolverAddress);
+        onUpdate(swaps);
+      } catch (error) {
+        if (onError) onError(error as Error);
+      }
+    };
+    poll();
+    intervalId = setInterval(poll, 5000) as unknown as number;
+    return () => {
+      isSubscribed = false;
+      if (intervalId) clearInterval(intervalId);
+    };
   }
 }
 

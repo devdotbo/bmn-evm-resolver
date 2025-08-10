@@ -12,7 +12,7 @@ setTimeout(() => {
   Deno.exit(0);
 }, 10000);
 
-import { createClient, eq, desc } from "npm:@ponder/client@0.12.0";
+import { createClient, eq, desc } from "@ponder/client";
 import * as schema from "./src/indexer/ponder.schema.ts";
 
 async function testPonderClient() {
