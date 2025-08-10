@@ -1,21 +1,25 @@
 #!/usr/bin/env -S deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv
 
 /**
- * Bob Service - Swap acceptor/taker service for cross-chain atomic swaps
+ * Bob-Resolver Unified Service - Combined taker and resolver service for cross-chain atomic swaps
  * 
- * This service runs continuously to:
- * - Monitor pending atomic swaps as the taker/acceptor
- * - Fill profitable orders from the taker perspective
+ * This unified service runs continuously to:
+ * - Act as RESOLVER: Monitor and fill Alice's limit orders
+ * - Act as BOB: Create destination escrows and complete swaps
+ * - Fill profitable orders using SimpleLimitOrderProtocol
  * - Create destination escrows in response to source escrows
- * - Complete swaps by revealing secrets
- * - Provide health check endpoints
+ * - Withdraw from source escrows by revealing secrets
+ * - Monitor for profitable swaps from both maker and taker perspectives
+ * - Manage keys, secrets, and order processing
+ * - Provide health check endpoints on port 8002
  * 
- * Bob mode is essentially the resolver acting as the counterparty (taker)
- * rather than the coordinator/maker role.
+ * This service combines both Bob (taker/acceptor) and Resolver (coordinator) roles
+ * into a single unified service for simplified deployment and operation.
  */
 
 import { createResolver } from "./src/resolver/resolver.ts";
 import { startHealthServer } from "./src/utils/health-server.ts";
+import { fillLimitOrder, ensureLimitOrderApprovals } from "./src/utils/limit-order.ts";
 
 // Configuration from environment variables
 const config = {
@@ -25,6 +29,8 @@ const config = {
   pollingInterval: parseInt(Deno.env.get("BOB_POLLING_INTERVAL") || Deno.env.get("POLLING_INTERVAL") || "10000"),
   minProfitBps: parseInt(Deno.env.get("BOB_MIN_PROFIT_BPS") || Deno.env.get("MIN_PROFIT_BPS") || "0"),
   healthPort: parseInt(Deno.env.get("BOB_HEALTH_PORT") || "8002"),
+  // Unified mode enables both resolver and bob capabilities
+  unifiedMode: true,
 };
 
 // Validate configuration
@@ -42,30 +48,98 @@ if (!config.privateKey) {
   Deno.exit(1);
 }
 
-console.log("🤖 Starting Bob Service (Taker/Acceptor) with configuration:");
+console.log("🤖 Starting Bob-Resolver Unified Service with configuration:");
 console.log(`  📡 Indexer URL: ${config.indexerUrl}`);
 console.log(`  ⏱️  Polling Interval: ${config.pollingInterval}ms`);
 console.log(`  💰 Min Profit: ${config.minProfitBps} bps (${config.minProfitBps / 100}%)`);
 console.log(`  🏥 Health Port: ${config.healthPort}`);
 console.log(`  🔑 Private Key: ${config.privateKey ? "Set" : "Not set"}`);
 console.log(`  🔑 Ankr API Key: ${config.ankrApiKey ? "Set" : "Not set (using public endpoints)"}`);
-console.log(`  🎭 Service Mode: Bob (Taker/Acceptor)`);
+console.log(`  🎭 Service Mode: Unified Bob-Resolver (Taker + Coordinator)`);
+console.log(`  ✨ Capabilities: Fill limit orders, create escrows, withdraw funds`);
 
-// Create the resolver in Bob mode
+// Create the unified resolver with both Bob and Resolver capabilities
 const resolver = createResolver(config);
 let healthServer: Deno.HttpServer | null = null;
 
+// Setup HTTP endpoints for direct order processing
+async function setupHttpEndpoints() {
+  const server = Deno.serve({ port: config.healthPort }, async (req) => {
+    const url = new URL(req.url);
+    
+    // Health check endpoint
+    if (url.pathname === "/health") {
+      return new Response(JSON.stringify({ 
+        status: "healthy", 
+        service: "bob-resolver-unified",
+        mode: "taker+coordinator",
+        capabilities: ["fill-orders", "create-escrows", "withdraw-funds"],
+        timestamp: new Date().toISOString() 
+      }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    // Fill order endpoint (resolver capability)
+    if (url.pathname === "/fill-order" && req.method === "POST") {
+      try {
+        const orderData = await req.json();
+        console.log("📝 Received order to fill:", orderData);
+        // Process the order through the resolver
+        const result = await resolver.processOrder(orderData);
+        return new Response(JSON.stringify({ success: true, result }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch (error) {
+        console.error("Error filling order:", error);
+        return new Response(JSON.stringify({ success: false, error: error.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+    
+    // Withdraw endpoint (bob capability)
+    if (url.pathname === "/withdraw" && req.method === "POST") {
+      try {
+        const withdrawData = await req.json();
+        console.log("💸 Received withdrawal request:", withdrawData);
+        // Process withdrawal through the resolver
+        const result = await resolver.processWithdrawal(withdrawData);
+        return new Response(JSON.stringify({ success: true, result }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch (error) {
+        console.error("Error processing withdrawal:", error);
+        return new Response(JSON.stringify({ success: false, error: error.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+    
+    return new Response("Not Found", { status: 404 });
+  });
+  
+  return server;
+}
+
 async function main() {
   try {
-    // Start health check server
-    console.log("\n🏥 Starting health check server...");
-    healthServer = startHealthServer(config.healthPort, "bob");
-    console.log("✅ Health server started successfully");
+    // Start HTTP server with endpoints
+    console.log("\n🏥 Starting unified service with HTTP endpoints...");
+    healthServer = await setupHttpEndpoints();
+    console.log("✅ HTTP server started successfully on port", config.healthPort);
+    console.log("   Available endpoints:");
+    console.log("   - GET  /health       - Health check");
+    console.log("   - POST /fill-order   - Fill a limit order (resolver)");
+    console.log("   - POST /withdraw     - Withdraw from escrow (bob)");
 
-    // Start the resolver in Bob mode
-    console.log("\n🚀 Starting Bob service...");
-    console.log("   Bob will act as taker/acceptor for atomic swaps");
-    console.log("   Creating destination escrows and completing swaps");
+    // Start the unified resolver service
+    console.log("\n🚀 Starting Bob-Resolver unified service...");
+    console.log("   Service will operate in dual mode:");
+    console.log("   - RESOLVER: Fill Alice's limit orders");
+    console.log("   - BOB: Create destination escrows and complete swaps");
     console.log("   Press Ctrl+C to stop\n");
     
     await resolver.start();
@@ -73,25 +147,25 @@ async function main() {
     // Keep the process alive and handle graceful shutdown
     await new Promise<void>((resolve) => {
       const shutdown = async () => {
-        console.log("\n🛑 Shutting down Bob service gracefully...");
+        console.log("\n🛑 Shutting down Bob-Resolver unified service gracefully...");
         
         // Stop the resolver
         try {
           await resolver.stop();
         } catch (error) {
-          console.error("Error stopping Bob resolver:", error);
+          console.error("Error stopping unified resolver:", error);
         }
         
-        // Close health server
+        // Close HTTP server
         try {
           if (healthServer) {
             await healthServer.shutdown();
           }
         } catch (error) {
-          console.error("Error closing health server:", error);
+          console.error("Error closing HTTP server:", error);
         }
         
-        console.log("✅ Bob service stopped");
+        console.log("✅ Bob-Resolver unified service stopped");
         resolve();
       };
 
@@ -101,7 +175,7 @@ async function main() {
     });
 
   } catch (error) {
-    console.error("❌ Fatal error in Bob service:", error);
+    console.error("❌ Fatal error in Bob-Resolver unified service:", error);
     
     // Cleanup on error
     try {
