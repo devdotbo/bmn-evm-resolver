@@ -13,17 +13,6 @@ scrape_configs:
         labels:
           service: 'prometheus'
 
-  # BMN Resolver Service
-  - job_name: 'bmn-resolver'
-    static_configs:
-      - targets: ['resolver:8000']
-        labels:
-          service: 'resolver'
-          role: 'coordinator'
-    metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
-
   # BMN Alice Service
   - job_name: 'bmn-alice'
     static_configs:
@@ -35,13 +24,13 @@ scrape_configs:
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # BMN Bob Service
-  - job_name: 'bmn-bob'
+  # BMN Bob-Resolver Service (unified coordinator and acceptor)
+  - job_name: 'bmn-bob-resolver'
     static_configs:
       - targets: ['bob:8002']
         labels:
-          service: 'bob'
-          role: 'acceptor'
+          service: 'bob-resolver'
+          role: 'acceptor-coordinator'
     metrics_path: '/metrics'
     scrape_interval: 10s
     scrape_timeout: 5s
