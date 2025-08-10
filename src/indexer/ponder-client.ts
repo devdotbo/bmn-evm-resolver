@@ -1,11 +1,12 @@
 /**
- * PonderClient - SQL over HTTP client (no @ponder/client dependency)
+ * PonderClient - SQL over HTTP client using @ponder/client
  *
- * Performs direct HTTP POST to the Ponder `/sql` endpoint to avoid npm runtime
- * resolution issues inside Deno containers.
+ * This implementation uses the official client per docs:
+ * https://ponder.sh/docs/query/sql-over-http#sql-over-http
  */
 
 import { getIndexerConfig } from "../config/indexer.ts";
+import { createClient, sql } from "@ponder/client";
 
 export interface IndexerConfig {
   url?: string;
@@ -43,45 +44,22 @@ export interface AtomicSwap {
 
 export class PonderClient {
   private baseUrl: string;
-  private sqlEndpoint: string;
-  
+  private sqlUrl: string;
+  private client: ReturnType<typeof createClient>;
+
   constructor(config: IndexerConfig = {}) {
-    // Get full configuration
     const fullConfig = getIndexerConfig();
-    
-    // Use provided URL or fallback to config or default
-    this.baseUrl = config.url || fullConfig.sqlUrl.replace("/sql", "") || "https://index-bmn.up.railway.app";
-    
-    // Ensure we have the correct base URL without /sql suffix
-    if (this.baseUrl.endsWith("/sql")) {
-      this.baseUrl = this.baseUrl.slice(0, -4);
-    }
-    
-    this.sqlEndpoint = `${this.baseUrl}/sql`;
-    
+    const provided = config.url || fullConfig.sqlUrl.replace("/sql", "") || "https://index-bmn.up.railway.app";
+
+    this.baseUrl = provided.endsWith("/sql") ? provided.slice(0, -4) : provided;
+    this.sqlUrl = `${this.baseUrl}/sql`;
+
+    // Initialize official client
+    this.client = createClient(this.sqlUrl);
+
     console.log("🔧 Initialized PonderClient with:");
     console.log("  Base URL:", this.baseUrl);
-    console.log("  SQL endpoint:", this.sqlEndpoint);
-  }
-  
-  private async postSql<T = any>(query: string): Promise<T[]> {
-    try {
-      const res = await fetch(this.sqlEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sql: query })
-      });
-      if (!res.ok) {
-        console.error("SQL error status:", res.status, res.statusText);
-        return [] as T[];
-      }
-      const json = await res.json();
-      const rows = (json?.data ?? json?.rows ?? []) as T[];
-      return rows;
-    } catch (e) {
-      console.error("HTTP SQL request failed:", e);
-      return [] as T[];
-    }
+    console.log("  SQL endpoint:", this.sqlUrl);
   }
   
   /**
@@ -90,8 +68,7 @@ export class PonderClient {
   async getPendingSrcEscrows(resolverAddress: string) {
     try {
       const taker = resolverAddress.toLowerCase();
-      const q = `SELECT * FROM src_escrow WHERE taker = '${taker}' AND status = 'created'`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM src_escrow WHERE taker = ${taker} AND status = 'created'`);
       return result ?? [];
     } catch (error) {
       console.error("❌ Error in getPendingSrcEscrows:", error);
@@ -104,8 +81,7 @@ export class PonderClient {
    */
   async getSrcEscrowByOrderHash(orderHash: string) {
     try {
-      const q = `SELECT * FROM src_escrow WHERE order_hash = '${orderHash}' LIMIT 1`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM src_escrow WHERE order_hash = ${orderHash} LIMIT 1`);
       return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getSrcEscrowByOrderHash:", error);
@@ -118,8 +94,7 @@ export class PonderClient {
    */
   async getDstEscrowByHashlock(hashlock: string) {
     try {
-      const q = `SELECT * FROM dst_escrow WHERE hashlock = '${hashlock}' LIMIT 1`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM dst_escrow WHERE hashlock = ${hashlock} LIMIT 1`);
       return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getDstEscrowByHashlock:", error);
@@ -132,8 +107,7 @@ export class PonderClient {
    */
   async getAtomicSwapByOrderHash(orderHash: string) {
     try {
-      const q = `SELECT * FROM atomic_swap WHERE order_hash = '${orderHash}' LIMIT 1`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM atomic_swap WHERE order_hash = ${orderHash} LIMIT 1`);
       return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getAtomicSwapByOrderHash:", error);
@@ -147,8 +121,7 @@ export class PonderClient {
   async getPendingAtomicSwaps(resolverAddress: string) {
     try {
       const taker = resolverAddress.toLowerCase();
-      const q = `SELECT * FROM atomic_swap WHERE src_taker = '${taker}' AND status IN ('pending','src_created')`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM atomic_swap WHERE src_taker = ${taker} AND (status = 'pending' OR status = 'src_created')`);
       console.log(`✅ Found ${result.length} pending swaps for ${resolverAddress}`);
       return result ?? [];
     } catch (error) {
@@ -162,8 +135,7 @@ export class PonderClient {
    */
   async getActiveSwaps() {
     try {
-      const q = `SELECT * FROM atomic_swap WHERE status IN ('pending','src_created') AND (dst_escrow_address IS NULL OR dst_escrow_address = '') LIMIT 100`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM atomic_swap WHERE (status = 'pending' OR status = 'src_created') AND (dst_escrow_address IS NULL OR dst_escrow_address = '') LIMIT 100`);
       return result ?? [];
     } catch (error) {
       console.error("❌ Error in getActiveSwaps:", error);
@@ -176,8 +148,7 @@ export class PonderClient {
    */
   async getSwapsByHashlock(hashlock: string) {
     try {
-      const q = `SELECT * FROM atomic_swap WHERE hashlock = '${hashlock}'`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM atomic_swap WHERE hashlock = ${hashlock}`);
       return result ?? [];
     } catch (error) {
       console.error("❌ Error in getSwapsByHashlock:", error);
@@ -190,8 +161,7 @@ export class PonderClient {
    */
   async getCompletedSwaps(limit: number = 10) {
     try {
-      const q = `SELECT * FROM atomic_swap WHERE status = 'completed' LIMIT ${limit}`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM atomic_swap WHERE status = 'completed' LIMIT ${limit}`);
       return result ?? [];
     } catch (error) {
       console.error("❌ Error in getCompletedSwaps:", error);
@@ -204,8 +174,7 @@ export class PonderClient {
    */
   async getRevealedSecrets() {
     try {
-      const q = `SELECT hashlock, secret FROM atomic_swap WHERE secret IS NOT NULL AND status IN ('completed','dst_created') LIMIT 100`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT hashlock, secret FROM atomic_swap WHERE secret IS NOT NULL AND (status = 'completed' OR status = 'dst_created') LIMIT 100`);
       return (result ?? []).filter((r: any) => r.hashlock && r.secret);
     } catch (error) {
       console.error("❌ Error in getRevealedSecrets:", error);
@@ -219,8 +188,7 @@ export class PonderClient {
   async getWithdrawalByEscrow(escrowAddress: string) {
     try {
       const addr = escrowAddress.toLowerCase();
-      const q = `SELECT secret FROM escrow_withdrawal WHERE escrow_address = '${addr}' LIMIT 1`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT secret FROM escrow_withdrawal WHERE escrow_address = ${addr} LIMIT 1`);
       return result?.[0] ?? null;
     } catch (error) {
       console.error("❌ Error in getWithdrawalByEscrow:", error);
@@ -233,8 +201,7 @@ export class PonderClient {
    */
   async getChainStatistics(chainId: number) {
     try {
-      const q = `SELECT * FROM chain_statistics WHERE chain_id = ${chainId} LIMIT 1`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM chain_statistics WHERE chain_id = ${chainId} LIMIT 1`);
       if (result?.[0]) {
         return {
           totalSrcEscrows: Number(result[0].total_src_escrows ?? 0),
@@ -255,15 +222,14 @@ export class PonderClient {
    */
   async getRecentWithdrawals(limit: number = 10) {
     try {
-      const q = `
+      const result = await this.client.db.execute(sql`
         SELECT w.escrow_address, w.chain_id, w.withdrawn_at AS timestamp, w.secret,
                s.hashlock, s.order_hash
         FROM escrow_withdrawal w
         LEFT JOIN src_escrow s ON s.escrow_address = w.escrow_address
         ORDER BY w.withdrawn_at DESC
         LIMIT ${limit}
-      `;
-      const result = await this.postSql(q);
+      `);
       return result ?? [];
     } catch (error) {
       console.error("❌ Error in getRecentWithdrawals:", error);
@@ -276,8 +242,7 @@ export class PonderClient {
    */
   async getBMNHolders(limit: number = 10) {
     try {
-      const q = `SELECT * FROM bmn_token_holder LIMIT ${limit}`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM bmn_token_holder LIMIT ${limit}`);
       return result ?? [];
     } catch (error) {
       console.error("❌ Error in getBMNHolders:", error);
@@ -290,8 +255,7 @@ export class PonderClient {
    */
   async getActiveLimitOrders(limit: number = 10) {
     try {
-      const q = `SELECT * FROM limit_order WHERE status = 'active' LIMIT ${limit}`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT * FROM limit_order WHERE status = 'active' LIMIT ${limit}`);
       return result ?? [];
     } catch (error) {
       console.error("❌ Error in getActiveLimitOrders:", error);
@@ -305,8 +269,7 @@ export class PonderClient {
   async isResolverWhitelisted(resolver: string, chainId: number) {
     try {
       const addr = resolver.toLowerCase();
-      const q = `SELECT 1 FROM resolver_whitelist WHERE resolver = '${addr}' AND chain_id = ${chainId} AND is_whitelisted = true LIMIT 1`;
-      const result = await this.postSql(q);
+      const result = await this.client.db.execute(sql`SELECT 1 FROM resolver_whitelist WHERE resolver = ${addr} AND chain_id = ${chainId} AND is_whitelisted = true LIMIT 1`);
       return (result ?? []).length > 0;
     } catch (error) {
       console.error("❌ Error in isResolverWhitelisted:", error);

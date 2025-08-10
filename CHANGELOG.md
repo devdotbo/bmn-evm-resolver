@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed - 2025-08-10
+- SQL over HTTP works via the official client per docs ([Ponder SQL over HTTP](https://ponder.sh/docs/query/sql-over-http#sql-over-http))
+  - Rewrote `src/indexer/ponder-client.ts` to use `@ponder/client` with parameterized `sql` queries
+  - Replaced raw `fetch`-based POSTs and removed noisy 404 logs
+  - Clarified behavior: `curl` to `/sql` may 404, but `@ponder/client` middleware endpoint functions as intended
+  - Updated `test-ponder-sql.ts` to use untyped `client.db.execute(sql\`...\`)` smoke tests; verified against Railway indexer
+
+### Fixed - 2025-08-10
 - Eliminated `drizzle-orm` runtime resolution errors inside containers by switching `PonderClient` to direct SQL-over-HTTP (POST /sql) and updating Docker config
   - Replaced `@ponder/client` usage at runtime with lightweight HTTP client in `src/indexer/ponder-client.ts`
   - Set `DENO_NODE_MODULES_DIR=none` and removed `/app/node_modules` to avoid npm bin/symlink issues
