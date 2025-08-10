@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-08-10
+- **Created limit-order.ts utility module** - Centralized SimpleLimitOrderProtocol interaction logic
+  - `fillLimitOrder` function for atomic order filling with PostInteraction support
+  - `ensureLimitOrderApprovals` for managing token approvals for both protocol and factory
+  - `calculateOrderHash` for EIP-712 order hashing
+  - Integrated error handling and retry logic
+  - Full PostInteraction event monitoring
+
+### Changed - 2025-08-10
+- **Refactored resolver to use SimpleLimitOrderProtocol utility** 
+  - Replaced inline fillOrderArgs calls with centralized `fillLimitOrder` function
+  - Simplified approval management using `ensureLimitOrderApprovals`
+  - Improved code maintainability and reusability
+  - Ensured proper POST_INTERACTION_CALL_FLAG is set in order flags
+
 ### Added
 - **Implemented real Ponder SQL client for atomic swap queries** - Replaced stubbed PonderClient with fully functional HTTP-based SQL implementation
   - Implements the @ponder/client protocol without requiring the npm package
