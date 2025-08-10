@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
 ### Changed - 2025-08-07 (Container env and tasks)
 - Docker entrypoints no longer pass `--env-file=.env`; Docker Compose now supplies env vars
 - `make test` uses container-friendly task `resolver:test:docker`
@@ -15,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added - 2025-08-07
 - `src/types/contracts.ts`: typed contract address mapping for factories, protocols, and tokens
+
 
 ### Fixed - 2025-08-07 (Complete Docker Success)
 - **Alice service now runs continuously** instead of exiting after showing help
