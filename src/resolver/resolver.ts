@@ -7,6 +7,7 @@ import {
   decodeAbiParameters,
   type Address,
   type Hash,
+  type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
@@ -510,23 +511,16 @@ export class UnifiedResolver {
       const wallet = chainId === base.id ? this.baseWallet : this.optimismWallet;
       const client = chainId === base.id ? this.baseClient : this.optimismClient;
       
-      console.log(`💰 Withdrawing from source escrow: ${escrow.escrowAddress}`);
-
-      const { request } = await client.simulateContract({
-        address: escrow.escrowAddress as Address,
-        abi: EscrowSrcV2Abi.abi,
-        functionName: "withdraw",
-        args: [secret],
-        account: this.account,
-      });
-
-      const hash = await wallet.writeContract(request);
-      console.log(`📝 Withdrawal transaction sent: ${hash}`);
-
-      const receipt = await client.waitForTransactionReceipt({ hash });
-      console.log(`✅ Successfully withdrew from source escrow in tx: ${receipt.transactionHash}`);
+      // Use the withdrawal manager for proper immutables handling
+      const result = await this.withdrawManager.withdrawFromSource(
+        escrow.hashlock,
+        secret as `0x${string}`,
+        client,
+        wallet,
+        this.account
+      );
       
-      return true;
+      return result.success;
     } catch (error) {
       console.error(`❌ Failed to withdraw from source:`, error);
       await this.secretManager.markFailed(escrow.hashlock, (error as Error).message);
