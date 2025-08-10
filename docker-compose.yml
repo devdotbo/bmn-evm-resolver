@@ -14,7 +14,7 @@ services:
       - DENO_DIR=/app/data/cache
       - SERVICE_NAME=alice
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - INDEXER_URL=http://host.docker.internal:42069
+      - INDEXER_URL=http://bmn-indexer:42069
       - RESOLVER_URL=http://bob:8002
     env_file:
       - .env
@@ -53,7 +53,7 @@ services:
       - SERVICE_NAME=bob-resolver
       - SERVICE_MODE=bob-resolver
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - INDEXER_URL=http://host.docker.internal:42069
+      - INDEXER_URL=http://bmn-indexer:42069
       # Environment variables for unified Bob-Resolver service
       - RESOLVER_PRIVATE_KEY=${RESOLVER_PRIVATE_KEY}
       - BOB_PRIVATE_KEY=${BOB_PRIVATE_KEY:-${RESOLVER_PRIVATE_KEY}}
