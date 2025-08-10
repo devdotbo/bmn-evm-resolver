@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - 2025-08-10
+- docker-compose: use bind mount `./data:/app/data` instead of named volume `bmn-data`
+- deno tasks: point to actual entrypoints
+  - resolver → `src/resolver/resolver.ts`
+  - alice → `alice-service.ts`
+  - added `bob` → `bob-resolver-service.ts`
+- bob-resolver-service: fixed approval + fill flow to use protocol and factory per chain; include `extensionData`
+- escrow-withdraw: implemented `withdraw()` with proper chain client selection and key usage
+
 ### Fixed - 2025-08-10
 - SQL over HTTP standardized on official client ([Ponder SQL over HTTP](https://ponder.sh/docs/query/sql-over-http#sql-over-http))
   - `ponder-client.ts` now uses `@ponder/client` with parameterized `sql` queries

@@ -385,11 +385,36 @@ export class EscrowWithdrawManager {
       console.log(`   Chain: ${escrow.chainId}`);
       console.log(`   Hashlock: ${escrow.hashlock}`);
       
-      // Get chain-specific clients (simplified for now, extend as needed)
-      // This would need to be enhanced with proper chain selection
-      // For now, just returning false to avoid implementation complexity
-      console.log("⚠️ Withdrawal implementation pending proper chain client setup");
-      return false;
+      const ankrKey = Deno.env.get("ANKR_API_KEY") || "";
+      const publicClient = createPublicClient({
+        chain: escrow.chainId === base.id ? base : optimism,
+        transport: http(escrow.chainId === base.id ? `https://rpc.ankr.com/base/${ankrKey}` : `https://rpc.ankr.com/optimism/${ankrKey}`),
+      });
+      const { privateKeyToAccount } = await import("viem/accounts");
+      const pk = (Deno.env.get("RESOLVER_PRIVATE_KEY") || Deno.env.get("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
+      if (!pk) throw new Error("Missing RESOLVER_PRIVATE_KEY/ALICE_PRIVATE_KEY for withdrawal");
+      const walletClient = createWalletClient({
+        chain: escrow.chainId === base.id ? base : optimism,
+        transport: http(escrow.chainId === base.id ? `https://rpc.ankr.com/base/${ankrKey}` : `https://rpc.ankr.com/optimism/${ankrKey}`),
+        account: privateKeyToAccount(pk),
+      });
+      
+      const result = escrow.isSource
+        ? await this.withdrawFromSource(
+            escrow.hashlock,
+            escrow.secret as `0x${string}`,
+            publicClient,
+            walletClient,
+            walletClient.account
+          )
+        : await this.withdrawFromDestination(
+            escrow.hashlock,
+            publicClient,
+            walletClient,
+            walletClient.account
+          );
+      
+      return result.success;
       
     } catch (error) {
       console.error("❌ Error during withdrawal:", error);

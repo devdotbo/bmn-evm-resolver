@@ -300,24 +300,39 @@ class BobResolverService {
       const wallet = chainId === 10 ? this.optimismWallet : this.baseWallet;
       const client = chainId === 10 ? this.optimismClient : this.baseClient;
       
-      // Ensure approvals
-      await ensureLimitOrderApprovals({
-        tokenAddress: orderData.takerAsset as Address,
-        amount: BigInt(orderData.takerAmount),
-        walletClient: wallet,
-        publicClient: client,
-      });
-      
-      // Fill the order
+      // Determine protocol and factory addresses for the chain
+      const protocolAddress = chainId === 10
+        ? CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM
+        : CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE;
+      const factoryAddress = CREATE3_ADDRESSES.ESCROW_FACTORY_V2;
+
+      // Ensure approvals (protocol + factory)
+      await ensureLimitOrderApprovals(
+        client,
+        wallet,
+        orderData.takerAsset as Address,
+        protocolAddress,
+        factoryAddress,
+        BigInt(orderData.takerAmount)
+      );
+
+      // Fill the order using protocol; include extensionData
       const params: FillOrderParams = {
         order: orderData.order,
         signature: orderData.signature,
+        extensionData: orderData.extensionData,
+        fillAmount: BigInt(orderData.takerAmount),
         takerTraits: orderData.takerTraits || 0n,
-        amount: BigInt(orderData.takerAmount),
       };
-      
-      const txHash = await fillLimitOrder(wallet, client, params);
-      console.log(`✅ Order filled with tx: ${txHash}`);
+
+      const result = await fillLimitOrder(
+        client,
+        wallet,
+        protocolAddress as Address,
+        params,
+        factoryAddress as Address
+      );
+      console.log(`✅ Order filled with tx: ${result.transactionHash}`);
       
       return true;
     } catch (error) {
@@ -331,10 +346,10 @@ class BobResolverService {
    */
   private async createDestinationEscrow(swap: any): Promise<boolean> {
     try {
-      // Implementation would interact with escrow factory
-      console.log(`Creating destination escrow for swap ${swap.id}`);
-      // TODO: Implement actual escrow creation logic
-      return true;
+      // For v2.2.0 PostInteraction, destination escrows are created during fill.
+      // We do not manually create dst escrows here. Leave as no-op.
+      console.log(`Skipping manual dst escrow creation for swap ${swap.id} (PostInteraction handles it)`);
+      return false;
     } catch (error) {
       console.error("Error creating destination escrow:", error);
       return false;

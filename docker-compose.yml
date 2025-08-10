@@ -19,8 +19,8 @@ services:
     env_file:
       - .env
     volumes:
-      # Shared data directory
-      - bmn-data:/app/data
+      # Bind mount project data dir
+      - ./data:/app/data
     ports:
       - "8001:8001"  # Alice API
     restart: unless-stopped
@@ -63,8 +63,8 @@ services:
     env_file:
       - .env
     volumes:
-      # Shared data directory
-      - bmn-data:/app/data
+      # Bind mount project data dir
+      - ./data:/app/data
     ports:
       - "8002:8002"  # Bob-Resolver API
     restart: unless-stopped
@@ -86,8 +86,3 @@ networks:
   bmn-network:
     external: true
     name: ${DOCKER_SHARED_NETWORK:-bmn-network}
-
-volumes:
-  # Named volumes for better management
-  bmn-data:
-    driver: local
