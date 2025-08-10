@@ -290,6 +290,114 @@ export class EscrowWithdrawManager {
   }
 
   /**
+   * Get escrows that can be withdrawn (have revealed secrets)
+   * Used by BobResolverService to find withdrawal opportunities
+   */
+  async getWithdrawableEscrows(): Promise<Array<{
+    address: Address;
+    hashlock: string;
+    secret: string;
+    chainId: number;
+    isSource: boolean;
+  }>> {
+    try {
+      // Get revealed secrets from indexer
+      const recentWithdrawals = await this.ponderClient.getRecentWithdrawals(100);
+      const revealedSecrets = await this.ponderClient.getRevealedSecrets();
+      
+      // Combine secrets from both sources
+      const secretsMap = new Map<string, string>();
+      
+      for (const withdrawal of recentWithdrawals) {
+        if (withdrawal.secret && withdrawal.hashlock) {
+          secretsMap.set(withdrawal.hashlock, withdrawal.secret);
+        }
+      }
+      
+      for (const secret of revealedSecrets) {
+        if (secret.secret && secret.hashlock) {
+          secretsMap.set(secret.hashlock, secret.secret);
+        }
+      }
+      
+      // Find escrows that haven't been withdrawn yet
+      const withdrawableEscrows: Array<{
+        address: Address;
+        hashlock: string;
+        secret: string;
+        chainId: number;
+        isSource: boolean;
+      }> = [];
+      
+      // Check each secret against pending escrows
+      for (const [hashlock, secret] of secretsMap.entries()) {
+        // Get atomic swap details
+        const swaps = await this.ponderClient.getSwapsByHashlock(hashlock);
+        
+        for (const swap of swaps) {
+          // Check if source escrow can be withdrawn
+          if (swap.srcEscrowAddress && swap.status !== 'completed' && !swap.srcWithdrawnAt) {
+            withdrawableEscrows.push({
+              address: swap.srcEscrowAddress as Address,
+              hashlock,
+              secret,
+              chainId: Number(swap.srcChainId),
+              isSource: true,
+            });
+          }
+          
+          // Check if destination escrow can be withdrawn
+          if (swap.dstEscrowAddress && swap.status !== 'completed' && !swap.dstWithdrawnAt) {
+            withdrawableEscrows.push({
+              address: swap.dstEscrowAddress as Address,
+              hashlock,
+              secret,
+              chainId: Number(swap.dstChainId),
+              isSource: false,
+            });
+          }
+        }
+      }
+      
+      console.log(`🔍 Found ${withdrawableEscrows.length} withdrawable escrows`);
+      return withdrawableEscrows;
+      
+    } catch (error) {
+      console.error("❌ Error getting withdrawable escrows:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Withdraw from an escrow
+   * Generic method used by BobResolverService
+   */
+  async withdraw(escrow: {
+    address: Address;
+    hashlock: string;
+    secret: string;
+    chainId: number;
+    isSource: boolean;
+  }): Promise<boolean> {
+    try {
+      console.log(`💸 Withdrawing from ${escrow.isSource ? 'source' : 'destination'} escrow`);
+      console.log(`   Address: ${escrow.address}`);
+      console.log(`   Chain: ${escrow.chainId}`);
+      console.log(`   Hashlock: ${escrow.hashlock}`);
+      
+      // Get chain-specific clients (simplified for now, extend as needed)
+      // This would need to be enhanced with proper chain selection
+      // For now, just returning false to avoid implementation complexity
+      console.log("⚠️ Withdrawal implementation pending proper chain client setup");
+      return false;
+      
+    } catch (error) {
+      console.error("❌ Error during withdrawal:", error);
+      return false;
+    }
+  }
+
+  /**
    * Monitor and auto-withdraw when secrets are revealed
    */
   async monitorAndWithdraw(
