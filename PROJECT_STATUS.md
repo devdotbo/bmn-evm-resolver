@@ -165,7 +165,9 @@ bmn-evm-resolver/
 - ⚠️ Missing unit tests for utilities
 
 ### Monitoring
-- **Health Checks**: http://localhost:8000/health (each service)
+- **Health Checks**: 
+  - Alice: http://localhost:8001/health
+  - Bob-Resolver: http://localhost:8002/health
 - **Logs**: `docker-compose logs [service]`
 - **Status**: `docker-compose ps`
 - ⚠️ Prometheus/Grafana removed (can re-add later)
@@ -206,9 +208,8 @@ ANKR_API_KEY=...
 docker-compose up -d --build
 
 # 2. Check health:
-curl http://localhost:8000/health
-curl http://localhost:8001/health
-curl http://localhost:8002/health
+curl http://localhost:8001/health  # Alice
+curl http://localhost:8002/health  # Bob-Resolver
 
 # 3. Run test swap:
 deno run --allow-all demo-complete-flow.ts
