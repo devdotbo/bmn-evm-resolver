@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - 2025-08-10
+- **Merged Bob and Resolver services into unified Bob-Resolver service**
+  - Combined taker (Bob) and coordinator (Resolver) functionalities into single service
+  - Created new `bob-resolver-service.ts` with explicit dual-mode capabilities
+  - Enhanced `bob-service.ts` to include resolver functionality
+  - Service runs on port 8002 with unified HTTP endpoints
+  - Added endpoints: `/health`, `/fill-order`, `/withdraw`, `/stats`
+  - Supports both filling Alice's limit orders and creating destination escrows
+  - Manages keys, secrets, and order processing in single service
+  - Monitors pending orders from indexer and local filesystem
+  - Processes withdrawals when secrets are revealed
+  - Simplified deployment by reducing service count
+
 ### Added - 2025-08-10
 - **Implemented escrow withdrawal with contract calls** - Created comprehensive withdrawal system for atomic swaps
   - New `escrow-withdraw.ts` utility module with `EscrowWithdrawManager` class
