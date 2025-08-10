@@ -1,6 +1,6 @@
 # Next Agent Handover
 
-This document provides a minimal, high-signal handover for the next agent to
+This document provides a minimal, high-signal handover for the next agent 
 continue work seamlessly.
 
 ## Current Runtime Status
@@ -38,6 +38,9 @@ continue work seamlessly.
        `takerAsset` (already attempted). Consider adding `takerTraits: 0` and
        ensuring numeric strings are converted to numbers where required.
    - If needed, restart `bmn-bob-resolver` to reset internal processed state.
+
+  - See detailed issue brief for the contract agent:
+    `docs/CURRENT_ISSUE_LIMIT_ORDER_FILL.md`
 
 2. Approvals
    - `ensureLimitOrderApprovals` should auto-approve protocol and factory. If

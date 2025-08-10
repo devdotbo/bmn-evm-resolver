@@ -87,8 +87,13 @@ export async function fillLimitOrder(
   }
   const vs = `0x${sWithV}` as Hex;
 
-  // Default taker traits to 0 for simple fill
-  const takerTraits = params.takerTraits ?? 0n;
+  // Build takerTraits: if not provided or zero, encode argsExtensionLength so LOP parses `args` as extension
+  // TakerTraitsLib encodes extension length in bits [224..247] (24 bits). We pass only extension in `args`.
+  const computedArgsExtLenBytes = BigInt((params.extensionData.length - 2) / 2);
+  const defaultTakerTraits = computedArgsExtLenBytes << 224n;
+  const takerTraits = params.takerTraits && params.takerTraits !== 0n
+    ? params.takerTraits
+    : defaultTakerTraits;
 
   // Simulate transaction first to catch errors early
   const { request } = await client.simulateContract({

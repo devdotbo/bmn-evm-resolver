@@ -372,7 +372,7 @@ export class UnifiedResolver {
             signature: orderData.signature as Hex,
             extensionData,
             fillAmount: order.makingAmount, // Fill full amount
-            takerTraits: 0n, // Simple fill, no special flags needed
+            // takerTraits omitted so utils/limit-order.ts computes argsExtensionLength automatically
           };
 
           result = await fillLimitOrder(
