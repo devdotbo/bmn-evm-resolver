@@ -157,23 +157,17 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'resolver'
-    static_configs:
-      - targets: ['resolver:8000']
-        labels:
-          service: 'resolver'
-          
   - job_name: 'alice'
     static_configs:
       - targets: ['alice:8001']
         labels:
           service: 'alice'
           
-  - job_name: 'bob'
+  - job_name: 'bob-resolver'
     static_configs:
       - targets: ['bob:8002']
         labels:
-          service: 'bob'
+          service: 'bob-resolver'
           
   - job_name: 'redis'
     static_configs:
@@ -230,13 +224,6 @@ if [ ! -f "docker-compose.override.yml" ]; then
 version: '3.8'
 
 services:
-  resolver:
-    build:
-      args:
-        - BUILDKIT_INLINE_CACHE=1
-    environment:
-      - LOG_LEVEL=debug
-      
   alice:
     build:
       args:
@@ -288,9 +275,8 @@ echo "  View service status:  docker-compose ps"
 echo "  Clean everything:     docker-compose down -v && rm -rf data/"
 echo ""
 echo "Service URLs (when running):"
-echo "  Resolver API:  http://localhost:8000"
-echo "  Alice API:     http://localhost:8001"
-echo "  Bob API:       http://localhost:8002"
+echo "  Alice API:        http://localhost:8001"
+echo "  Bob-Resolver API: http://localhost:8002"
 echo "  Grafana:       http://localhost:3000 (admin/admin)"
 echo "  Prometheus:    http://localhost:9090"
 echo "  Redis:         localhost:6379"
