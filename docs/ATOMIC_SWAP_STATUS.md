@@ -16,7 +16,7 @@ Last updated: 2025-08-07
   - Reads local orders, ensures approvals, fills via 1inch SimpleLimitOrderProtocol, parses Factory PostInteraction events.
   - Stores secrets and withdraws from source escrows after secret reveal.
 - **Indexer**:
-  - Ponder schema includes `atomic_swap`, `srcEscrow`, `dstEscrow`, `escrowWithdrawal` and is queried via `@ponder/client`.
+  - Ponder schema includes `atomic_swap`, `srcEscrow`, `dstEscrow`, `escrowWithdrawal` and is queried via `@ponder/client` over SQL.
 - **Tests**:
   - Comprehensive PostInteraction v2.2 encoding/util tests in `tests/postinteraction-v2.2.test.ts`.
   - A console demo simulates the full flow in `demo-complete-flow.ts`.

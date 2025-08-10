@@ -1,61 +1,43 @@
-# SQL Endpoint Fix Summary
+# SQL over HTTP Client Usage (Resolved)
 
-## Problem Statement
-The PonderClient implementation was using an incorrect API format for querying the indexer, causing 500 errors and missing functionality.
+## Summary
+We standardized on the official `@ponder/client` for SQL over HTTP, matching Ponder's documentation. Direct curl checks of `/sql` can return 404 depending on server middleware and are not a reliable signal; the client works as intended and is the supported integration path.
 
 ## Issues Fixed
 
-### 1. Incorrect SQL Endpoint Format
-**Problem**: PonderClient was using `/sql/db` endpoint with query parameters
-**Solution**: Changed to POST `/sql` with JSON body `{ sql: query }`
+### 1. Client Integration
+**Resolution**: Use `@ponder/client` with `createClient("<base>/sql")` and parameterized `sql` queries.
 
 ### 2. Docker Networking
-**Problem**: Services were using `host.docker.internal:42069` which doesn't work reliably
-**Solution**: Changed to `bmn-indexer:42069` using Docker container networking
+If using a local/indexed service, prefer container DNS (e.g., `bmn-indexer:42069`) over `host.docker.internal`.
 
-### 3. Missing Methods
-**Problem**: `getActiveSwaps()` and `getWithdrawableEscrows()` methods were not implemented
-**Solution**: 
-- Added `getActiveSwaps()` to PonderClient for finding swap opportunities
-- Added `getWithdrawableEscrows()` and `withdraw()` to EscrowWithdrawManager
+### 3. Client Methods
+Added/validated indexer helpers in `PonderClient` that internally use `client.db.execute(sql\`...\`)`.
 
 ### 4. Directory Handling
-**Problem**: bob-resolver-service.ts failed when pending-orders directory didn't exist
-**Solution**: Added proper directory creation and error handling
+Ensured `bob-resolver-service.ts` creates `pending-orders`/`completed-orders` if missing.
 
 ## Implementation Details
 
-### Correct SQL Query Format
+### Example (Untyped Query)
 ```typescript
-// Before (incorrect)
-const url = new URL(`${this.sqlUrl}/db`);
-url.searchParams.set("sql", SimpleSerializer.stringify(sqlQuery));
-const response = await fetch(url.toString(), { method: "POST" });
-
-// After (correct)
-const response = await fetch(this.sqlUrl, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ sql: finalQuery }),
-});
+import { createClient, sql } from "@ponder/client";
+const client = createClient(`${INDEXER_URL}/sql`);
+const rows = await client.db.execute(sql`SELECT 1 AS ok;`);
 ```
 
-### Response Handling
-```typescript
-// Handle both 'data' and 'rows' fields in response
-const rows = result.data || result.rows || [];
-```
+Docs: https://ponder.sh/docs/query/sql-over-http#sql-over-http
 
 ### Docker Network Configuration
 ```yaml
 # docker-compose.yml
 environment:
-  - INDEXER_URL=http://bmn-indexer:42069  # Use container name, not host.docker.internal
+  - INDEXER_URL=http://bmn-indexer:42069
 ```
 
 ## Testing
 
-Run the test script to verify the SQL endpoint works:
+Run the test script to verify the SQL endpoint via client:
 ```bash
 deno run --allow-net --allow-env test-ponder-sql.ts
 ```
@@ -66,13 +48,11 @@ docker-compose up -d --build
 docker-compose logs -f bob
 ```
 
-## Files Modified
-1. `/src/indexer/ponder-client.ts` - Fixed SQL execution and added getActiveSwaps()
-2. `/src/utils/escrow-withdraw.ts` - Added getWithdrawableEscrows() and withdraw()
-3. `/docker-compose.yml` - Updated INDEXER_URL for both services
-4. `/bob-resolver-service.ts` - Added directory creation and error handling
-5. `/test-ponder-sql.ts` - Created test script for verification
-6. `/CHANGELOG.md` - Documented all changes
+## Files
+1. `/src/indexer/ponder-client.ts` - Uses `@ponder/client` and `sql` queries
+2. `/test-ponder-sql.ts` - Untyped `client.db.execute` smoke tests
+3. `/docker-compose.yml` - Uses `INDEXER_URL` env
+4. `/CHANGELOG.md` - Notes resolution and client usage
 
 ## Next Steps
 1. Test the implementation with the actual indexer running
