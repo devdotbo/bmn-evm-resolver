@@ -25,7 +25,6 @@ RUN chown -R deno:deno /app
 # Cache dependencies as deno user
 USER deno
 RUN deno cache --unstable-kv --reload \
-    --import-map=./deno.json \
     https://deno.land/x/dotenv@v3.2.2/mod.ts
 USER root
 
