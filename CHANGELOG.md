@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed - 2025-08-10
+- **Updated Docker infrastructure for two-party atomic swap architecture**
+  - Removed separate Resolver service and Dockerfile.resolver
+  - Updated docker-compose.yml to reflect unified Bob-Resolver service
+  - Bob-Resolver service now runs on port 8002 as main coordinator and counterparty
+  - Alice service depends on Bob-Resolver instead of separate Resolver
+  - Updated all health check endpoints and monitoring configuration
+  - Simplified service architecture from three services to two
+
+### Changed - 2025-08-10
 - **Merged Bob and Resolver services into unified Bob-Resolver service**
   - Combined taker (Bob) and coordinator (Resolver) functionalities into single service
   - Created new `bob-resolver-service.ts` with explicit dual-mode capabilities
