@@ -32,6 +32,7 @@ import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.jso
 import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with { type: "json" };
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
 import IERC20Abi from "../../abis/IERC20.json" with { type: "json" };
+import { EscrowWithdrawManager } from "../utils/escrow-withdraw.ts";
 
 const INDEXER_URL = Deno.env.get("INDEXER_URL") || "http://localhost:42069";
 const ALICE_PRIVATE_KEY = Deno.env.get("ALICE_PRIVATE_KEY") || "";
@@ -61,6 +62,7 @@ interface LimitOrder {
 export class LimitOrderAlice {
   private ponderClient: PonderClient;
   private secretManager: SecretManager;
+  private withdrawManager: EscrowWithdrawManager;
   private account: any;
   private baseClient: any;
   private optimismClient: any;
@@ -73,6 +75,7 @@ export class LimitOrderAlice {
     });
 
     this.secretManager = new SecretManager();
+    this.withdrawManager = new EscrowWithdrawManager();
 
     const privateKey = ALICE_PRIVATE_KEY;
     if (!privateKey) {
@@ -388,12 +391,6 @@ export class LimitOrderAlice {
   }
 
   async withdrawFromDestination(orderHash: string): Promise<void> {
-    // Get secret from SecretManager
-    const secret = await this.secretManager.getSecretByOrderHash(orderHash);
-    if (!secret) {
-      throw new Error(`No secret found for order ${orderHash}`);
-    }
-
     const swap = await this.ponderClient.getAtomicSwapByOrderHash(orderHash);
     if (!swap || !swap.dstEscrowAddress) {
       throw new Error(`No destination escrow found for order ${orderHash}`);
@@ -403,33 +400,16 @@ export class LimitOrderAlice {
     const wallet = dstChainId === base.id ? this.baseWallet : this.optimismWallet;
     const client = dstChainId === base.id ? this.baseClient : this.optimismClient;
 
-    console.log(`\n💰 Withdrawing from destination escrow`);
-    console.log(`   Chain: ${dstChainId} (${dstChainId === 10 ? 'Optimism' : 'Base'})`);
-    console.log(`   Escrow: ${swap.dstEscrowAddress}`);
-    console.log(`   Revealing secret: ${secret}`);
-
-    const { request } = await client.simulateContract({
-      account: this.account,
-      address: swap.dstEscrowAddress,
-      abi: EscrowDstAbi.abi,
-      functionName: "withdraw",
-      args: [secret],
-    });
-
-    const hash = await wallet.writeContract(request);
-    console.log(`⏳ Withdrawing... tx: ${hash}`);
-    
-    const receipt = await client.waitForTransactionReceipt({ hash });
-    console.log(`✅ Successfully withdrew from destination escrow!`);
-    console.log(`   Gas used: ${receipt.gasUsed}`);
-
-    // Mark secret as confirmed
-    const hashlock = keccak256(secret as `0x${string}`);
-    await this.secretManager.confirmSecret(
-      hashlock,
-      receipt.transactionHash,
-      BigInt(receipt.gasUsed || 0)
+    const result = await this.withdrawManager.withdrawFromDestination(
+      orderHash,
+      client,
+      wallet,
+      this.account
     );
+
+    if (!result.success) {
+      throw new Error(`Withdrawal failed: ${result.error}`);
+    }
   }
 
   private generateSecret(): string {

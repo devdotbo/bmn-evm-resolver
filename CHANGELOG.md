@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added - 2025-08-10
+- **Implemented escrow withdrawal with contract calls** - Created comprehensive withdrawal system for atomic swaps
+  - New `escrow-withdraw.ts` utility module with `EscrowWithdrawManager` class
+  - Proper handling of escrow immutables structure for both v2 contracts
+  - `withdrawFromDestination` for Alice withdrawing from Bob's escrow with secret reveal
+  - `withdrawFromSource` for Resolver withdrawing after learning the secret
+  - Retry logic with exponential backoff for failed withdrawals
+  - Automatic monitoring and withdrawal when secrets are revealed
+  - Full integration with SecretManager for tracking withdrawal status
+  - Updated all Alice implementations and Resolver to use new withdrawal manager
+
+### Added - 2025-08-10
 - **Created limit-order.ts utility module** - Centralized SimpleLimitOrderProtocol interaction logic
   - `fillLimitOrder` function for atomic order filling with PostInteraction support
   - `ensureLimitOrderApprovals` for managing token approvals for both protocol and factory
