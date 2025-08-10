@@ -66,9 +66,8 @@ up:
 	@docker-compose up -d --build && docker-compose logs
 	@echo ""
 	@echo "Services started successfully!"
-	@echo "Resolver: http://localhost:8000"
-	@echo "Alice:    http://localhost:8001"
-	@echo "Bob:      http://localhost:8002"
+	@echo "Alice:        http://localhost:8001"
+	@echo "Bob-Resolver: http://localhost:8002"
 
 # Stop all services
 down:
@@ -195,9 +194,8 @@ stop: down
 # Health check
 health:
 	@echo "Checking service health..."
-	@curl -s http://localhost:8000/health > /dev/null && echo "✓ Resolver: Healthy" || echo "✗ Resolver: Unhealthy"
 	@curl -s http://localhost:8001/health > /dev/null && echo "✓ Alice: Healthy" || echo "✗ Alice: Unhealthy"
-	@curl -s http://localhost:8002/health > /dev/null && echo "✓ Bob: Healthy" || echo "✗ Bob: Unhealthy"
+	@curl -s http://localhost:8002/health > /dev/null && echo "✓ Bob-Resolver: Healthy" || echo "✗ Bob-Resolver: Unhealthy"
 
 # View resource usage
 stats:
