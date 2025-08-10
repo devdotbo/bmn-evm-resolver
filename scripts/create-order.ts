@@ -13,7 +13,7 @@ async function main() {
   const resolver = getEnvOrThrow("RESOLVER");
   const amountStr = Deno.env.get("AMOUNT") ?? "0.01"; // BMN amount (18 decimals)
   const srcChainId = Number(Deno.env.get("SRC_CHAIN") ?? 8453); // Base
-  const dstChainId = Number(Deno.env.get("DST_CHAIN") ?? 10);   // Optimism
+  const dstChainId = Number(Deno.env.get("DST_CHAIN") ?? 10); // Optimism
   const srcDepositStr = Deno.env.get("SRC_DEPOSIT") ?? "0";
   const dstDepositStr = Deno.env.get("DST_DEPOSIT") ?? "0";
 
@@ -46,5 +46,3 @@ async function main() {
 if (import.meta.main) {
   await main();
 }
-
-
