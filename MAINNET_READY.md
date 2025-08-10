@@ -1,8 +1,22 @@
 # 🚀 Mainnet Deployment Ready
 
-## ✅ System Status: READY FOR PRODUCTION
+## ⚠️ System Status: TESTNET ONLY - PostInteraction Fixed
 
-### 🎯 Quick Start
+### 🎯 Current Status Summary
+
+**PostInteraction Integration**: ✅ FIXED (v2.2.0)
+- Correct bit flags implemented (249, 251)
+- Extension format with proper offsets
+- Extension hash in salt lower 160 bits
+- Callbacks trigger successfully after order fills
+
+**Mainnet Readiness**: ❌ NOT READY
+- PostInteraction fix validated on testnet only
+- v2.2.0 contracts need mainnet deployment
+- Resolver needs mainnet whitelisting
+- Production testing incomplete
+
+### 🎯 Quick Start (TESTNET ONLY)
 
 ```bash
 # 1. Set environment variables
@@ -15,64 +29,86 @@ deno task resolver
 
 # 3. Alice creates orders (in another terminal)
 export ALICE_PRIVATE_KEY="0x..."
-deno run --allow-all alice.ts --action create --resolver 0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5
+deno run --allow-all alice.ts --action create --resolver 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
 ```
 
 ### 📋 Deployment Checklist
 
-#### ✅ Smart Contracts (Mainnet)
-- [x] **CrossChainEscrowFactory v2.1.0**: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
-  - Deployed on Base ✅
-  - Deployed on Optimism ✅
-  - Version: "2.1.0-bmn-secure"
+#### 🔄 Smart Contracts Status
+
+**TESTNET (Anvil)**
+- [x] **SimplifiedEscrowFactory v2.2.0**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+  - PostInteraction interface implemented ✅
+  - Deployed on local Anvil ✅
+  - Version: "2.2.0-postinteraction-fixed"
   
 - [x] **SimpleLimitOrderProtocol**
-  - Base: `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06` ✅
-  - Optimism: `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7` ✅
+  - Anvil: `0x5c69B5f05e8a866F1EbFce8fF94b4234ddE6F19b` ✅
+  - PostInteraction callbacks working ✅
 
-- [x] **Resolver Whitelist Status**
-  - Address: `0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5`
-  - Whitelisted on Base ✅
-  - Whitelisted on Optimism ✅
+- [x] **Resolver Whitelist Status (Testnet)**
+  - Address: `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC`
+  - Whitelisted on Anvil testnet ✅
 
-#### ✅ Infrastructure
-- [x] **Ponder Indexer**: Running at `http://localhost:42069`
-  - SQL over HTTP endpoint: `http://localhost:42069/sql`
-  - Monitoring all required events
-  - Schema includes atomic swaps, escrows, withdrawals
+**MAINNET (Not Deployed)**
+- [ ] **SimplifiedEscrowFactory v2.2.0**: NOT DEPLOYED
+  - Base: Needs deployment ❌
+  - Optimism: Needs deployment ❌
+  
+- [ ] **Resolver Whitelist Status (Mainnet)**
+  - Address: TBD
+  - Needs whitelisting on Base ❌
+  - Needs whitelisting on Optimism ❌
 
-- [x] **UnifiedResolver**: Complete implementation
+#### ✅ Infrastructure (Working Components)
+- [x] **PostInteraction Integration**: FIXED in v2.2.0
+  - Correct bit flags (249, 251) ✅
+  - Proper extension format ✅
+  - Extension hash in salt ✅
+  - Callbacks trigger successfully ✅
+
+- [x] **UnifiedResolver**: Core functionality complete
   - PonderClient for SQL queries ✅
   - SimpleLimitOrderProtocol integration ✅
   - SecretManager with Deno KV ✅
-  - Profitability checks ✅
+  - Basic profitability checks ✅
 
-- [x] **LimitOrderAlice**: Order creation system
+- [x] **LimitOrderAlice**: Order creation working
   - EIP-712 signature generation ✅
-  - PostInteraction for factory triggers ✅
+  - PostInteraction extension data ✅
   - Secret management ✅
-  - Auto-withdrawal monitoring ✅
+  - Order submission ✅
 
-### 🔄 Complete Flow (Tested)
+#### ⚠️ Infrastructure (Needs Work)
+- [ ] **Ponder Indexer**: Partially working
+  - SQL endpoint functional ✅
+  - Event monitoring incomplete ⚠️
+  - May miss some events ⚠️
+  - Needs production hardening ❌
+
+- [ ] **Auto-withdrawal**: Not fully tested
+  - Secret reveal monitoring ⚠️
+  - Automatic withdrawal logic ⚠️
+  - Race condition handling ❌
+
+### 🔄 Complete Flow (TESTNET VERIFIED)
 
 ```
-1. Alice creates EIP-712 signed limit order
+1. Alice creates EIP-712 signed limit order ✅
    ↓
-2. Order includes postInteraction data for factory
+2. Order includes correct postInteraction extension ✅
    ↓
-3. Ponder indexer captures OrderFilled events
+3. SimpleLimitOrderProtocol processes order ✅
    ↓
-4. Resolver queries indexer via SQL/HTTP
+4. Protocol triggers factory.postInteraction() ✅
    ↓
-5. Resolver fills order via SimpleLimitOrderProtocol
+5. Factory creates source escrow ✅
    ↓
-6. Protocol triggers factory.postSourceEscrow()
+6. Resolver creates destination escrow ✅
    ↓
-7. Resolver creates destination escrow
+7. Alice withdraws by revealing secret ✅
    ↓
-8. Alice withdraws by revealing secret
-   ↓
-9. Resolver withdraws using revealed secret
+8. Resolver withdraws using revealed secret ✅
 ```
 
 ### 📊 Current Configuration
@@ -81,44 +117,40 @@ deno run --allow-all alice.ts --action create --resolver 0xfdF1dDeB176BEA06c7430
 |-----------|-------|-------------|
 | MIN_PROFIT_BPS | 0 | No minimum profit required (configurable) |
 | POLLING_INTERVAL | 10000ms | Check for orders every 10 seconds |
-| Factory Version | v2.1.0 | Secure version with whitelist |
-| Resolver Address | 0xfdF1d...b7B5 | Whitelisted on both chains |
+| Factory Version | v2.2.0 (testnet) | PostInteraction fixed version |
+| Resolver Address | 0x3C44Cd...4293BC | Whitelisted on testnet only |
+| Environment | Testnet/Anvil | NOT deployed to mainnet |
 
-### 🛠️ Production Deployment
+### 🚨 MAINNET BLOCKERS
 
-#### Using PM2
-```bash
-# Install PM2
-npm install -g pm2
+Before mainnet deployment, these issues MUST be resolved:
 
-# Start resolver
-pm2 start --interpreter="deno" --interpreter-args="run --allow-all --env-file=.env" run-resolver.ts --name bmn-resolver
+1. **Contract Deployment**
+   - [ ] Deploy SimplifiedEscrowFactory v2.2.0 to Base mainnet
+   - [ ] Deploy SimplifiedEscrowFactory v2.2.0 to Optimism mainnet
+   - [ ] Verify contracts on Etherscan/Basescan
 
-# Monitor
-pm2 logs bmn-resolver
-pm2 status
-```
+2. **Resolver Whitelisting**
+   - [ ] Get resolver address whitelisted on Base mainnet factory
+   - [ ] Get resolver address whitelisted on Optimism mainnet factory
+   - [ ] Verify whitelist status with admin
 
-#### Using Docker
-```bash
-# Build image
-docker build -t bmn-resolver .
+3. **Production Testing**
+   - [ ] Complete end-to-end test on Base testnet
+   - [ ] Complete end-to-end test on Optimism testnet
+   - [ ] Test with real 1inch limit orders (not just local)
+   - [ ] Stress test with multiple concurrent orders
 
-# Run container
-docker run -d \
-  --name bmn-resolver \
-  --env-file .env \
-  --restart unless-stopped \
-  bmn-resolver
-```
+4. **Infrastructure Hardening**
+   - [ ] Fix Ponder indexer event monitoring gaps
+   - [ ] Implement reliable auto-withdrawal system
+   - [ ] Add comprehensive error recovery
+   - [ ] Set up monitoring and alerting
 
-#### Using systemd
-```bash
-# Create service file at /etc/systemd/system/bmn-resolver.service
-sudo systemctl daemon-reload
-sudo systemctl enable bmn-resolver
-sudo systemctl start bmn-resolver
-```
+5. **Security Audit**
+   - [ ] Audit v2.2.0 contract changes
+   - [ ] Review PostInteraction implementation
+   - [ ] Verify no new attack vectors introduced
 
 ### 📈 Monitoring
 
@@ -161,35 +193,52 @@ sudo systemctl start bmn-resolver
 - **Indexer Issues**: Check Ponder logs at indexer URL
 - **Security Issues**: Run `./scripts/security-check.sh`
 
-### ✅ Final Verification
+### ✅ Testnet Verification
 
-Run these commands to verify everything is ready:
+Run these commands to verify testnet setup:
 
 ```bash
-# 1. Test indexer connection
-deno run --allow-all test-indexer-query.ts
+# 1. Test PostInteraction implementation
+deno run --allow-all test-postinteraction.ts
 
-# 2. Test resolver configuration
-deno task resolver:test
-
-# 3. Dry run Alice order
-DRY_RUN=true deno run --allow-all alice.ts --action create
-
-# 4. Check resolver whitelist
+# 2. Verify factory v2.2.0 deployment
 deno run --allow-all scripts/verify-factory-migration.ts
+
+# 3. Test limit order creation with PostInteraction
+deno run --allow-all alice.ts --action create
+
+# 4. Check resolver whitelist status
+deno run --allow-all scripts/check-whitelist.ts
 ```
 
 ---
 
-## 🎉 System Ready for Mainnet
+## ⚠️ System Status: TESTNET ONLY
 
-All components are deployed, tested, and operational. The resolver is whitelisted and ready to process atomic swaps between Base and Optimism networks.
+**PostInteraction is FIXED** in v2.2.0 and working correctly on testnet. The system successfully:
+- Creates limit orders with proper PostInteraction extension
+- Triggers factory callbacks after order fills
+- Creates cross-chain escrows automatically
+- Completes atomic swaps end-to-end
 
-**Next Steps:**
-1. Fund resolver with tokens and ETH
-2. Set appropriate MIN_PROFIT_BPS for production
-3. Deploy resolver as background service
-4. Monitor for incoming orders
-5. Track successful swaps
+**However, the system is NOT ready for mainnet** because:
+- v2.2.0 contracts are not deployed to mainnet
+- Resolver is not whitelisted on mainnet
+- Production testing is incomplete
+- Infrastructure needs hardening
 
-Last Updated: 2025-01-07
+### 📅 Estimated Timeline to Mainnet
+
+1. **Week 1**: Deploy and verify v2.2.0 contracts on mainnets
+2. **Week 2**: Complete production testing on testnets
+3. **Week 3**: Security audit and infrastructure hardening
+4. **Week 4**: Mainnet deployment and monitoring setup
+
+### 🔗 Key Resources
+
+- **PostInteraction Fix Documentation**: `docs/POSTINTERACTION_FIX_2025-08-08.md`
+- **Troubleshooting Guide**: `docs/POSTINTERACTION_TROUBLESHOOTING.md`
+- **Technical Architecture**: `ARCHITECTURE.md`
+- **Test Suite**: `test-postinteraction.ts`
+
+Last Updated: 2025-08-09

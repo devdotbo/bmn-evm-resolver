@@ -47,5 +47,5 @@ deno task alice --action withdraw --order 0xOrderHash
 
 ## Contract Addresses (CREATE3 - same on all chains)
 
-- Factory: `0xB916C3edbFe574fFCBa688A6B92F72106479bD6c`
+- Factory: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (SimplifiedEscrowFactory v2.2.0)
 - BMN Token: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`

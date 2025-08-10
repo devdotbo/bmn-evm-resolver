@@ -170,7 +170,7 @@ List all PostInteraction events with filtering options
 ## Appendix: Key Addresses
 
 - **Factory v2.2.0**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
-- **Factory v2.1.0** (old): `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
+- **Factory v2.1.0** (old, deprecated): `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
 - **Limit Order Protocol Base**: `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06`
 - **Limit Order Protocol Optimism**: `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7`
 - **BMN Token**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`

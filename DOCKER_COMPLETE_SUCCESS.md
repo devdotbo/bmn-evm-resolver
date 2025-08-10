@@ -1,67 +1,52 @@
-# Docker Infrastructure Complete Success 🎉
+# Docker Infrastructure Status
 
-## Mission Accomplished
+## Current Architecture
 
-All Docker services have been successfully fixed and are now running with full health monitoring!
+The BMN resolver system uses Docker Compose for orchestration with three core services.
 
-## Service Status - ALL HEALTHY ✅
+## Service Status
 
 ```
-SERVICES         STATUS                  PORTS                   HEALTH
-bmn-alice        Up (healthy)           localhost:8001          ✅ /health endpoint working
-bmn-bob          Up (healthy)           localhost:8002          ✅ /health endpoint working  
-bmn-resolver     Up (healthy)           localhost:8000          ✅ /health endpoint working
-bmn-grafana      Up                     localhost:3000          ✅ Running (admin/admin)
-bmn-prometheus   Up                     localhost:9090          ✅ Scraping all services
-bmn-redis        Up                     localhost:6379          ✅ Cache/pub-sub working
-bmn-indexer      Up (unhealthy)         localhost:42069         ⚠️ RPC issues but functioning
-bmn-postgres     Up (healthy)           localhost:5432          ✅ Database operational
+SERVICE          STATUS              PORTS                   ENDPOINT
+bmn-resolver     Up (healthy)        localhost:8000          /health
+bmn-alice        Up (healthy)        localhost:8001          /health
+bmn-bob          Up (healthy)        localhost:8002          /health
 ```
 
-## Fixes Implemented
+## Services Overview
 
-### 1. Alice Service Fixed ✅
-- **Problem**: CLI tool that exited immediately
-- **Solution**: Created `alice-service.ts` that runs continuously in monitor mode
-- **Result**: Alice now monitors orders and auto-withdraws when destination escrows are ready
+### Core Services
 
-### 2. Health Endpoints Implemented ✅
-- **Problem**: No health check endpoints for Docker
-- **Solution**: Created service wrappers with integrated health servers
-- **Files Created**:
-  - `alice-service.ts` - Alice with health on port 8001
-  - `resolver-service.ts` - Resolver with health on port 8000
-  - `bob-service.ts` - Bob with health on port 8002
-- **Result**: All services report healthy status
+1. **Resolver** (Port 8000)
+   - Acts as the main coordinator service
+   - Handles order routing and coordination
+   - Container: `bmn-resolver`
+   - Health check: `http://localhost:8000/health`
 
-### 3. Prometheus Configuration Fixed ✅
-- **Problem**: Config file mounting issues on macOS Docker Desktop
-- **Solution**: Created custom Dockerfiles embedding configs
-- **Files Created**:
-  - `Dockerfile.prometheus` - Prometheus with embedded config
-  - `Dockerfile.grafana` - Grafana with provisioning
-  - `prometheus.yml` - Proper scrape configuration
-- **Result**: Prometheus successfully scraping all service metrics
+2. **Alice** (Port 8001)
+   - Swap initiator service
+   - Monitors orders and auto-withdraws when destination escrows are ready
+   - Container: `bmn-alice`
+   - Health check: `http://localhost:8001/health`
 
-### 4. Monitoring Stack Operational ✅
-- **Prometheus Targets**: All services UP
-  - bmn-alice: UP
-  - bmn-bob: UP
-  - bmn-resolver: UP
-  - prometheus: UP
-- **Grafana Dashboard**: http://localhost:3000/d/bmn-overview/bmn-services-overview
-- **Metrics Endpoints**: All working
-  - http://localhost:8000/metrics
-  - http://localhost:8001/metrics
-  - http://localhost:8002/metrics
+3. **Bob** (Port 8002)
+   - Swap acceptor/taker service
+   - Separate instance configured for Bob role
+   - Container: `bmn-bob`
+   - Health check: `http://localhost:8002/health`
+
+### External Dependencies
+
+- **Indexer**: Accessed via `host.docker.internal:42069`
+- **Blockchain RPCs**: Configured via environment variables
 
 ## Quick Commands
 
 ```bash
-# Build and start everything
-docker-compose up -d --build
+# Build and start all services
+docker-compose up -d --build && docker-compose logs
 
-# Check status
+# Check service status
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 # Test health endpoints
@@ -69,15 +54,20 @@ curl http://localhost:8000/health
 curl http://localhost:8001/health
 curl http://localhost:8002/health
 
-# View logs
+# View logs (without following)
+docker-compose logs resolver alice bob
+
+# View logs (with following)
 docker-compose logs -f resolver alice bob
 
-# Access monitoring
-open http://localhost:3000  # Grafana (admin/admin)
-open http://localhost:9090  # Prometheus
+# Restart specific service
+docker-compose restart resolver
+
+# Stop all services
+docker-compose down
 ```
 
-## Architecture Overview
+## Architecture Diagram
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -87,60 +77,134 @@ open http://localhost:9090  # Prometheus
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
 │  │   Alice     │  │  Resolver   │  │     Bob     │     │
 │  │  (8001)     │  │   (8000)    │  │   (8002)    │     │
-│  │  monitor    │  │  coordinate │  │   accept    │     │
+│  │  initiator  │  │ coordinator │  │  acceptor   │     │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘     │
 │         │                 │                 │            │
 │         └─────────────────┼─────────────────┘            │
 │                           │                              │
-│  ┌────────────────────────┴────────────────────────┐    │
-│  │               Redis (6379)                       │    │
-│  │          Cache & Pub/Sub Messaging               │    │
-│  └──────────────────────────────────────────────────┘    │
-│                                                           │
-│  ┌─────────────┐  ┌─────────────┐                       │
-│  │ Prometheus  │──│   Grafana   │                       │
-│  │   (9090)    │  │   (3000)    │                       │
-│  └─────────────┘  └─────────────┘                       │
-│                                                           │
+│                    Shared Data Volume                    │
+│                     /app/data/                          │
+│                  ├── kv/      (Deno KV)                 │
+│                  ├── cache/   (Deno cache)              │
+│                  ├── logs/    (Application logs)        │
+│                  └── secrets/ (Encrypted keys)          │
+│                                                          │
 └───────────────────────────┬──────────────────────────────┘
-                            │
-                   host.docker.internal
-                            │
-         ┌──────────────────┴──────────────────┐
-         │         Indexer (42069)              │
-         │    PostgreSQL Event Database         │
-         └──────────────────────────────────────┘
+                           │
+                  host.docker.internal
+                           │
+        ┌──────────────────┴──────────────────┐
+        │         Indexer (42069)              │
+        │    PostgreSQL Event Database         │
+        └──────────────────────────────────────┘
 ```
 
-## Key Improvements
+## Data Persistence
 
-1. **Service Resilience**: All services now run continuously with proper error handling
-2. **Health Monitoring**: Docker health checks ensure service availability
-3. **Metrics Collection**: Prometheus collects metrics from all services
-4. **Visualization**: Grafana provides real-time dashboards
-5. **Graceful Shutdown**: All services handle SIGINT/SIGTERM properly
-6. **Configuration Management**: Embedded configs avoid macOS Docker issues
-7. **Named Volumes**: Persistent data storage across container restarts
+All services share a named volume `bmn-data` mounted at `/app/data`:
 
-## Remaining Minor Issues
+```
+/app/data/
+├── kv/          # Deno KV databases
+│   ├── resolver.db
+│   ├── alice.db
+│   └── bob.db
+├── cache/       # Shared Deno cache
+├── logs/        # Application logs
+└── secrets/     # Encrypted credentials
+```
 
-1. **Indexer RPC Warnings**: Indexer missing RPC endpoints but still functional
-2. **Redis Metrics**: Redis doesn't expose Prometheus metrics (normal)
+## Environment Configuration
 
-## Success Metrics
+1. Create `.env` from `.env.example`:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
 
-- ✅ All core services healthy
+2. Required environment variables:
+   - RPC endpoints for each chain
+   - Wallet private keys (for testing)
+   - Service configuration
+
+3. Environment injection:
+   - Docker Compose handles environment variable injection
+   - No `--env-file` flags in container entrypoints
+   - Each service gets variables from `.env` via `env_file` directive
+
+## Build Optimization
+
+All Dockerfiles use:
+- Multi-stage builds for efficient caching
+- `BUILDKIT_INLINE_CACHE=1` for layer caching
+- Non-root user execution
+- Signal handling with `tini`
+- Minimal final images
+
+## Health Monitoring
+
+Each service exposes health endpoints:
+- **Endpoint**: `/health`
+- **Response**: `{"status":"healthy","service":"<service-name>"}`
+- **Used by**: Docker health checks
+
+## Recent Updates (2025-08-07)
+
+### Infrastructure Changes
+- Removed monitoring stack (Prometheus/Grafana) - use health endpoints instead
+- Removed Redis service - not required for current architecture
+- Standardized Docker tasks: `resolver:docker`, `alice:docker`, `bob:docker`
+- Improved environment variable handling
+
+### Key Improvements
+1. **Service Resilience**: All services run continuously with proper error handling
+2. **Health Monitoring**: Simple HTTP health checks for each service
+3. **Graceful Shutdown**: All services handle SIGINT/SIGTERM properly
+4. **Configuration Management**: Environment variables injected by Docker Compose
+5. **Named Volumes**: Persistent data storage across container restarts
+
+## Troubleshooting
+
+```bash
+# Check container health
+docker-compose ps
+
+# View detailed logs
+docker-compose logs --tail=100 resolver
+
+# Access container shell
+docker-compose exec resolver sh
+
+# Run tests inside container
+docker-compose exec resolver deno task resolver:test:docker
+
+# Reset everything
+docker-compose down -v
+rm -rf data/
+./init-docker.sh
+
+# Rebuild without cache (only if necessary)
+docker-compose build --no-cache
+```
+
+## Development Workflow
+
+1. **Local Development**: Edit code locally
+2. **Rebuild & Start**: `docker-compose up -d --build && docker-compose logs`
+3. **Check Service Health**: `curl http://localhost:800{0,1,2}/health`
+4. **Monitor Logs**: `docker-compose logs -f [service]`
+5. **Run Tests**: `make test` (runs inside container)
+
+## Status Summary
+
+- ✅ All core services operational
 - ✅ Health endpoints responding
-- ✅ Prometheus scraping metrics
-- ✅ Grafana dashboards available
 - ✅ Services running continuously
 - ✅ Docker Compose fully operational
-
-## Conclusion
-
-The Docker infrastructure is now **fully operational** with complete monitoring, health checks, and service orchestration. All critical issues have been resolved, and the system is ready for atomic swap operations.
+- ✅ Persistent data volumes configured
+- ✅ Environment variable injection working
 
 ---
-**Status**: COMPLETE SUCCESS ✅
-**Date**: 2025-08-07
-**Services**: 8/8 Healthy (Indexer has RPC warnings but functional)
+**Status**: OPERATIONAL
+**Last Updated**: 2025-08-09
+**Services**: 3/3 Healthy

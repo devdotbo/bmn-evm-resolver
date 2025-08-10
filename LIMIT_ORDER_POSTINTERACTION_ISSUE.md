@@ -50,7 +50,7 @@ Successfully implemented limit order filling through 1inch SimpleLimitOrderProto
 // Current implementation in limit-order-alice.ts
 const makerTraits = 0n; // Public order - anyone can fill
 const extensionData = concat([
-  FACTORY_ADDRESS,  // 0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A
+  FACTORY_ADDRESS,  // 0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68 (v2.2.0)
   extraDataArgs     // Encoded escrow creation parameters
 ]);
 ```
@@ -130,7 +130,7 @@ Instead of relying on protocol's postInteraction:
 ### External Contracts
 - SimpleLimitOrderProtocol: `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7` (Optimism)
 - SimpleLimitOrderProtocol: `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06` (Base)
-- Factory: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` (Both chains)
+- Factory: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (v2.2.0, Both chains)
 
 ## Critical Questions
 

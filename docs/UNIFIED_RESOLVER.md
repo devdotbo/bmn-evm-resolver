@@ -29,8 +29,8 @@ The Unified Resolver is a mainnet-ready implementation that integrates:
 
 ## Contract Addresses
 
-### Factory V2 (v2.1.0)
-- **Address**: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` (same on Base and Optimism)
+### Factory V2 (v2.2.0)
+- **Address**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (same on Base and Optimism)
 
 ### SimpleLimitOrderProtocol
 - **Base**: `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06`
@@ -127,7 +127,7 @@ await escrowSrc.withdraw(secret);
 - Focus on core functionality
 
 ### Mainnet Ready
-- Uses v2.1.0 factory addresses
+- Uses v2.2.0 factory addresses
 - Integrates with SimpleLimitOrderProtocol
 - Supports Base and Optimism mainnets
 

@@ -22,14 +22,16 @@ Bridge-Me-Not is a cross-chain atomic swap system enabling trustless token excha
 │           │                                │                           │
 │           ▼                                ▼                           │
 │  ┌──────────────────────────────────────────────────┐                 │
-│  │       CrossChainEscrowFactory v2.1.0             │                 │
+│  │      SimplifiedEscrowFactory v2.2.0              │                 │
 │  │              (Same address both chains)          │                 │
+│  │   Triggers PostInteraction with bits 249/251     │                 │
 │  └────────┬──────────────────────────┬──────────────┘                 │
 │           │                          │                                 │
 │           ▼                          ▼                                 │
 │    ┌──────────┐              ┌──────────┐                            │
 │    │ Escrow A │◄────HTLC────►│ Escrow B │                            │
 │    └──────────┘              └──────────┘                            │
+│      (Atomic)                  (Atomic)                               │
 │                                                                        │
 ├──────────────────────────────────────────────────────────────────────────┤
 │                         MONITORING LAYER                                │
@@ -63,7 +65,9 @@ Bridge-Me-Not is a cross-chain atomic swap system enabling trustless token excha
 **Key Features**:
 - Generates cryptographically secure secrets for HTLC
 - Creates EIP-712 typed data structures for order validation
-- Includes factory `postInteraction` for atomic escrow creation
+- Includes factory `postInteraction` with bits 249/251 for atomic escrow creation
+- Properly formats extension with offset-based structure
+- Includes extension hash in salt (lower 160 bits)
 - Supports both market making and single order modes
 
 **Location**: `src/alice/mainnet-alice.ts`
@@ -74,25 +78,30 @@ Bridge-Me-Not is a cross-chain atomic swap system enabling trustless token excha
 **Key Features**:
 - Validates EIP-712 signatures
 - Executes token swaps atomically
-- Triggers escrow creation via `postInteraction`
+- Triggers escrow creation via `postInteraction` using bits 249 and 251
 - Ensures order uniqueness via nonces
+- Properly formatted extension hash in salt (lower 160 bits)
 
 **Deployment**:
 - Base: `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06`
 - Optimism: `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7`
 
-### 3. CrossChainEscrowFactory v2.1.0
-**Purpose**: Creates and manages HTLC escrows for cross-chain atomic swaps.
+### 3. SimplifiedEscrowFactory v2.2.0
+**Purpose**: Creates and manages HTLC escrows for cross-chain atomic swaps with PostInteraction support.
 
 **Key Features**:
+- Atomic escrow creation via PostInteraction callback
+- Uses bits 249 and 251 for proper 1inch protocol integration
 - Deterministic escrow address generation
 - Time-locked fund protection
 - Hash-based secret reveals
 - Emergency withdrawal after timeout
+- Whitelisted resolver support
 
-**Deployment**: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
+**Deployment**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
 - Deployed at same address on both Base and Optimism
-- Version: 2.1.0
+- Version: 2.2.0
+- Implements IPostInteraction interface
 
 ### 4. PonderClient
 **Purpose**: Provides SQL over HTTP interface to query indexed blockchain data.
@@ -134,8 +143,9 @@ Bridge-Me-Not is a cross-chain atomic swap system enabling trustless token excha
 
 | Contract | Base | Optimism |
 |----------|------|----------|
-| CrossChainEscrowFactory v2.1.0 | `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` | `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` |
+| SimplifiedEscrowFactory v2.2.0 | `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` | `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` |
 | SimpleLimitOrderProtocol | `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06` | `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7` |
+| BMN Token | `0x8287CD2aC7E227D9D927F998EB600a0683a832A1` | `0x8287CD2aC7E227D9D927F998EB600a0683a832A1` |
 
 ### Token Addresses
 
@@ -155,7 +165,10 @@ Bridge-Me-Not is a cross-chain atomic swap system enabling trustless token excha
    - Maker/taker addresses
    - Secret hash
    - Expiry times
+   - PostInteraction extension with factory address
+   - Proper bit flags (249/251) for atomic execution
 5. **Sign order** using EIP-712 standard
+   - Salt includes extension hash for PostInteraction
 6. **Store order** in local state with secret
 
 ### Phase 2: Order Discovery
@@ -173,9 +186,17 @@ Bridge-Me-Not is a cross-chain atomic swap system enabling trustless token excha
 1. **Resolver fills order** on destination chain:
    ```
    SimpleLimitOrderProtocol.fillOrder() →
+   PostInteraction triggered (bits 249/251) →
+   Factory.postInteraction() called atomically →
    Factory.deployEscrow() →
    Escrow B created with funds locked
    ```
+   
+   **PostInteraction Flow Details**:
+   - Bit 249: Enable PostInteraction for maker
+   - Bit 251: Enable PostInteraction for resolver
+   - Extension format: offset-based with factory address and escrow params
+   - Salt contains extension hash in lower 160 bits
 
 2. **Alice detects** Escrow B creation via monitoring
 
@@ -388,4 +409,64 @@ deno run --allow-all scripts/test-reveal.ts --secret 0x... --escrow 0x...
 ---
 
 Last Updated: January 2025
-Version: 1.0.0
+Version: 2.2.0
+
+## PostInteraction Integration
+
+### How PostInteraction Works
+
+The PostInteraction mechanism enables atomic escrow creation immediately after a limit order fill:
+
+1. **Order Creation**: Alice creates an order with:
+   - Bits 249 and 251 set in the `makerTraits` field
+   - Extension containing factory address and escrow parameters
+   - Salt with extension hash in lower 160 bits
+
+2. **Order Filling**: When resolver fills the order:
+   ```solidity
+   // SimpleLimitOrderProtocol detects bits 249/251
+   if (postInteractionEnabled) {
+       // Calls factory.postInteraction() atomically
+       IPostInteraction(extension.factory).postInteraction(
+           order,
+           extension.data,
+           makingAmount,
+           takingAmount,
+           remainingAmount,
+           extraData
+       );
+   }
+   ```
+
+3. **Atomic Escrow Creation**: Factory creates escrow in same transaction:
+   - No separate transaction needed
+   - Funds locked immediately
+   - Eliminates front-running risks
+
+### Extension Format
+
+```typescript
+// Extension structure for PostInteraction
+const extension = {
+    // Offset to factory address (32 bytes)
+    offset: 32,
+    // Factory address (20 bytes)
+    factory: "0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68",
+    // Escrow parameters
+    data: {
+        hashlock: bytes32,
+        timelock: uint256,
+        tokenA: address,
+        tokenB: address,
+        // ... other params
+    }
+};
+```
+
+### Resolver Whitelist
+
+The v2.2.0 factory includes a whitelist mechanism:
+- Only whitelisted resolvers can trigger PostInteraction
+- Current whitelisted resolver: `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC`
+- Prevents unauthorized escrow creation
+- Maintains system security
