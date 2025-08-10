@@ -1,6 +1,10 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@noble/hashes@^1.6.1": "1.8.0",
+    "npm:@ponder/client@~0.12.3": "0.12.3",
+    "npm:@t3-oss/env-core@~0.11.1": "0.11.1_zod@3.25.76",
+    "npm:abitype@^1.0.6": "1.0.8",
     "npm:viem@^2.21.21": "2.33.3_ws@8.18.2"
   },
   "npm": {
@@ -18,6 +22,14 @@
     },
     "@noble/hashes@1.8.0": {
       "integrity": "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="
+    },
+    "@ponder/client@0.12.3": {
+      "integrity": "sha512-2wV2YcEpnl/n64K1XSeW4QgAnHdDHby5wF3cZDo2FV8+eqIQahPPoqd950UufFP3VMqdK/tGtwJB7NuZxKTHDA==",
+      "dependencies": [
+        "drizzle-orm",
+        "eventsource",
+        "superjson"
+      ]
     },
     "@scure/base@1.2.6": {
       "integrity": "sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg=="
@@ -37,11 +49,38 @@
         "@scure/base"
       ]
     },
+    "@t3-oss/env-core@0.11.1_zod@3.25.76": {
+      "integrity": "sha512-MaxOwEoG1ntCFoKJsS7nqwgcxLW1SJw238AJwfJeaz3P/8GtkxXZsPPolsz1AdYvUTbe3XvqZ/VCdfjt+3zmKw==",
+      "dependencies": [
+        "zod"
+      ]
+    },
     "abitype@1.0.8": {
       "integrity": "sha512-ZeiI6h3GnW06uYDLx0etQtX/p8E24UaHHBj57RSjK7YBFe7iuVn07EDpOeP451D06sF27VOz9JJPlIKJmXgkEg=="
     },
+    "copy-anything@3.0.5": {
+      "integrity": "sha512-yCEafptTtb4bk7GLEQoM8KVJpxAfdBJYaXyzQEgQQQgYrZiDp8SJmGKlYza6CYjEDNstAdNdKA3UuoULlEbS6w==",
+      "dependencies": [
+        "is-what"
+      ]
+    },
+    "drizzle-orm@0.41.0": {
+      "integrity": "sha512-7A4ZxhHk9gdlXmTdPj/lREtP+3u8KvZ4yEN6MYVxBzZGex5Wtdc+CWSbu7btgF6TB0N+MNPrvW7RKBbxJchs/Q=="
+    },
     "eventemitter3@5.0.1": {
       "integrity": "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="
+    },
+    "eventsource-parser@3.0.3": {
+      "integrity": "sha512-nVpZkTMM9rF6AQ9gPJpFsNAMt48wIzB5TQgiTLdHiuO8XEDhUgZEhqKlZWXbIzo9VmJ/HvysHqEaVeD5v9TPvA=="
+    },
+    "eventsource@3.0.7": {
+      "integrity": "sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==",
+      "dependencies": [
+        "eventsource-parser"
+      ]
+    },
+    "is-what@4.1.16": {
+      "integrity": "sha512-ZhMwEosbFJkA0YhFnNDgTM4ZxDRsS6HqTo7qsZM08fehyRYIYa0yHu5R6mgo1n/8MgaPBXiPimPD77baVFYg+A=="
     },
     "isows@1.0.7_ws@8.18.2": {
       "integrity": "sha512-I1fSfDCZL5P0v33sVqeTDSpcstAg/N+wF5HS033mogOVIp4B+oHC7oOCsA3axAbBSGTJ8QubbNmnIRN/h8U7hg==",
@@ -62,6 +101,12 @@
         "eventemitter3"
       ]
     },
+    "superjson@2.2.2": {
+      "integrity": "sha512-5JRxVqC8I8NuOUjzBbvVJAKNM8qoVuH0O77h4WInc/qC2q5IreqKxYwgkga3PfA22OayK2ikceb/B26dztPl+Q==",
+      "dependencies": [
+        "copy-anything"
+      ]
+    },
     "viem@2.33.3_ws@8.18.2": {
       "integrity": "sha512-aWDr6i6r3OfNCs0h9IieHFhn7xQJJ8YsuA49+9T5JRyGGAkWhLgcbLq2YMecgwM7HdUZpx1vPugZjsShqNi7Gw==",
       "dependencies": [
@@ -77,6 +122,9 @@
     },
     "ws@8.18.2": {
       "integrity": "sha512-DMricUmwGZUVr++AEAe2uiVM7UoO9MAVZMDu05UQOaUII0lp+zOzLLU4Xqh/JvTqklB1T4uELaaPBKyjE1r4fQ=="
+    },
+    "zod@3.25.76": {
+      "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
     }
   },
   "remote": {
@@ -126,7 +174,7 @@
   "workspace": {
     "dependencies": [
       "npm:@noble/hashes@^1.6.1",
-      "npm:@ponder/client@~0.1.14",
+      "npm:@ponder/client@~0.12.3",
       "npm:@t3-oss/env-core@~0.11.1",
       "npm:abitype@^1.0.6",
       "npm:viem@^2.21.21"
