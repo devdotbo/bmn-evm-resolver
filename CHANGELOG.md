@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Fixed environment variable access in indexer config** - Replaced `process.env` with `Deno.env.get()` in PRODUCTION_INDEXER_CONFIG_TEMPLATE to ensure compatibility with Deno runtime
+
 ### Changed - 2025-01-10
 - **Inlined import map into deno.json** to support `deno install` command
   - Removed separate `import_map.json` file
