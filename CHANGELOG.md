@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-08-10
+- NEXT_AGENT.md: concise handover doc for next agent including current runtime status, latest actions, and next steps.
+- scripts:
+  - scripts/create-order.ts: helper to create signed limit orders (uses --env-file=.env).
+  - scripts/read-bmn-balance.ts: helper to read BMN balance for an address.
+
+### Changed - 2025-08-10
+- Cursor rules and AGENTS updated: mandate `--env-file=.env` for all local Deno commands; Docker Compose continues to inject `.env` via `env_file`.
+- .gitignore: ignore `pending-orders/`, `completed-orders/`, and local `/tmp/*.log`.
+
 ### Changed - 2025-08-10
 - docker-compose: use bind mount `./data:/app/data` instead of named volume `bmn-data`
 - deno tasks: point to actual entrypoints

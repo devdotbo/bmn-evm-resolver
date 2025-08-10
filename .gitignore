@@ -87,6 +87,11 @@ dist/
 build/
 # Runtime data storage
 data/
+pending-orders/
+completed-orders/
+
+# Local service health logs
+/tmp/*.log
 
 # Crush working dir
 .crush/

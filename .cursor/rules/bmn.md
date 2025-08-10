@@ -8,7 +8,10 @@
   - same for `alice`, `bob`.
 - Health: `curl localhost:8000/health`, `:8001/health`, `:8002/health`.
 - State uses Deno KV; no Redis.
-- Avoid adding `--env-file .env` unless `.env` exists; prefer `env_file:` in compose.
+- Always include `--env-file=.env` for all local Deno commands run in Cursor.
+  - Example: `deno run --env-file=.env --allow-net --allow-env script.ts`
+  - Tasks in `deno.json` already include `--env-file=.env`.
+  - Inside Docker Compose, envs are injected via `env_file: .env` (no extra flags needed).
 - When editing code, keep to TypeScript best practices in `src/**` and avoid introducing any `any` types.
 - Security: never commit real secrets; `.env` should not be tracked; use `.env.example` for placeholders.
 - Commit style: conventional commits, e.g., `chore(infra): ...`, `feat: ...`, `fix: ...`.

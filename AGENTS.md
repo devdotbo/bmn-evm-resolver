@@ -35,3 +35,12 @@
 - Never commit secrets. Use `.env` from `.env.example`; verify `.gitignore` blocks secrets.
 - Use health endpoints for checks: `http://localhost:8000/health`, `:8001/health`, `:8002/health`.
 - Prefer `make up` to rebuild with cache; avoid `--no-cache` unless necessary.
+
+## Environment Usage Rules (MANDATORY)
+- Always run local Deno commands with `--env-file=.env`.
+  - Examples:
+    - `deno run --env-file=.env ...`
+    - `deno task alice` (tasks in `deno.json` already include `--env-file=.env`)
+- Do not run local Deno scripts without `--env-file=.env`. The only exception is inside Docker containers where Compose injects env via `env_file: .env`.
+- Keep `.env.example` up to date with required variables. Copy to `.env` before running anything.
+- CI/dev scripts and docs must include `--env-file=.env` for any local Deno invocation.
