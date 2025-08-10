@@ -3,13 +3,16 @@
 ## Design Principles
 
 ### 1. Single Responsibility Principle
+
 Each component owns and manages its own state:
+
 - **Blockchain**: Immutable transaction history
 - **Indexer**: Read-only historical queries
 - **Resolver**: Operational state and business logic
 - **Application**: User interface state
 
 ### 2. Data Ownership
+
 ```
 Component       Owns                          Does NOT Own
 ---------       ----                          ------------
@@ -71,6 +74,7 @@ Application     UI state, User preferences    Protocol state
 ## Data Flow Patterns
 
 ### Pattern 1: Secret Revelation (Correct)
+
 ```
 1. Resolver calculates optimal timing
 2. Resolver stores secret in its database
@@ -81,6 +85,7 @@ Application     UI state, User preferences    Protocol state
 ```
 
 ### Pattern 2: Monitoring New Escrows (Correct)
+
 ```
 1. Indexer detects SrcEscrowCreated event
 2. Resolver queries indexer for new escrows
@@ -90,6 +95,7 @@ Application     UI state, User preferences    Protocol state
 ```
 
 ### Pattern 3: Historical Analysis (Correct)
+
 ```
 1. Resolver queries indexer for historical swaps
 2. Resolver queries its own database for its participation
@@ -100,16 +106,17 @@ Application     UI state, User preferences    Protocol state
 ## Component Boundaries
 
 ### Indexer Boundary
+
 ```typescript
 interface IndexerAPI {
   // Read-only queries
   getAtomicSwaps(filter: SwapFilter): Promise<AtomicSwap[]>;
   getChainStatistics(chainId: number): Promise<ChainStats>;
   getEscrowEvents(address: string): Promise<EscrowEvent[]>;
-  
+
   // Live subscriptions
   subscribeToNewEscrows(callback: (escrow: Escrow) => void): void;
-  
+
   // NOT provided
   // ❌ getResolverSecrets()
   // ❌ storeResolverDecision()
@@ -118,17 +125,18 @@ interface IndexerAPI {
 ```
 
 ### Resolver Boundary
+
 ```typescript
 interface ResolverAPI {
   // Internal state management
   storeSecret(secret: Secret): Promise<void>;
   getMySecrets(): Promise<Secret[]>;
   recordDecision(decision: Decision): Promise<void>;
-  
+
   // Business logic
   evaluateSwap(swap: AtomicSwap): Promise<boolean>;
   calculateOptimalGas(): Promise<GasStrategy>;
-  
+
   // NOT provided
   // ❌ getGlobalStatistics()
   // ❌ indexBlockchainEvents()
@@ -139,6 +147,7 @@ interface ResolverAPI {
 ## State Segregation
 
 ### Indexer State (Immutable Historical Record)
+
 ```typescript
 interface IndexerState {
   // Blockchain events exactly as emitted
@@ -148,7 +157,7 @@ interface IndexerState {
     withdrawn: WithdrawnEvent[];
     cancelled: CancelledEvent[];
   };
-  
+
   // Aggregated statistics
   statistics: {
     totalSwaps: number;
@@ -160,6 +169,7 @@ interface IndexerState {
 ```
 
 ### Resolver State (Mutable Operational Data)
+
 ```typescript
 interface ResolverState {
   // Secrets we manage
@@ -170,20 +180,20 @@ interface ResolverState {
     confirmedAt?: Date;
     txHash?: string;
   }>;
-  
+
   // Swaps we're monitoring
   monitoredSwaps: Map<string, {
     orderHash: string;
     profitability: bigint;
     gasEstimate: bigint;
     deadline: Date;
-    status: 'monitoring' | 'executing' | 'completed';
+    status: "monitoring" | "executing" | "completed";
   }>;
-  
+
   // Our decisions
   decisions: Array<{
     timestamp: Date;
-    action: 'reveal' | 'skip' | 'cancel';
+    action: "reveal" | "skip" | "cancel";
     reason: string;
     gasPrice: bigint;
     competitorCount: number;
@@ -211,7 +221,9 @@ interface ResolverState {
 ## Database Design
 
 ### Indexer Database (PostgreSQL)
+
 Optimized for complex queries and aggregations:
+
 ```sql
 -- Read-heavy, optimized for JOINs
 CREATE TABLE atomic_swap (
@@ -227,7 +239,9 @@ CREATE TABLE atomic_swap (
 ```
 
 ### Resolver Database (SQLite)
+
 Optimized for fast local access:
+
 ```sql
 -- Write-heavy, optimized for speed
 CREATE TABLE revealed_secrets (
@@ -269,30 +283,36 @@ CREATE INDEX idx_revealed_at ON revealed_secrets(revealed_at);
 ## Benefits of Proper Architecture
 
 ### 1. Independence
+
 - Resolver can operate without indexer
 - Indexer can be upgraded without affecting resolver
 - Multiple resolvers can run independently
 
 ### 2. Performance
+
 - Local database queries: ~10ms vs ~500ms
 - No network latency for state access
 - Efficient caching possible
 
 ### 3. Scalability
+
 - Horizontal scaling of resolvers
 - Sharding possible per chain or per address range
 - No shared state bottleneck
 
 ### 4. Reliability
+
 - No single point of failure
 - Resolver continues operating if indexer is down
 - State recovery from local backups
 
 ### 5. Maintainability
+
 - Clear boundaries reduce complexity
 - Independent testing possible
 - Schema changes don't cascade
 
 ## Migration Path
 
-See [MIGRATION_STRATEGY.md](./MIGRATION_STRATEGY.md) for detailed steps to migrate from current architecture to this proper design.
+See [MIGRATION_STRATEGY.md](./MIGRATION_STRATEGY.md) for detailed steps to
+migrate from current architecture to this proper design.

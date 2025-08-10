@@ -1,12 +1,16 @@
 # Deno KV Integration for Resolver State Management
 
 ## Overview
-The Bridge-Me-Not resolver uses Deno KV for persistent local state management, particularly for tracking secrets and atomic swap operations.
+
+The Bridge-Me-Not resolver uses Deno KV for persistent local state management,
+particularly for tracking secrets and atomic swap operations.
 
 ## Setup Requirements
 
 ### 1. Enable Deno KV Flag
-Deno KV requires the `--unstable-kv` flag to be enabled. This has been added to all Deno tasks in `deno.json`:
+
+Deno KV requires the `--unstable-kv` flag to be enabled. This has been added to
+all Deno tasks in `deno.json`:
 
 ```json
 {
@@ -20,7 +24,9 @@ Deno KV requires the `--unstable-kv` flag to be enabled. This has been added to 
 ## Architecture
 
 ### SecretManager
-The `SecretManager` class provides a persistent storage layer for secrets using Deno KV:
+
+The `SecretManager` class provides a persistent storage layer for secrets using
+Deno KV:
 
 ```typescript
 src/state/SecretManager.ts
@@ -35,6 +41,7 @@ src/state/SecretManager.ts
 ```
 
 ### Integration with SimpleResolver
+
 The resolver integrates the SecretManager for local state:
 
 ```typescript
@@ -45,8 +52,8 @@ this.secretManager = new SecretManager();
 await this.secretManager.init();
 
 // Main processing loop
-await this.monitorForRevealedSecrets();  // Watch for on-chain secrets
-await this.processLocalSecrets();        // Process stored secrets
+await this.monitorForRevealedSecrets(); // Watch for on-chain secrets
+await this.processLocalSecrets(); // Process stored secrets
 ```
 
 ## Data Flow
@@ -59,12 +66,17 @@ await this.processLocalSecrets();        // Process stored secrets
 ## Schema Compatibility Issues
 
 ### Current Limitations
-The `escrowWithdrawal` table schema lacks certain fields needed for complete secret tracking:
+
+The `escrowWithdrawal` table schema lacks certain fields needed for complete
+secret tracking:
+
 - `hashlock` - Not available in current schema
 - `orderHash` - Not available in current schema
 
 ### Temporary Solution
-The `monitorForRevealedSecrets()` function is temporarily disabled until the indexer schema is updated to include these fields.
+
+The `monitorForRevealedSecrets()` function is temporarily disabled until the
+indexer schema is updated to include these fields.
 
 ```typescript
 private async monitorForRevealedSecrets() {
@@ -92,11 +104,13 @@ deno task resolver
 ## Troubleshooting
 
 ### Error: "Deno.openKv is not a function"
+
 **Solution**: Ensure the `--unstable-kv` flag is included in your run command.
 
-### Error: "Cannot convert undefined or null to object"  
-**Cause**: Schema mismatch in Drizzle ORM queries.
-**Solution**: Check that all selected fields exist in the schema definition.
+### Error: "Cannot convert undefined or null to object"
+
+**Cause**: Schema mismatch in Drizzle ORM queries. **Solution**: Check that all
+selected fields exist in the schema definition.
 
 ## Future Improvements
 
@@ -104,9 +118,11 @@ deno task resolver
    - `hashlock` field for direct secret lookup
    - `orderHash` field for order correlation
 
-2. **Enhanced Monitoring**: Re-enable `monitorForRevealedSecrets()` once schema is updated
+2. **Enhanced Monitoring**: Re-enable `monitorForRevealedSecrets()` once schema
+   is updated
 
-3. **Performance Optimization**: Implement batched secret processing for efficiency
+3. **Performance Optimization**: Implement batched secret processing for
+   efficiency
 
 ## Security Considerations
 
@@ -116,6 +132,7 @@ deno task resolver
 - All secrets are encrypted at rest by Deno KV
 
 ## Related Files
+
 - `/src/state/SecretManager.ts` - KV storage implementation
 - `/src/resolver/simple-resolver.ts` - Resolver integration
 - `/src/indexer/ponder-client.ts` - Indexer client with schema queries

@@ -2,20 +2,24 @@
 
 ## Overview
 
-A complete cross-chain atomic swap system that enables trustless token exchanges between different EVM chains without intermediaries.
+A complete cross-chain atomic swap system that enables trustless token exchanges
+between different EVM chains without intermediaries.
 
 ## Core Components
 
 ### 1. Smart Contracts
+
 - **HTLCEscrow**: Hash Time-Locked Contract for each chain
 - **TokenWrapper**: Interface for ERC20 token interactions
 - **Factory**: Deploy escrows with deterministic addresses
 
 ### 2. Participants
+
 - **Alice (Maker)**: Initiates the swap, locks tokens on source chain
 - **Bob (Taker/Resolver)**: Accepts the swap, locks tokens on destination chain
 
 ### 3. Infrastructure
+
 - **Event Monitor**: Watches for on-chain events
 - **State Manager**: Tracks swap states and secrets
 - **Network Manager**: Handles multi-chain connections
@@ -67,14 +71,17 @@ A complete cross-chain atomic swap system that enables trustless token exchanges
 ## Key Properties
 
 ### Atomicity
+
 - Either both parties get their tokens, or neither does
 - No partial execution possible
 
 ### Trustlessness
+
 - No third party required
 - Smart contracts enforce the rules
 
 ### Time-bounded
+
 - Timeouts prevent funds being locked forever
 - Alice timeout > Bob timeout (prevents race conditions)
 
@@ -89,32 +96,33 @@ INITIALIZED → ALICE_LOCKED → BOB_LOCKED → ALICE_WITHDRAWN → BOB_WITHDRAW
 ## Data Structures
 
 ### Swap Order
+
 ```typescript
 interface SwapOrder {
-  id: string;                    // Unique identifier
-  maker: Address;                 // Alice's address
-  taker?: Address;                // Bob's address (optional initially)
-  
+  id: string; // Unique identifier
+  maker: Address; // Alice's address
+  taker?: Address; // Bob's address (optional initially)
+
   // Source chain details
   srcChain: ChainId;
   srcToken: Address;
   srcAmount: BigNumber;
-  srcEscrow?: Address;            // Deployed escrow address
-  
+  srcEscrow?: Address; // Deployed escrow address
+
   // Destination chain details
   dstChain: ChainId;
   dstToken: Address;
   dstAmount: BigNumber;
-  dstEscrow?: Address;            // Deployed escrow address
-  
+  dstEscrow?: Address; // Deployed escrow address
+
   // HTLC parameters
-  hashlock: bytes32;              // Hash of the secret
-  secret?: bytes32;               // Revealed after withdrawal
-  
+  hashlock: bytes32; // Hash of the secret
+  secret?: bytes32; // Revealed after withdrawal
+
   // Timeouts (timestamps)
-  aliceTimeout: number;           // When Alice can refund
-  bobTimeout: number;             // When Bob can refund
-  
+  aliceTimeout: number; // When Alice can refund
+  bobTimeout: number; // When Bob can refund
+
   // Status tracking
   status: SwapStatus;
   createdAt: number;
@@ -123,6 +131,7 @@ interface SwapOrder {
 ```
 
 ### HTLC State
+
 ```typescript
 interface HTLCState {
   sender: Address;
@@ -139,6 +148,7 @@ interface HTLCState {
 ## Network Architecture
 
 ### Multi-chain Setup
+
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   Base RPC   │     │ Optimism RPC │     │ Arbitrum RPC │
@@ -162,12 +172,14 @@ interface HTLCState {
 ## Event System
 
 ### Critical Events to Monitor
+
 1. **HTLCCreated**: New escrow deployed
 2. **HTLCWithdrawn**: Secret revealed
 3. **HTLCRefunded**: Timeout reached
 4. **TokenTransfer**: Track token movements
 
 ### Event Processing Flow
+
 ```
 Event Emission → Event Capture → Validation → State Update → Action Trigger
 ```
@@ -175,6 +187,7 @@ Event Emission → Event Capture → Validation → State Update → Action Trig
 ## Error Handling
 
 ### Failure Scenarios
+
 1. **Bob doesn't respond**: Alice refunds after timeout
 2. **Alice doesn't withdraw**: Bob refunds after his timeout
 3. **Network issues**: Retry mechanisms with exponential backoff
@@ -184,6 +197,7 @@ Event Emission → Event Capture → Validation → State Update → Action Trig
 ## Gas Optimization
 
 ### Strategies
+
 1. Use CREATE2 for deterministic addresses
 2. Pack struct data efficiently
 3. Minimize storage operations
@@ -193,8 +207,10 @@ Event Emission → Event Capture → Validation → State Update → Action Trig
 ## Next Steps
 
 See the following documents for detailed specifications:
+
 - [02-SMART-CONTRACTS.md](./02-SMART-CONTRACTS.md) - Contract specifications
 - [03-ALICE-FLOW.md](./03-ALICE-FLOW.md) - Maker implementation
 - [04-BOB-FLOW.md](./04-BOB-FLOW.md) - Taker implementation
 - [05-SECURITY.md](./05-SECURITY.md) - Security considerations
-- [06-IMPLEMENTATION-ROADMAP.md](./06-IMPLEMENTATION-ROADMAP.md) - Development plan
+- [06-IMPLEMENTATION-ROADMAP.md](./06-IMPLEMENTATION-ROADMAP.md) - Development
+  plan

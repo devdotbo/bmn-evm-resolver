@@ -2,14 +2,18 @@
 
 ## Purpose
 
-The SecretManager is the core component responsible for managing all secrets revealed by the resolver. It provides a clean interface for storing, retrieving, and tracking the lifecycle of secrets used in atomic swaps.
+The SecretManager is the core component responsible for managing all secrets
+revealed by the resolver. It provides a clean interface for storing, retrieving,
+and tracking the lifecycle of secrets used in atomic swaps.
 
 ## Design Principles
 
-1. **Single Source of Truth**: All secret-related state lives in the resolver's database
+1. **Single Source of Truth**: All secret-related state lives in the resolver's
+   database
 2. **Memory-First Access**: Hot data cached in memory for sub-millisecond access
 3. **Audit Trail**: Complete history of all secret operations
-4. **Failure Recovery**: Ability to retry failed reveals and recover from crashes
+4. **Failure Recovery**: Ability to retry failed reveals and recover from
+   crashes
 
 ## Architecture
 
@@ -43,20 +47,24 @@ The SecretManager is the core component responsible for managing all secrets rev
 interface ISecretManager {
   // Write Operations
   storeSecret(params: StoreSecretParams): Promise<SecretRecord>;
-  confirmSecret(hashlock: string, txHash: string, gasUsed: bigint): Promise<void>;
+  confirmSecret(
+    hashlock: string,
+    txHash: string,
+    gasUsed: bigint,
+  ): Promise<void>;
   markFailed(hashlock: string, error: string): Promise<void>;
-  
+
   // Read Operations
   getSecretByHashlock(hashlock: string): Promise<string | null>;
   getSecretByOrderHash(orderHash: string): Promise<string | null>;
   getRevealedSecrets(filter?: SecretFilter): Promise<SecretRecord[]>;
   hasSecret(hashlock: string): Promise<boolean>;
-  
+
   // Lifecycle Operations
   pruneOldSecrets(olderThan: Date): Promise<number>;
   exportSecrets(path: string): Promise<void>;
   importSecrets(path: string): Promise<void>;
-  
+
   // Analytics
   getStatistics(): Promise<SecretStatistics>;
   getRevealPatterns(): Promise<RevealPattern[]>;
@@ -66,53 +74,55 @@ interface ISecretManager {
 ## Data Structures
 
 ### SecretRecord
+
 ```typescript
 interface SecretRecord {
   // Identity
   id: number;
-  hashlock: string;         // keccak256(secret)
-  secret: string;           // The actual secret
-  
+  hashlock: string; // keccak256(secret)
+  secret: string; // The actual secret
+
   // Context
-  orderHash: string;        // Associated swap order
-  escrowAddress: string;    // Where it was revealed
-  chainId: number;          // Which chain
-  
+  orderHash: string; // Associated swap order
+  escrowAddress: string; // Where it was revealed
+  chainId: number; // Which chain
+
   // Lifecycle
-  revealedAt: Date;         // When we decided to reveal
-  revealedBy: 'resolver' | 'manual' | 'recovery';
-  confirmedAt?: Date;       // When blockchain confirmed
-  
+  revealedAt: Date; // When we decided to reveal
+  revealedBy: "resolver" | "manual" | "recovery";
+  confirmedAt?: Date; // When blockchain confirmed
+
   // Transaction
-  txHash?: string;          // Blockchain transaction
-  blockNumber?: number;     // Block it was included
-  gasUsed?: bigint;         // Actual gas consumed
-  gasPriceWei?: bigint;     // Gas price paid
-  
+  txHash?: string; // Blockchain transaction
+  blockNumber?: number; // Block it was included
+  gasUsed?: bigint; // Actual gas consumed
+  gasPriceWei?: bigint; // Gas price paid
+
   // Status
   status: SecretStatus;
   errorMessage?: string;
   retryCount: number;
-  
+
   // Metadata
   competitorCount?: number; // How many others revealed
   profitabilityWei?: bigint; // Expected profit
-  mevProtection?: boolean;  // If flashbots used
-  
+  mevProtection?: boolean; // If flashbots used
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
 }
 
-type SecretStatus = 
-  | 'pending'      // Stored but not on-chain yet
-  | 'submitted'    // Transaction sent
-  | 'confirmed'    // On-chain confirmation
-  | 'failed'       // Transaction failed
-  | 'expired';     // Deadline passed
+type SecretStatus =
+  | "pending" // Stored but not on-chain yet
+  | "submitted" // Transaction sent
+  | "confirmed" // On-chain confirmation
+  | "failed" // Transaction failed
+  | "expired"; // Deadline passed
 ```
 
 ### Memory Cache Structure
+
 ```typescript
 class MemoryCache {
   private cache: Map<string, CachedSecret>;
@@ -323,6 +333,7 @@ async confirmSecret(hashlock: string, txHash: string, gasUsed: bigint): Promise<
 ## Cache Management
 
 ### LRU Eviction Policy
+
 ```typescript
 private evictLRU(): void {
   let oldest: string | null = null;
@@ -349,6 +360,7 @@ private evictLRU(): void {
 ```
 
 ### Cache Warming
+
 ```typescript
 async warmCache(): Promise<void> {
   // Load recent secrets
@@ -375,6 +387,7 @@ async warmCache(): Promise<void> {
 ## Error Handling
 
 ### Retry Logic
+
 ```typescript
 async retryFailedSecrets(): Promise<void> {
   const failed = await this.db
@@ -409,24 +422,25 @@ async retryFailedSecrets(): Promise<void> {
 ## Security Considerations
 
 ### Encryption at Rest
+
 ```typescript
 class EncryptedSecretManager extends SecretManager {
   private cipher: Cipher;
-  
+
   async storeSecret(params: StoreSecretParams): Promise<SecretRecord> {
     // Encrypt before storing
     const encrypted = await this.cipher.encrypt(params.secret);
-    
+
     return super.storeSecret({
       ...params,
-      secret: encrypted
+      secret: encrypted,
     });
   }
-  
+
   async getSecretByHashlock(hashlock: string): Promise<string | null> {
     const encrypted = await super.getSecretByHashlock(hashlock);
     if (!encrypted) return null;
-    
+
     // Decrypt before returning
     return await this.cipher.decrypt(encrypted);
   }
@@ -434,28 +448,29 @@ class EncryptedSecretManager extends SecretManager {
 ```
 
 ### Access Control
+
 ```typescript
 class SecureSecretManager extends SecretManager {
   async getSecretByHashlock(
     hashlock: string,
-    requester: string
+    requester: string,
   ): Promise<string | null> {
     // Audit access
     await this.db
-      .insertInto('access_log')
+      .insertInto("access_log")
       .values({
-        resource_type: 'secret',
+        resource_type: "secret",
         resource_id: hashlock,
         requester,
-        timestamp: new Date()
+        timestamp: new Date(),
       })
       .execute();
-    
+
     // Check permissions
-    if (!this.hasPermission(requester, 'read:secrets')) {
-      throw new UnauthorizedError('No permission to read secrets');
+    if (!this.hasPermission(requester, "read:secrets")) {
+      throw new UnauthorizedError("No permission to read secrets");
     }
-    
+
     return super.getSecretByHashlock(hashlock);
   }
 }
@@ -464,23 +479,24 @@ class SecureSecretManager extends SecretManager {
 ## Monitoring & Metrics
 
 ### Key Metrics
+
 ```typescript
 interface SecretMetrics {
   // Performance
-  cacheHitRate: number;      // Target: > 90%
+  cacheHitRate: number; // Target: > 90%
   retrievalLatencyP50: number; // Target: < 5ms
   retrievalLatencyP99: number; // Target: < 20ms
-  
+
   // Volume
   totalSecretsStored: number;
   secretsRevealedPerHour: number;
   pendingSecrets: number;
-  
+
   // Reliability
-  confirmationRate: number;  // Target: > 99%
-  averageRetries: number;    // Target: < 1.1
-  failureRate: number;       // Target: < 1%
-  
+  confirmationRate: number; // Target: > 99%
+  averageRetries: number; // Target: < 1.1
+  failureRate: number; // Target: < 1%
+
   // Cache
   cacheSize: number;
   cacheMemoryMB: number;
@@ -489,20 +505,21 @@ interface SecretMetrics {
 ```
 
 ### Alerting Rules
+
 ```yaml
 alerts:
   - name: HighSecretRetrievalLatency
     condition: p99_latency > 50ms
     severity: warning
-    
+
   - name: LowCacheHitRate
     condition: hit_rate < 80%
     severity: warning
-    
+
   - name: SecretConfirmationFailure
     condition: confirmation_rate < 95%
     severity: critical
-    
+
   - name: CacheMemoryHigh
     condition: cache_memory > 500MB
     severity: warning
@@ -511,31 +528,32 @@ alerts:
 ## Testing Strategy
 
 ### Unit Tests
+
 ```typescript
-describe('SecretManager', () => {
-  it('should store and retrieve secrets', async () => {
+describe("SecretManager", () => {
+  it("should store and retrieve secrets", async () => {
     const manager = new SecretManager(testDb);
-    const secret = '0x' + randomBytes(32).toString('hex');
-    
+    const secret = "0x" + randomBytes(32).toString("hex");
+
     await manager.storeSecret({
       secret,
-      orderHash: '0xabc',
-      escrowAddress: '0xdef',
-      chainId: 1
+      orderHash: "0xabc",
+      escrowAddress: "0xdef",
+      chainId: 1,
     });
-    
+
     const retrieved = await manager.getSecretByHashlock(keccak256(secret));
     expect(retrieved).toBe(secret);
   });
-  
-  it('should handle cache eviction', async () => {
+
+  it("should handle cache eviction", async () => {
     const manager = new SecretManager(testDb, { maxCacheSize: 10 });
-    
+
     // Fill cache beyond limit
     for (let i = 0; i < 15; i++) {
       await manager.storeSecret(generateTestSecret(i));
     }
-    
+
     expect(manager.cacheSize).toBeLessThanOrEqual(10);
   });
 });
@@ -544,23 +562,29 @@ describe('SecretManager', () => {
 ## Migration from Current System
 
 ### Phase 1: Parallel Operation
+
 Run SecretManager alongside current indexer queries:
+
 ```typescript
 const secret = await Promise.race([
   secretManager.getSecretByHashlock(hashlock),
-  ponderClient.getRevealedSecret(hashlock) // fallback
+  ponderClient.getRevealedSecret(hashlock), // fallback
 ]);
 ```
 
 ### Phase 2: Gradual Migration
+
 Migrate responsibilities one by one:
+
 1. Start storing new secrets in SecretManager
-2. Begin reading from SecretManager with indexer fallback  
+2. Begin reading from SecretManager with indexer fallback
 3. Migrate historical secrets
 4. Remove indexer dependency
 
 ### Phase 3: Cleanup
+
 Remove old code and optimize:
+
 1. Remove PonderClient secret methods
 2. Optimize cache settings based on metrics
 3. Add advanced features (encryption, sharding)

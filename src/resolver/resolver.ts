@@ -1,32 +1,36 @@
 import {
+  type Address,
   createPublicClient,
   createWalletClient,
-  http,
-  parseAbi,
-  encodeFunctionData,
   decodeAbiParameters,
-  type Address,
+  encodeFunctionData,
   type Hash,
   type Hex,
+  http,
+  parseAbi,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
-import { PonderClient, type AtomicSwap } from "../indexer/ponder-client.ts";
+import { type AtomicSwap, PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
 import { CREATE3_ADDRESSES } from "../config/contracts.ts";
 import { TokenApprovalManager } from "../utils/token-approvals.ts";
 import { PostInteractionEventMonitor } from "../monitoring/postinteraction-events.ts";
 import { PostInteractionErrorHandler } from "../utils/postinteraction-errors.ts";
-import { 
-  fillLimitOrder, 
+import {
   ensureLimitOrderApprovals,
+  fillLimitOrder,
+  type FillOrderParams,
   type LimitOrderData,
-  type FillOrderParams 
 } from "../utils/limit-order.ts";
 
 // Import ABIs
-import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with { type: "json" };
-import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with { type: "json" };
+import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with {
+  type: "json",
+};
+import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with {
+  type: "json",
+};
 import EscrowSrcV2Abi from "../../abis/EscrowSrcV2.json" with { type: "json" };
 import EscrowDstV2Abi from "../../abis/EscrowDstV2.json" with { type: "json" };
 import { EscrowWithdrawManager } from "../utils/escrow-withdraw.ts";
@@ -36,7 +40,8 @@ const FACTORY_V2_ADDRESS = CREATE3_ADDRESSES.ESCROW_FACTORY_V2;
 
 // SimpleLimitOrderProtocol addresses
 const LIMIT_ORDER_PROTOCOL_BASE = CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE;
-const LIMIT_ORDER_PROTOCOL_OPTIMISM = CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM;
+const LIMIT_ORDER_PROTOCOL_OPTIMISM =
+  CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM;
 
 interface ResolverConfig {
   indexerUrl?: string;
@@ -45,7 +50,6 @@ interface ResolverConfig {
   pollingInterval?: number;
   minProfitBps?: number; // Minimum profit in basis points (100 = 1%)
 }
-
 
 export class UnifiedResolver {
   private ponderClient: PonderClient;
@@ -64,14 +68,16 @@ export class UnifiedResolver {
   constructor(config: ResolverConfig = {}) {
     // Initialize indexer client
     this.ponderClient = new PonderClient({
-      url: config.indexerUrl || Deno.env.get("INDEXER_URL") || "http://localhost:42069",
+      url: config.indexerUrl || Deno.env.get("INDEXER_URL") ||
+        "http://localhost:42069",
     });
 
     // Initialize local state manager
     this.secretManager = new SecretManager();
     this.withdrawManager = new EscrowWithdrawManager();
 
-    const privateKey = config.privateKey || Deno.env.get("RESOLVER_PRIVATE_KEY");
+    const privateKey = config.privateKey ||
+      Deno.env.get("RESOLVER_PRIVATE_KEY");
     if (!privateKey) {
       throw new Error("RESOLVER_PRIVATE_KEY not set");
     }
@@ -108,17 +114,21 @@ export class UnifiedResolver {
     console.log(`🚀 Unified Resolver initialized`);
     console.log(`📍 Factory V2: ${FACTORY_V2_ADDRESS}`);
     console.log(`📍 Base Limit Order Protocol: ${LIMIT_ORDER_PROTOCOL_BASE}`);
-    console.log(`📍 Optimism Limit Order Protocol: ${LIMIT_ORDER_PROTOCOL_OPTIMISM}`);
+    console.log(
+      `📍 Optimism Limit Order Protocol: ${LIMIT_ORDER_PROTOCOL_OPTIMISM}`,
+    );
   }
 
   async start() {
-    console.log(`🚀 Starting unified resolver with address: ${this.account.address}`);
-    
+    console.log(
+      `🚀 Starting unified resolver with address: ${this.account.address}`,
+    );
+
     // Initialize local state
     await this.secretManager.init();
     const stats = await this.secretManager.getStatistics();
     console.log(`📊 SecretManager stats: ${JSON.stringify(stats)}`);
-    
+
     this.isRunning = true;
 
     // Main loop
@@ -126,16 +136,16 @@ export class UnifiedResolver {
       try {
         // Monitor for limit orders via indexer
         await this.processPendingOrders();
-        
+
         // Process locally stored secrets for withdrawals
         await this.processLocalSecrets();
-        
+
         // Monitor for revealed secrets on-chain
         await this.monitorForRevealedSecrets();
       } catch (error) {
         console.error("❌ Error in main loop:", error);
       }
-      
+
       await new Promise((resolve) => setTimeout(resolve, this.pollingInterval));
     }
   }
@@ -152,10 +162,12 @@ export class UnifiedResolver {
   private async processPendingOrders() {
     // First, check for locally stored orders from Alice
     await this.processLocalOrders();
-    
+
     // Then check indexer for any additional swaps
-    const pendingSwaps = await this.ponderClient.getPendingAtomicSwaps(this.account.address);
-    
+    const pendingSwaps = await this.ponderClient.getPendingAtomicSwaps(
+      this.account.address,
+    );
+
     for (const swap of pendingSwaps) {
       // Skip if already processed
       if (this.processedOrders.has(swap.orderHash)) {
@@ -165,7 +177,7 @@ export class UnifiedResolver {
       // Check if we should fill this order
       if (swap.status === "src_created" && !swap.dstEscrowAddress) {
         console.log(`🎯 Found pending swap: ${swap.orderHash}`);
-        
+
         // Check profitability
         if (this.isProfitable(swap)) {
           console.log(`✅ Order is profitable, proceeding to fill`);
@@ -183,41 +195,41 @@ export class UnifiedResolver {
    */
   private async processLocalOrders() {
     const ordersDir = "./pending-orders";
-    
+
     try {
       // Check if orders directory exists
       const dirInfo = await Deno.stat(ordersDir);
       if (!dirInfo.isDirectory) return;
-      
+
       // Read all order files
       for await (const entry of Deno.readDir(ordersDir)) {
         if (entry.isFile && entry.name.endsWith(".json")) {
           const orderPath = `${ordersDir}/${entry.name}`;
-          
+
           try {
             const orderData = JSON.parse(await Deno.readTextFile(orderPath));
-            
+
             // For limit orders, the resolver fills any order it finds
             // The order maker/receiver is Alice, we're just the filler
             console.log(`📄 Found order from maker: ${orderData.order.maker}`);
-            
+
             const orderHash = orderData.hashlock; // Using hashlock as identifier
-            
+
             // Skip if already processed
             if (this.processedOrders.has(orderHash)) {
               continue;
             }
-            
+
             console.log(`📄 Found local order file: ${entry.name}`);
             console.log(`   Hashlock: ${orderData.hashlock}`);
             console.log(`   Chain: ${orderData.chainId}`);
-            
+
             // Fill the order
             const success = await this.fillLocalOrder(orderData);
-            
+
             if (success) {
               this.processedOrders.add(orderHash);
-              
+
               // Move processed file to completed directory
               const completedDir = "./completed-orders";
               await Deno.mkdir(completedDir, { recursive: true });
@@ -225,9 +237,11 @@ export class UnifiedResolver {
             } else {
               console.log(`⚠️ Order not filled, will retry in next cycle`);
             }
-            
           } catch (error) {
-            console.error(`❌ Failed to process order file ${entry.name}:`, error);
+            console.error(
+              `❌ Failed to process order file ${entry.name}:`,
+              error,
+            );
           }
         }
       }
@@ -246,14 +260,16 @@ export class UnifiedResolver {
   private isProfitable(swap: AtomicSwap): boolean {
     const srcDeposit = swap.srcAmount || BigInt(0);
     const dstDeposit = swap.dstAmount || BigInt(0);
-    
+
     // Calculate profit in basis points
     if (srcDeposit === BigInt(0)) return false;
-    
+
     const profitBps = ((dstDeposit - srcDeposit) * BigInt(10000)) / srcDeposit;
-    
-    console.log(`💰 Profit calculation: ${profitBps.toString()} bps (min: ${this.minProfitBps})`);
-    
+
+    console.log(
+      `💰 Profit calculation: ${profitBps.toString()} bps (min: ${this.minProfitBps})`,
+    );
+
     return profitBps >= BigInt(this.minProfitBps);
   }
 
@@ -266,16 +282,22 @@ export class UnifiedResolver {
       const localPath = `./pending-orders/${swap.hashlock}.json`;
       const fileInfo = await Deno.stat(localPath).catch(() => null);
       if (!fileInfo || !fileInfo.isFile) {
-        console.log(`⚠️ No local payload found for ${swap.orderHash} (${swap.hashlock}). Skipping.`);
+        console.log(
+          `⚠️ No local payload found for ${swap.orderHash} (${swap.hashlock}). Skipping.`,
+        );
         return;
       }
 
       const raw = await Deno.readTextFile(localPath);
       const orderData = JSON.parse(raw);
-      console.log(`📦 Loaded local order payload for ${swap.orderHash}. Proceeding to fill…`);
+      console.log(
+        `📦 Loaded local order payload for ${swap.orderHash}. Proceeding to fill…`,
+      );
       const success = await this.fillLocalOrder(orderData);
       if (!success) {
-        console.log(`⚠️ Failed to fill order ${swap.orderHash} from local payload`);
+        console.log(
+          `⚠️ Failed to fill order ${swap.orderHash} from local payload`,
+        );
       }
     } catch (error) {
       console.error(`❌ fillLimitOrder error for ${swap.orderHash}:`, error);
@@ -289,16 +311,24 @@ export class UnifiedResolver {
   private async fillLocalOrder(orderData: any): Promise<boolean> {
     try {
       const chainId = orderData.chainId;
-      const wallet = chainId === base.id ? this.baseWallet : this.optimismWallet;
-      const client = chainId === base.id ? this.baseClient : this.optimismClient;
-      const limitOrderProtocol = chainId === base.id ? LIMIT_ORDER_PROTOCOL_BASE : LIMIT_ORDER_PROTOCOL_OPTIMISM;
-      
-      console.log(`🔨 Filling order on chain ${chainId} via SimpleLimitOrderProtocol`);
+      const wallet = chainId === base.id
+        ? this.baseWallet
+        : this.optimismWallet;
+      const client = chainId === base.id
+        ? this.baseClient
+        : this.optimismClient;
+      const limitOrderProtocol = chainId === base.id
+        ? LIMIT_ORDER_PROTOCOL_BASE
+        : LIMIT_ORDER_PROTOCOL_OPTIMISM;
+
+      console.log(
+        `🔨 Filling order on chain ${chainId} via SimpleLimitOrderProtocol`,
+      );
 
       // Get token addresses
       const BMN_TOKEN = CREATE3_ADDRESSES.BMN_TOKEN as Address;
       const takingAmount = BigInt(orderData.order.takingAmount);
-      
+
       // Ensure all necessary approvals are in place
       await ensureLimitOrderApprovals(
         client,
@@ -306,7 +336,7 @@ export class UnifiedResolver {
         BMN_TOKEN,
         limitOrderProtocol,
         FACTORY_V2_ADDRESS,
-        takingAmount
+        takingAmount,
       );
 
       // Reconstruct the order structure
@@ -333,7 +363,7 @@ export class UnifiedResolver {
       let result;
       let retryCount = 0;
       const maxRetries = 3;
-      
+
       while (retryCount < maxRetries) {
         try {
           // Use the utility function to fill the order
@@ -344,20 +374,21 @@ export class UnifiedResolver {
             fillAmount: order.makingAmount, // Fill full amount
             takerTraits: 0n, // Simple fill, no special flags needed
           };
-          
+
           result = await fillLimitOrder(
             client,
             wallet,
             limitOrderProtocol,
             fillParams,
-            FACTORY_V2_ADDRESS
+            FACTORY_V2_ADDRESS,
           );
-          
+
           break; // Success, exit retry loop
-          
         } catch (error) {
-          console.error(`❌ Error filling order (attempt ${retryCount + 1}/${maxRetries})`);
-          
+          console.error(
+            `❌ Error filling order (attempt ${retryCount + 1}/${maxRetries})`,
+          );
+
           // Handle the error
           const errorContext = {
             orderHash: orderData.hashlock,
@@ -366,29 +397,34 @@ export class UnifiedResolver {
             tokenAddress: order.takerAsset,
             amount: order.takingAmount,
           };
-          
+
           try {
-            const recovery = await PostInteractionErrorHandler.handleError(error, errorContext);
-            
+            const recovery = await PostInteractionErrorHandler.handleError(
+              error,
+              errorContext,
+            );
+
             if (recovery.retry && retryCount < maxRetries - 1) {
               retryCount++;
-              
+
               // Take action based on recovery suggestion
               if (recovery.action === "APPROVE_FACTORY") {
                 console.log("🔄 Re-approving factory...");
-                const approvalManager = new TokenApprovalManager(FACTORY_V2_ADDRESS);
+                const approvalManager = new TokenApprovalManager(
+                  FACTORY_V2_ADDRESS,
+                );
                 await approvalManager.ensureApproval(
                   client,
                   wallet,
                   order.takerAsset,
                   this.account.address,
-                  order.takingAmount
+                  order.takingAmount,
                 );
               } else if (recovery.action === "WAIT_AND_RETRY") {
                 console.log("⏳ Waiting before retry...");
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                await new Promise((resolve) => setTimeout(resolve, 5000));
               }
-              
+
               continue; // Retry the transaction
             } else {
               throw error; // Max retries reached or unrecoverable
@@ -400,13 +436,15 @@ export class UnifiedResolver {
           }
         }
       }
-      
+
       if (!result) {
         throw new Error(`Failed to fill order after ${maxRetries} attempts`);
       }
-      
+
       // Store the secret with the actual escrow address if PostInteraction succeeded
-      if (result.postInteractionExecuted && result.srcEscrow && orderData.secret) {
+      if (
+        result.postInteractionExecuted && result.srcEscrow && orderData.secret
+      ) {
         await this.secretManager.storeSecret({
           secret: orderData.secret as `0x${string}`,
           orderHash: orderData.hashlock as `0x${string}`,
@@ -415,9 +453,8 @@ export class UnifiedResolver {
         });
         console.log(`🔐 Secret stored for escrow ${result.srcEscrow}`);
       }
-      
-      return true; // Success
 
+      return true; // Success
     } catch (error) {
       console.error(`❌ Failed to fill local order:`, error);
       return false; // Failed
@@ -427,12 +464,17 @@ export class UnifiedResolver {
   /**
    * Get the destination escrow address for a given hashlock
    */
-  private async getDstEscrowAddress(hashlock: string, chainId: number): Promise<string | null> {
+  private async getDstEscrowAddress(
+    hashlock: string,
+    chainId: number,
+  ): Promise<string | null> {
     const client = chainId === base.id ? this.baseClient : this.optimismClient;
-    
+
     try {
       // Query the indexer for the destination escrow
-      const dstEscrow = await this.ponderClient.getDstEscrowByHashlock(hashlock);
+      const dstEscrow = await this.ponderClient.getDstEscrowByHashlock(
+        hashlock,
+      );
       return dstEscrow?.escrowAddress || null;
     } catch (error) {
       console.error(`❌ Failed to get destination escrow address:`, error);
@@ -447,18 +489,20 @@ export class UnifiedResolver {
     try {
       // Get recently revealed secrets from indexer
       const withdrawals = await this.ponderClient.getRecentWithdrawals(20);
-      
+
       for (const withdrawal of withdrawals) {
         if (withdrawal.secret && withdrawal.escrowAddress) {
           // Calculate hashlock from secret
           const { keccak256 } = await import("viem");
           const hashlock = keccak256(withdrawal.secret as `0x${string}`);
-          
+
           // Check if we already have this secret
           const hasSecret = await this.secretManager.hasSecret(hashlock);
           if (!hasSecret) {
-            console.log(`🔍 Found new secret revealed on-chain for hashlock: ${hashlock}`);
-            
+            console.log(
+              `🔍 Found new secret revealed on-chain for hashlock: ${hashlock}`,
+            );
+
             // Store it locally for our use
             await this.secretManager.storeSecret({
               secret: withdrawal.secret as `0x${string}`,
@@ -479,23 +523,28 @@ export class UnifiedResolver {
    */
   private async processLocalSecrets() {
     const pendingSecrets = await this.secretManager.getPendingSecrets();
-    
+
     for (const secretRecord of pendingSecrets) {
       // Check if we have a source escrow we can withdraw from
-      const srcEscrows = await this.ponderClient.getPendingSrcEscrows(this.account.address);
-      const srcEscrow = srcEscrows.find(e => 
-        e.hashlock === secretRecord.hashlock && 
-        e.status === 'created'
+      const srcEscrows = await this.ponderClient.getPendingSrcEscrows(
+        this.account.address,
+      );
+      const srcEscrow = srcEscrows.find((e) =>
+        e.hashlock === secretRecord.hashlock &&
+        e.status === "created"
       );
 
       if (srcEscrow) {
-        const success = await this.withdrawFromSource(srcEscrow, secretRecord.secret);
+        const success = await this.withdrawFromSource(
+          srcEscrow,
+          secretRecord.secret,
+        );
         if (success) {
           // Mark as confirmed in our local state
           await this.secretManager.confirmSecret(
             secretRecord.hashlock,
-            'tx_hash_placeholder', // In real implementation, get from withdrawal
-            BigInt(100000) // Estimated gas used
+            "tx_hash_placeholder", // In real implementation, get from withdrawal
+            BigInt(100000), // Estimated gas used
           );
         }
       }
@@ -505,25 +554,35 @@ export class UnifiedResolver {
   /**
    * Withdraw tokens from source escrow using revealed secret
    */
-  private async withdrawFromSource(escrow: any, secret: string): Promise<boolean> {
+  private async withdrawFromSource(
+    escrow: any,
+    secret: string,
+  ): Promise<boolean> {
     try {
       const chainId = Number(escrow.chainId);
-      const wallet = chainId === base.id ? this.baseWallet : this.optimismWallet;
-      const client = chainId === base.id ? this.baseClient : this.optimismClient;
-      
+      const wallet = chainId === base.id
+        ? this.baseWallet
+        : this.optimismWallet;
+      const client = chainId === base.id
+        ? this.baseClient
+        : this.optimismClient;
+
       // Use the withdrawal manager for proper immutables handling
       const result = await this.withdrawManager.withdrawFromSource(
         escrow.hashlock,
         secret as `0x${string}`,
         client,
         wallet,
-        this.account
+        this.account,
       );
-      
+
       return result.success;
     } catch (error) {
       console.error(`❌ Failed to withdraw from source:`, error);
-      await this.secretManager.markFailed(escrow.hashlock, (error as Error).message);
+      await this.secretManager.markFailed(
+        escrow.hashlock,
+        (error as Error).message,
+      );
       return false;
     }
   }
@@ -533,7 +592,7 @@ export class UnifiedResolver {
    */
   async getStatistics() {
     const secretStats = await this.secretManager.getStatistics();
-    
+
     return {
       resolverAddress: this.account.address,
       processedOrders: this.processedOrders.size,
@@ -551,7 +610,7 @@ export function createResolver(config?: ResolverConfig): UnifiedResolver {
 // Main entry point if run directly
 if (import.meta.main) {
   const resolver = createResolver();
-  
+
   // Handle graceful shutdown
   Deno.addSignalListener("SIGINT", async () => {
     console.log("\n🛑 Received SIGINT, shutting down gracefully...");

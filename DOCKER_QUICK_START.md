@@ -1,6 +1,7 @@
 # Docker Quick Start Guide
 
 ## Quick Start
+
 ```bash
 # 1. Start the indexer first
 cd ../bmn-evm-contracts-indexer
@@ -15,11 +16,13 @@ docker ps
 ```
 
 ## Service URLs
+
 - Alice API: http://localhost:8001
 - Bob-Resolver API: http://localhost:8002
 - Indexer: http://localhost:42069
 
 ## Common Commands
+
 ```bash
 # View logs
 docker compose logs -f bob
@@ -36,20 +39,25 @@ docker compose up -d --build
 ```
 
 ## Troubleshooting
+
 - **Services can't connect to indexer**: Check indexer is running on port 42069
 - **Build fails**: Check Deno version matches (should be 2.4.3)
 - **Volumes fail**: Ensure Docker Desktop has file sharing enabled
-- **Alice keeps restarting**: This is expected - it needs to be fixed to run as a service
+- **Alice keeps restarting**: This is expected - it needs to be fixed to run as
+  a service
 
 ## What Works
-✅ Docker builds successfully  
-✅ Services connect to indexer  
-✅ Basic infrastructure operational  
+
+✅ Docker builds successfully\
+✅ Services connect to indexer\
+✅ Basic infrastructure operational
 
 ## What Needs Fixing
-✅ Health check endpoints (implemented)  
+
+✅ Health check endpoints (implemented)
 
 ## Environment Setup
+
 ```bash
 # Copy example env if not exists
 cp .env.example .env
@@ -59,6 +67,7 @@ nano .env
 ```
 
 ## Service Architecture
+
 ```
 bmn-evm-contracts-indexer/
 ├── PostgreSQL (events database)
@@ -72,6 +81,7 @@ bmn-evm-resolver/
 ```
 
 ## Debug Tips
+
 ```bash
 # Check indexer events
 make -C ../bmn-evm-contracts-indexer check-events
@@ -87,6 +97,7 @@ docker-compose exec redis redis-cli
 ```
 
 ## Next Steps for Development
+
 1. Fix Alice service to run continuously
 2. Implement health check endpoints
 3. Configure Prometheus metrics

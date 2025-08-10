@@ -2,7 +2,7 @@
 
 /**
  * Post-Migration Checklist Script
- * 
+ *
  * Comprehensive checklist to verify all migration steps are completed
  * for the transition from factory v1.1.0 to v2.1.0
  */
@@ -35,7 +35,9 @@ class MigrationChecklist {
       category: "Configuration",
       task: "Factory addresses updated in contracts.ts",
       check: async () => {
-        const { CONTRACT_ADDRESSES } = await import("../src/config/contracts.ts");
+        const { CONTRACT_ADDRESSES } = await import(
+          "../src/config/contracts.ts"
+        );
         const baseFactory = CONTRACT_ADDRESSES[8453]?.escrowFactory;
         const optimismFactory = CONTRACT_ADDRESSES[10]?.escrowFactory;
         return (
@@ -63,7 +65,9 @@ class MigrationChecklist {
       category: "Configuration",
       task: "Limit Order Protocol addresses configured",
       check: async () => {
-        const { CREATE3_ADDRESSES } = await import("../src/config/contracts.ts");
+        const { CREATE3_ADDRESSES } = await import(
+          "../src/config/contracts.ts"
+        );
         return !!(
           CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE &&
           CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM
@@ -83,7 +87,7 @@ class MigrationChecklist {
             8453,
             CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
             this.resolverAddress as `0x${string}`,
-            Deno.env.get("BASE_RPC")
+            Deno.env.get("BASE_RPC"),
           );
           return status.version.includes("2.1.0");
         } catch {
@@ -103,7 +107,7 @@ class MigrationChecklist {
             8453,
             CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
             this.resolverAddress as `0x${string}`,
-            Deno.env.get("BASE_RPC")
+            Deno.env.get("BASE_RPC"),
           );
           return status.isWhitelisted;
         } catch {
@@ -123,7 +127,7 @@ class MigrationChecklist {
             8453,
             CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
             this.resolverAddress as `0x${string}`,
-            Deno.env.get("BASE_RPC")
+            Deno.env.get("BASE_RPC"),
           );
           return !status.isPaused;
         } catch {
@@ -144,7 +148,7 @@ class MigrationChecklist {
             10,
             CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
             this.resolverAddress as `0x${string}`,
-            Deno.env.get("OPTIMISM_RPC")
+            Deno.env.get("OPTIMISM_RPC"),
           );
           return status.version.includes("2.1.0");
         } catch {
@@ -164,7 +168,7 @@ class MigrationChecklist {
             10,
             CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
             this.resolverAddress as `0x${string}`,
-            Deno.env.get("OPTIMISM_RPC")
+            Deno.env.get("OPTIMISM_RPC"),
           );
           return status.isWhitelisted;
         } catch {
@@ -184,7 +188,7 @@ class MigrationChecklist {
             10,
             CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
             this.resolverAddress as `0x${string}`,
-            Deno.env.get("OPTIMISM_RPC")
+            Deno.env.get("OPTIMISM_RPC"),
           );
           return !status.isPaused;
         } catch {
@@ -273,7 +277,7 @@ class MigrationChecklist {
     console.log("=".repeat(60));
 
     const categories = new Map<string, ChecklistItem[]>();
-    
+
     // Group by category
     for (const item of this.items) {
       if (!categories.has(item.category)) {
@@ -296,7 +300,7 @@ class MigrationChecklist {
         try {
           const passed = await item.check();
           this.results.set(item.task, passed);
-          
+
           if (passed) {
             totalPassed++;
             console.log(`✅ ${item.task}`);
@@ -325,14 +329,14 @@ class MigrationChecklist {
     console.log("\n" + "=".repeat(60));
     console.log("📊 CHECKLIST SUMMARY");
     console.log("=".repeat(60));
-    
+
     const percentage = Math.round((totalPassed / totalItems) * 100);
     console.log(`\nCompleted: ${totalPassed}/${totalItems} (${percentage}%)`);
-    
+
     if (!allCriticalPassed) {
       console.log("\n❌ Critical items failed! Migration not ready.");
       console.log("\nRequired actions:");
-      
+
       for (const item of this.items) {
         if (item.critical && !this.results.get(item.task)) {
           console.log(`  • ${item.task}`);
@@ -350,7 +354,7 @@ class MigrationChecklist {
     } else {
       console.log("\n⚠️ Non-critical items pending. Migration can proceed.");
       console.log("\nOptional improvements:");
-      
+
       for (const item of this.items) {
         if (!item.critical && !this.results.get(item.task)) {
           console.log(`  • ${item.task}`);
@@ -363,9 +367,9 @@ class MigrationChecklist {
 }
 
 async function main() {
-  console.log("=" .repeat(60));
+  console.log("=".repeat(60));
   console.log("POST-MIGRATION CHECKLIST");
-  console.log("=" .repeat(60));
+  console.log("=".repeat(60));
 
   // Get resolver address
   const privateKey = Deno.env.get("RESOLVER_PRIVATE_KEY");
@@ -388,7 +392,7 @@ async function main() {
 }
 
 if (import.meta.main) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error("❌ Checklist failed:", error);
     Deno.exit(1);
   });

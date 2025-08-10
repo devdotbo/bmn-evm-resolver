@@ -2,7 +2,7 @@ import type { Address } from "viem";
 
 /**
  * PostInteraction Error Handler for v2.2.0
- * 
+ *
  * Handles various error scenarios that can occur during PostInteraction execution
  * and provides recovery strategies.
  */
@@ -154,7 +154,8 @@ export class PostInteractionErrorHandler {
         message: "Invalid timelock parameters",
         details: error,
         recoverable: false,
-        suggestedAction: "Check timelock values are in the future and properly formatted",
+        suggestedAction:
+          "Check timelock values are in the future and properly formatted",
       };
     }
 
@@ -196,14 +197,14 @@ export class PostInteractionErrorHandler {
       factoryAddress?: Address;
       tokenAddress?: Address;
       amount?: bigint;
-    }
+    },
   ): Promise<{ retry: boolean; action?: string }> {
     const parsedError = this.parseError(error);
-    
+
     console.error(`\n❌ PostInteraction Error: ${parsedError.message}`);
     console.error(`   Type: ${parsedError.type}`);
     console.error(`   Recoverable: ${parsedError.recoverable}`);
-    
+
     if (parsedError.suggestedAction) {
       console.error(`   Suggested Action: ${parsedError.suggestedAction}`);
     }
@@ -240,13 +241,13 @@ export class PostInteractionErrorHandler {
       case PostInteractionErrorType.RESOLVER_NOT_WHITELISTED:
         console.error("\n🚫 Fatal: Resolver not whitelisted");
         throw new Error(
-          `Resolver ${context.resolverAddress} is not whitelisted on factory ${context.factoryAddress}`
+          `Resolver ${context.resolverAddress} is not whitelisted on factory ${context.factoryAddress}`,
         );
 
       case PostInteractionErrorType.INVALID_EXTENSION_DATA:
         console.error("\n🚫 Fatal: Invalid extension data format");
         throw new Error(
-          "Extension data encoding doesn't match v2.2.0 specification"
+          "Extension data encoding doesn't match v2.2.0 specification",
         );
 
       case PostInteractionErrorType.ESCROW_ALREADY_EXISTS:
@@ -261,7 +262,7 @@ export class PostInteractionErrorHandler {
         if (!parsedError.recoverable) {
           throw new Error(`Unrecoverable error: ${parsedError.message}`);
         }
-        
+
         // For potentially recoverable unknown errors, suggest retry with delay
         console.log("\n🔄 Unknown error, waiting before retry...");
         await new Promise((resolve) => setTimeout(resolve, 10000));
@@ -279,32 +280,32 @@ export class PostInteractionErrorHandler {
    */
   static getUserMessage(error: any): string {
     const parsedError = this.parseError(error);
-    
+
     switch (parsedError.type) {
       case PostInteractionErrorType.INSUFFICIENT_ALLOWANCE:
         return "Please approve the factory contract to transfer your tokens.";
-      
+
       case PostInteractionErrorType.INSUFFICIENT_BALANCE:
         return "You don't have enough tokens for this swap.";
-      
+
       case PostInteractionErrorType.RESOLVER_NOT_WHITELISTED:
         return "The resolver is not authorized. Please contact support.";
-      
+
       case PostInteractionErrorType.FACTORY_PAUSED:
         return "The system is temporarily paused for maintenance. Please try again later.";
-      
+
       case PostInteractionErrorType.INVALID_EXTENSION_DATA:
         return "There's an issue with the order data. Please try creating a new order.";
-      
+
       case PostInteractionErrorType.ESCROW_ALREADY_EXISTS:
         return "This order may have already been processed.";
-      
+
       case PostInteractionErrorType.INVALID_HASHLOCK:
         return "Invalid swap parameters. Please create a new order.";
-      
+
       case PostInteractionErrorType.INVALID_TIMELOCKS:
         return "The swap timing parameters are invalid. Please create a new order.";
-      
+
       default:
         return "An unexpected error occurred. Please try again or contact support.";
     }
@@ -317,7 +318,7 @@ export class PostInteractionErrorHandler {
    */
   static logError(error: any, verbose: boolean = false): void {
     const parsedError = this.parseError(error);
-    
+
     console.error("═══════════════════════════════════════");
     console.error("PostInteraction Error Report");
     console.error("═══════════════════════════════════════");
@@ -325,16 +326,16 @@ export class PostInteractionErrorHandler {
     console.error(`Type: ${parsedError.type}`);
     console.error(`Message: ${parsedError.message}`);
     console.error(`Recoverable: ${parsedError.recoverable}`);
-    
+
     if (parsedError.suggestedAction) {
       console.error(`Action: ${parsedError.suggestedAction}`);
     }
-    
+
     if (verbose && parsedError.details) {
       console.error("\nFull Error Details:");
       console.error(parsedError.details);
     }
-    
+
     console.error("═══════════════════════════════════════\n");
   }
 }

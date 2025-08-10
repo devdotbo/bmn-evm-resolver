@@ -54,8 +54,14 @@ export const baseMainnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [Deno.env.get("BASE_RPC_URL") || `https://rpc.ankr.com/base/${ANKR_API_KEY}`],
-      webSocket: [Deno.env.get("BASE_WS_URL") || `wss://rpc.ankr.com/base/ws/${ANKR_API_KEY}`],
+      http: [
+        Deno.env.get("BASE_RPC_URL") ||
+        `https://rpc.ankr.com/base/${ANKR_API_KEY}`,
+      ],
+      webSocket: [
+        Deno.env.get("BASE_WS_URL") ||
+        `wss://rpc.ankr.com/base/ws/${ANKR_API_KEY}`,
+      ],
     },
   },
   testnet: false,
@@ -75,16 +81,27 @@ export const optimismMainnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [Deno.env.get("OPTIMISM_RPC_URL") || `https://rpc.ankr.com/optimism/${ANKR_API_KEY}`],
-      webSocket: [Deno.env.get("OPTIMISM_WS_URL") || `wss://rpc.ankr.com/optimism/ws/${ANKR_API_KEY}`],
+      http: [
+        Deno.env.get("OPTIMISM_RPC_URL") ||
+        `https://rpc.ankr.com/optimism/${ANKR_API_KEY}`,
+      ],
+      webSocket: [
+        Deno.env.get("OPTIMISM_WS_URL") ||
+        `wss://rpc.ankr.com/optimism/ws/${ANKR_API_KEY}`,
+      ],
     },
   },
   testnet: false,
   blockExplorers: {
-    default: { name: "Optimistic Etherscan", url: "https://optimistic.etherscan.io" },
+    default: {
+      name: "Optimistic Etherscan",
+      url: "https://optimistic.etherscan.io",
+    },
   },
 });
 
 // Test account addresses loaded from environment
-export const ALICE_ADDRESS = (Deno.env.get("ALICE_ADDRESS") || "0x70997970C51812dc3A010C7d01b50e0d17dc79C8") as Address;
-export const BOB_ADDRESS = (Deno.env.get("BOB_ADDRESS") || "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC") as Address;
+export const ALICE_ADDRESS = (Deno.env.get("ALICE_ADDRESS") ||
+  "0x70997970C51812dc3A010C7d01b50e0d17dc79C8") as Address;
+export const BOB_ADDRESS = (Deno.env.get("BOB_ADDRESS") ||
+  "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC") as Address;

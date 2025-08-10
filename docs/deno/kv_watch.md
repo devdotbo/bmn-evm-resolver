@@ -2,21 +2,31 @@
 
 ## Overview and Introduction
 
-Deno KV Watch is a powerful feature that enables real-time detection of changes in the Deno Key/Value (KV) database. This feature is essential for building reactive applications that need to respond immediately to data modifications, making it ideal for implementing real-time features such as live dashboards, collaborative tools, newsfeeds, and chat systems.
+Deno KV Watch is a powerful feature that enables real-time detection of changes
+in the Deno Key/Value (KV) database. This feature is essential for building
+reactive applications that need to respond immediately to data modifications,
+making it ideal for implementing real-time features such as live dashboards,
+collaborative tools, newsfeeds, and chat systems.
 
-> **Note**: KV Watch is currently an unstable API and may be subject to changes in future releases. It requires the `--unstable-kv` flag when running your application.
+> **Note**: KV Watch is currently an unstable API and may be subject to changes
+> in future releases. It requires the `--unstable-kv` flag when running your
+> application.
 
 ## How KV Watch Differs from Regular KV Operations
 
 ### Regular KV Operations
+
 Traditional KV operations in Deno are synchronous, one-time actions:
+
 - `kv.get()` - Retrieves a value once
 - `kv.set()` - Sets a value once
 - `kv.delete()` - Deletes a value once
 - Results are returned immediately and the operation completes
 
 ### KV Watch Operations
+
 KV Watch provides continuous, asynchronous monitoring:
+
 - Creates a persistent connection to monitor specific keys
 - Automatically notifies when watched keys change
 - Returns an async iterator or stream for continuous updates
@@ -25,16 +35,20 @@ KV Watch provides continuous, asynchronous monitoring:
 ## Real-time Data Synchronization Concepts
 
 ### Event-Driven Architecture
+
 KV Watch implements an event-driven pattern where:
+
 1. **Subscribers** register interest in specific keys or key patterns
 2. **Publishers** modify data through regular KV operations
 3. **Notifications** are automatically sent to all active watchers
 4. **Handlers** process incoming change events
 
 ### Key Watching Patterns
+
 - **Single Key Watch**: Monitor a specific key for changes
 - **Multiple Keys Watch**: Monitor an array of keys simultaneously
-- **Pattern-Based Watch**: Watch keys matching specific patterns (useful for namespaced data)
+- **Pattern-Based Watch**: Watch keys matching specific patterns (useful for
+  namespaced data)
 
 ## Complete Code Examples
 
@@ -47,7 +61,7 @@ const kv = await Deno.openKv();
 // Watch a single key for changes
 for await (const [entry] of kv.watch([["counter"]])) {
   console.log(`Counter value updated: ${entry.value}`);
-  
+
   // Entry contains:
   // - key: The key that changed
   // - value: The new value
@@ -65,16 +79,16 @@ const stream = kv.watch([["counter"]]).getReader();
 
 while (true) {
   const result = await stream.read();
-  
+
   if (result.done) {
     console.log("Stream closed");
     break;
   }
-  
+
   // Access the updated entry
   const entry = result.value[0];
   console.log(`Counter updated to: ${entry.value}`);
-  
+
   // Optionally perform additional operations
   if (entry.value > 100) {
     console.log("Counter exceeded threshold!");
@@ -92,47 +106,49 @@ Deno.serve(async (req) => {
   // Handle SSE endpoint
   if (new URL(req.url).pathname === "/events") {
     const stream = kv.watch([["counter"]]).getReader();
-    
+
     const body = new ReadableStream({
       async start(controller) {
         // Send initial value
         const initialData = await kv.get(["counter"]);
         controller.enqueue(
           new TextEncoder().encode(
-            `data: ${JSON.stringify({ counter: initialData.value })}\n\n`
-          )
+            `data: ${JSON.stringify({ counter: initialData.value })}\n\n`,
+          ),
         );
-        
+
         // Stream updates
         while (true) {
           const result = await stream.read();
           if (result.done) return;
-          
+
           const data = await kv.get(["counter"]);
-          const message = `data: ${JSON.stringify({ 
-            counter: data.value,
-            timestamp: new Date().toISOString()
-          })}\n\n`;
-          
+          const message = `data: ${
+            JSON.stringify({
+              counter: data.value,
+              timestamp: new Date().toISOString(),
+            })
+          }\n\n`;
+
           controller.enqueue(new TextEncoder().encode(message));
         }
       },
-      
+
       cancel() {
         // Cleanup when client disconnects
         stream.cancel();
-      }
+      },
     });
-    
+
     return new Response(body, {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive"
-      }
+        "Connection": "keep-alive",
+      },
     });
   }
-  
+
   // Handle other endpoints
   return new Response("Not found", { status: 404 });
 });
@@ -147,13 +163,13 @@ const kv = await Deno.openKv();
 const keysToWatch = [
   ["users", "count"],
   ["messages", "latest"],
-  ["system", "status"]
+  ["system", "status"],
 ];
 
 for await (const entries of kv.watch(keysToWatch)) {
   for (const entry of entries) {
     console.log(`Key ${entry.key.join("/")} changed to: ${entry.value}`);
-    
+
     // Handle different keys differently
     if (entry.key[0] === "users") {
       handleUserUpdate(entry);
@@ -188,33 +204,33 @@ class KVSubscriptionManager {
     this.kv = kv;
     this.subscriptions = new Map();
   }
-  
+
   async subscribe(keys, handler) {
     const id = crypto.randomUUID();
     const reader = this.kv.watch(keys).getReader();
-    
+
     const subscription = {
       id,
       keys,
       reader,
       handler,
-      active: true
+      active: true,
     };
-    
+
     this.subscriptions.set(id, subscription);
-    
+
     // Start processing
     this.process(subscription);
-    
+
     return id;
   }
-  
+
   async process(subscription) {
     while (subscription.active) {
       try {
         const result = await subscription.reader.read();
         if (result.done) break;
-        
+
         // Call the handler with the updates
         await subscription.handler(result.value);
       } catch (error) {
@@ -223,7 +239,7 @@ class KVSubscriptionManager {
       }
     }
   }
-  
+
   unsubscribe(id) {
     const subscription = this.subscriptions.get(id);
     if (subscription) {
@@ -232,7 +248,7 @@ class KVSubscriptionManager {
       this.subscriptions.delete(id);
     }
   }
-  
+
   unsubscribeAll() {
     for (const [id] of this.subscriptions) {
       this.unsubscribe(id);
@@ -251,7 +267,7 @@ const userId = await manager.subscribe(
     for (const entry of entries) {
       console.log(`Online users: ${entry.value}`);
     }
-  }
+  },
 );
 
 // Later, unsubscribe
@@ -268,11 +284,11 @@ const kv = await Deno.openKv();
 // Watch for new messages in a chat room
 async function watchChatRoom(roomId) {
   const messageKey = ["chat", roomId, "messages"];
-  
+
   for await (const [entry] of kv.watch([messageKey])) {
     const messages = entry.value || [];
     const latestMessage = messages[messages.length - 1];
-    
+
     if (latestMessage) {
       displayMessage(latestMessage);
       notifyUsers(roomId, latestMessage);
@@ -288,7 +304,7 @@ function notifyUsers(roomId, message) {
   // Send notifications to connected users
   broadcast(roomId, {
     type: "new_message",
-    data: message
+    data: message,
   });
 }
 ```
@@ -304,17 +320,17 @@ async function watchDashboardMetrics() {
     ["metrics", "cpu_usage"],
     ["metrics", "memory_usage"],
     ["metrics", "request_count"],
-    ["metrics", "error_rate"]
+    ["metrics", "error_rate"],
   ];
-  
+
   for await (const entries of kv.watch(metricsKeys)) {
     const metrics = {};
-    
+
     for (const entry of entries) {
       const metricName = entry.key[1];
       metrics[metricName] = entry.value;
     }
-    
+
     updateDashboard(metrics);
   }
 }
@@ -322,7 +338,7 @@ async function watchDashboardMetrics() {
 function updateDashboard(metrics) {
   // Update UI components with new metrics
   console.log("Dashboard Update:", metrics);
-  
+
   // Check thresholds and trigger alerts
   if (metrics.cpu_usage > 80) {
     sendAlert("High CPU usage detected!");
@@ -342,7 +358,7 @@ const kv = await Deno.openKv();
 async function watchDocument(documentId) {
   const docKey = ["documents", documentId];
   const cursorKey = ["cursors", documentId];
-  
+
   for await (const entries of kv.watch([docKey, cursorKey])) {
     for (const entry of entries) {
       if (entry.key[0] === "documents") {
@@ -357,7 +373,7 @@ async function watchDocument(documentId) {
 function handleDocumentChange(docId, content) {
   // Apply operational transform or CRDT merge
   mergeDocumentChanges(docId, content);
-  
+
   // Update local view
   renderDocument(content);
 }
@@ -373,8 +389,11 @@ function handleCursorUpdate(docId, cursors) {
 ## Performance and Scalability Considerations
 
 ### Connection Management
-- **Connection Pooling**: Each watch creates a persistent connection. Manage the number of active watches to avoid resource exhaustion.
-- **Batching**: Watch multiple related keys in a single operation rather than creating separate watchers.
+
+- **Connection Pooling**: Each watch creates a persistent connection. Manage the
+  number of active watches to avoid resource exhaustion.
+- **Batching**: Watch multiple related keys in a single operation rather than
+  creating separate watchers.
 
 ```javascript
 // Good - Single watch for multiple keys
@@ -387,6 +406,7 @@ const watcher3 = kv.watch([key3]);
 ```
 
 ### Memory Considerations
+
 - **Buffer Management**: Process watch events promptly to prevent memory buildup
 - **Cleanup**: Always cancel watchers when no longer needed
 
@@ -398,7 +418,7 @@ try {
   while (true) {
     const result = await reader.read();
     if (result.done) break;
-    
+
     // Process immediately to avoid buffering
     await processUpdate(result.value);
   }
@@ -411,6 +431,7 @@ try {
 ### Scalability Patterns
 
 #### 1. Event Aggregation
+
 ```javascript
 class EventAggregator {
   constructor(kv, flushInterval = 1000) {
@@ -418,35 +439,36 @@ class EventAggregator {
     this.buffer = [];
     this.flushInterval = flushInterval;
   }
-  
+
   async watch(keys, batchHandler) {
     for await (const entries of this.kv.watch(keys)) {
       this.buffer.push(...entries);
-      
+
       if (this.buffer.length >= 100) {
         await this.flush(batchHandler);
       }
     }
   }
-  
+
   async flush(handler) {
     if (this.buffer.length === 0) return;
-    
+
     const batch = [...this.buffer];
     this.buffer = [];
-    
+
     await handler(batch);
   }
 }
 ```
 
 #### 2. Selective Watching
+
 ```javascript
 // Watch only active user sessions
 async function watchActiveUsers(kv) {
   const activeUserIds = await getActiveUserIds(kv);
-  const keysToWatch = activeUserIds.map(id => ["users", id, "status"]);
-  
+  const keysToWatch = activeUserIds.map((id) => ["users", id, "status"]);
+
   for await (const entries of kv.watch(keysToWatch)) {
     // Process only active user updates
     processActiveUserUpdates(entries);
@@ -457,6 +479,7 @@ async function watchActiveUsers(kv) {
 ## Best Practices for Watching Keys
 
 ### 1. Use Specific Key Patterns
+
 ```javascript
 // Good - Specific keys
 const watcher = kv.watch([["users", userId, "profile"]]);
@@ -466,11 +489,12 @@ const watcher = kv.watch([["users"]]);
 ```
 
 ### 2. Implement Error Handling
+
 ```javascript
 async function robustWatch(kv, keys, handler) {
   let retryCount = 0;
   const maxRetries = 3;
-  
+
   while (retryCount < maxRetries) {
     try {
       for await (const entries of kv.watch(keys)) {
@@ -480,13 +504,13 @@ async function robustWatch(kv, keys, handler) {
     } catch (error) {
       console.error(`Watch error (attempt ${retryCount + 1}):`, error);
       retryCount++;
-      
+
       if (retryCount >= maxRetries) {
         throw new Error(`Failed to watch after ${maxRetries} attempts`);
       }
-      
+
       // Exponential backoff
-      await new Promise(resolve => 
+      await new Promise((resolve) =>
         setTimeout(resolve, Math.pow(2, retryCount) * 1000)
       );
     }
@@ -495,17 +519,18 @@ async function robustWatch(kv, keys, handler) {
 ```
 
 ### 3. Lifecycle Management
+
 ```javascript
 class WatcherLifecycle {
   constructor(kv) {
     this.kv = kv;
     this.watchers = new Set();
   }
-  
+
   async start(keys, handler) {
     const reader = this.kv.watch(keys).getReader();
     this.watchers.add(reader);
-    
+
     try {
       while (true) {
         const result = await reader.read();
@@ -516,17 +541,15 @@ class WatcherLifecycle {
       this.watchers.delete(reader);
     }
   }
-  
+
   async shutdown() {
     console.log(`Shutting down ${this.watchers.size} watchers...`);
-    
-    const promises = Array.from(this.watchers).map(reader => 
-      reader.cancel()
-    );
-    
+
+    const promises = Array.from(this.watchers).map((reader) => reader.cancel());
+
     await Promise.all(promises);
     this.watchers.clear();
-    
+
     console.log("All watchers shut down");
   }
 }
@@ -546,6 +569,7 @@ Deno.addSignalListener("SIGINT", async () => {
 ```
 
 ### 4. Debouncing and Throttling
+
 ```javascript
 function debounce(func, delay) {
   let timeoutId;
@@ -580,17 +604,18 @@ const throttledHandler = throttle(async (entries) => {
 }, 100);
 
 for await (const entries of kv.watch([["rapidly_changing_key"]])) {
-  debouncedHandler(entries);  // For expensive operations
-  throttledHandler(entries);   // For UI updates
+  debouncedHandler(entries); // For expensive operations
+  throttledHandler(entries); // For UI updates
 }
 ```
 
 ### 5. Testing Watch Functionality
+
 ```javascript
 // Test helper for watch functionality
 async function testWatch() {
   const kv = await Deno.openKv(":memory:");
-  
+
   // Set up watcher
   const updates = [];
   const watchPromise = (async () => {
@@ -599,25 +624,25 @@ async function testWatch() {
       if (updates.length >= 3) break;
     }
   })();
-  
+
   // Simulate updates
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
   await kv.set(["test_key"], "value1");
-  
-  await new Promise(resolve => setTimeout(resolve, 100));
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
   await kv.set(["test_key"], "value2");
-  
-  await new Promise(resolve => setTimeout(resolve, 100));
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
   await kv.set(["test_key"], "value3");
-  
+
   // Wait for watcher to complete
   await watchPromise;
-  
+
   console.assert(updates.length === 3, "Should receive 3 updates");
   console.assert(updates[0] === "value1", "First update should be value1");
   console.assert(updates[1] === "value2", "Second update should be value2");
   console.assert(updates[2] === "value3", "Third update should be value3");
-  
+
   console.log("Watch tests passed!");
   kv.close();
 }
@@ -647,4 +672,10 @@ deno run --unstable-kv https://docs.deno.com/examples/scripts/kv_watch.ts
 
 ## Summary
 
-Deno KV Watch is a powerful feature for building real-time, reactive applications. By understanding its event-driven architecture, implementing proper error handling, and following best practices for performance and scalability, you can create robust applications that respond instantly to data changes. Remember to always use the `--unstable-kv` flag when running applications with KV Watch, and be prepared for potential API changes as the feature evolves.
+Deno KV Watch is a powerful feature for building real-time, reactive
+applications. By understanding its event-driven architecture, implementing
+proper error handling, and following best practices for performance and
+scalability, you can create robust applications that respond instantly to data
+changes. Remember to always use the `--unstable-kv` flag when running
+applications with KV Watch, and be prepared for potential API changes as the
+feature evolves.

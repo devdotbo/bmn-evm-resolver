@@ -1,21 +1,28 @@
 # Limit Order Protocol Integration
 
 > **📚 ARCHIVED DOCUMENTATION - FOR HISTORICAL REFERENCE**
-> 
-> **This document describes the integration approach before the PostInteraction fix on 2025-08-08.**
-> 
-> The PostInteraction functionality described here had implementation issues that have since been resolved.
-> 
+>
+> **This document describes the integration approach before the PostInteraction
+> fix on 2025-08-08.**
+>
+> The PostInteraction functionality described here had implementation issues
+> that have since been resolved.
+>
 > For current implementation details, see:
-> - **Fix Documentation**: [../POSTINTERACTION_FIX_2025-08-08.md](../POSTINTERACTION_FIX_2025-08-08.md)
-> - **Troubleshooting Guide**: [../POSTINTERACTION_TROUBLESHOOTING.md](../POSTINTERACTION_TROUBLESHOOTING.md)
+>
+> - **Fix Documentation**:
+>   [../POSTINTERACTION_FIX_2025-08-08.md](../POSTINTERACTION_FIX_2025-08-08.md)
+> - **Troubleshooting Guide**:
+>   [../POSTINTERACTION_TROUBLESHOOTING.md](../POSTINTERACTION_TROUBLESHOOTING.md)
 > - **Current Status**: ✅ FULLY OPERATIONAL
 
 ---
 
 ## Overview (Historical Context)
 
-This implementation integrates Bridge-Me-Not with the 1inch SimpleLimitOrderProtocol to enable cross-chain atomic swaps using EIP-712 signed limit orders with post-interaction hooks that trigger escrow creation.
+This implementation integrates Bridge-Me-Not with the 1inch
+SimpleLimitOrderProtocol to enable cross-chain atomic swaps using EIP-712 signed
+limit orders with post-interaction hooks that trigger escrow creation.
 
 ## Key Components
 
@@ -27,23 +34,27 @@ This implementation integrates Bridge-Me-Not with the 1inch SimpleLimitOrderProt
 ### 2. LimitOrderAlice (`src/alice/limit-order-alice.ts`)
 
 The main class that handles:
-- **EIP-712 Order Creation**: Creates properly formatted limit orders with EIP-712 signatures
-- **Post-Interaction Integration**: Includes extension data that triggers `factory.postSourceEscrow()` after order fill
+
+- **EIP-712 Order Creation**: Creates properly formatted limit orders with
+  EIP-712 signatures
+- **Post-Interaction Integration**: Includes extension data that triggers
+  `factory.postSourceEscrow()` after order fill
 - **Secret Management**: Generates and stores secrets for HTLC atomic swaps
-- **Order Monitoring**: Watches for destination escrow creation and auto-withdraws
+- **Order Monitoring**: Watches for destination escrow creation and
+  auto-withdraws
 
 ### 3. Order Structure
 
 ```typescript
 interface LimitOrder {
-  salt: bigint;           // Random nonce for uniqueness
-  maker: Address;         // Alice's address
-  receiver: Address;      // Who receives the tokens (also Alice)
-  makerAsset: Address;    // BMN token on source chain
-  takerAsset: Address;    // BMN token (same for atomic swap)
-  makingAmount: bigint;   // Amount Alice is selling
-  takingAmount: bigint;   // Amount Alice wants to receive
-  makerTraits: bigint;    // Flags including hasExtension bit
+  salt: bigint; // Random nonce for uniqueness
+  maker: Address; // Alice's address
+  receiver: Address; // Who receives the tokens (also Alice)
+  makerAsset: Address; // BMN token on source chain
+  takerAsset: Address; // BMN token (same for atomic swap)
+  makingAmount: bigint; // Amount Alice is selling
+  takingAmount: bigint; // Amount Alice wants to receive
+  makerTraits: bigint; // Flags including hasExtension bit
 }
 ```
 
@@ -51,7 +62,8 @@ interface LimitOrder {
 
 1. **Order Creation**: Alice creates a limit order with extension data
 2. **Extension Data**: Contains factory address and `postSourceEscrow` calldata
-3. **Order Fill**: When resolver fills the order, the protocol executes the post-interaction
+3. **Order Fill**: When resolver fills the order, the protocol executes the
+   post-interaction
 4. **Escrow Creation**: Factory creates source escrow with HTLC parameters
 5. **Cross-Chain**: Resolver creates matching destination escrow
 6. **Withdrawal**: Alice reveals secret to claim funds on destination
@@ -87,7 +99,8 @@ deno run alice.ts --action list
 
 ## Security Features
 
-1. **EIP-712 Signatures**: Orders are cryptographically signed using EIP-712 standard
+1. **EIP-712 Signatures**: Orders are cryptographically signed using EIP-712
+   standard
 2. **HTLC Protection**: Hash-time-locked contracts ensure atomic execution
 3. **Extension Validation**: Post-interactions are validated by the protocol
 4. **Secret Management**: Secrets stored securely using Deno KV
@@ -132,11 +145,13 @@ DRY_RUN=false                        # Set to false for real transactions
 ## Testing
 
 ### Dry Run Test
+
 ```bash
 DRY_RUN=true deno run test-limit-order.ts
 ```
 
 ### Integration Test
+
 ```bash
 # Requires funded account on mainnet
 DRY_RUN=false deno run test-limit-order.ts

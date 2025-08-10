@@ -1,7 +1,7 @@
 # Production Docker Compose Configuration
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
-version: '3.8'
+version: "3.8"
 
 services:
   resolver:
@@ -9,10 +9,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: "2"
           memory: 2G
         reservations:
-          cpus: '1'
+          cpus: "1"
           memory: 1G
       restart_policy:
         condition: any
@@ -28,16 +28,16 @@ services:
         max-size: "100m"
         max-file: "20"
         compress: "true"
-    
+
   alice:
     image: bmn-alice:latest
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 1G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
       restart_policy:
         condition: any
@@ -53,16 +53,16 @@ services:
         max-size: "100m"
         max-file: "20"
         compress: "true"
-    
+
   bob:
     image: bmn-bob:latest
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 1G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
       restart_policy:
         condition: any
@@ -78,5 +78,5 @@ services:
         max-size: "100m"
         max-file: "20"
         compress: "true"
-    
+
   # Monitoring stack removed in production overlay: redis, prometheus, grafana

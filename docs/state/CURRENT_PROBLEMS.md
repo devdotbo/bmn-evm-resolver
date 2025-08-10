@@ -2,7 +2,9 @@
 
 ## Executive Summary
 
-The BMN resolver is currently attempting to use the blockchain indexer (Ponder) as its state management system. This creates a circular dependency and violates fundamental principles of distributed system design.
+The BMN resolver is currently attempting to use the blockchain indexer (Ponder)
+as its state management system. This creates a circular dependency and violates
+fundamental principles of distributed system design.
 
 ## Critical Issues Identified
 
@@ -27,7 +29,9 @@ async getRevealedSecrets(): Promise<Array<{ hashlock: string; secret: string }>>
 }
 ```
 
-The resolver tried to query `escrowWithdrawal` table for hashlocks, but that table doesn't contain hashlock data. This indicates a fundamental misunderstanding of data ownership.
+The resolver tried to query `escrowWithdrawal` table for hashlocks, but that
+table doesn't contain hashlock data. This indicates a fundamental
+misunderstanding of data ownership.
 
 ### 3. Schema Mismatch Issues
 
@@ -36,10 +40,10 @@ The resolver's interfaces don't match the actual schema:
 ```typescript
 // Interface had wrong fields
 export interface SrcEscrow {
-  deadline: bigint;      // Doesn't exist in schema
-  srcChainId: bigint;    // Should be chainId
-  dstChainId: bigint;    // Is actually in separate field
-  updatedAt: bigint;     // Doesn't exist
+  deadline: bigint; // Doesn't exist in schema
+  srcChainId: bigint; // Should be chainId
+  dstChainId: bigint; // Is actually in separate field
+  updatedAt: bigint; // Doesn't exist
 }
 
 // Actual schema has
@@ -66,11 +70,13 @@ Latency: 12ms
 
 - Blockchain reorganizations could invalidate resolver's understanding
 - Indexer delays cause resolver to miss critical timing windows
-- No way to track resolver-specific metadata (who revealed, why, when locally decided)
+- No way to track resolver-specific metadata (who revealed, why, when locally
+  decided)
 
 ### 6. Missing Business Context
 
-The indexer only knows what happened on-chain, not WHY the resolver made decisions:
+The indexer only knows what happened on-chain, not WHY the resolver made
+decisions:
 
 ```typescript
 // Indexer can't store this context
@@ -87,22 +93,25 @@ The indexer only knows what happened on-chain, not WHY the resolver made decisio
 ## Code Symptoms
 
 ### Symptom 1: Querying for Own State
+
 ```typescript
 // WRONG: Asking indexer for secrets we revealed
 const secrets = await this.ponderClient.getRevealedSecrets();
 ```
 
 ### Symptom 2: Complex Joins for Simple Data
+
 ```typescript
 // WRONG: Joining multiple tables to reconstruct our state
 const results = await this.client.db
   .select()
   .from(schema.escrowWithdrawal)
-  .leftJoin(schema.atomicSwap)  // Why join? We should know this
-  .leftJoin(schema.srcEscrow)   // More joins for our own data
+  .leftJoin(schema.atomicSwap) // Why join? We should know this
+  .leftJoin(schema.srcEscrow); // More joins for our own data
 ```
 
 ### Symptom 3: Waiting for Indexer Confirmation
+
 ```typescript
 // WRONG: Circular waiting
 await this.revealSecret(secret);
@@ -113,21 +122,25 @@ const indexed = await this.indexer.getSecret(secret); // Get back what we just d
 ## Impact Analysis
 
 ### Reliability Impact
+
 - Single point of failure (indexer down = resolver can't function)
 - State loss if indexer database corrupted
 - Cannot operate independently
 
 ### Performance Impact
+
 - Unnecessary network round trips
 - Complex SQL queries for simple lookups
 - No caching possible (don't own the data)
 
 ### Scalability Impact
+
 - Can't shard resolver instances (shared state in indexer)
 - Database contention with other indexer queries
 - Growing join complexity as data increases
 
 ### Development Impact
+
 - Tight coupling makes testing difficult
 - Can't develop resolver without running indexer
 - Schema changes in indexer break resolver
@@ -139,7 +152,8 @@ The fundamental issue is a **violation of the Single Responsibility Principle**:
 - **Indexer's Job**: Provide queryable access to blockchain history
 - **Resolver's Job**: Make decisions and execute atomic swap protocols
 
-The resolver is trying to use the indexer as its operational database, which the indexer was never designed to be.
+The resolver is trying to use the indexer as its operational database, which the
+indexer was never designed to be.
 
 ## Current Data Flow (Broken)
 
@@ -160,6 +174,7 @@ Note the circular flow from Resolver → Blockchain → Indexer → Resolver
 ## Evidence from Code
 
 ### From SimpleResolver.ts
+
 ```typescript
 private async checkForRevealedSecrets() {
   const secrets = await this.ponderClient.getRevealedSecrets();
@@ -175,9 +190,11 @@ private async checkForRevealedSecrets() {
 }
 ```
 
-This method shows the resolver querying the indexer for secrets, then trying to match them with escrows - data it should already have in its own state.
+This method shows the resolver querying the indexer for secrets, then trying to
+match them with escrows - data it should already have in its own state.
 
 ### From PonderClient.ts
+
 ```typescript
 async getRevealedSecrets(): Promise<Array<{ hashlock: string; secret: string }>> {
   // Note: escrowWithdrawal doesn't have hashlock, we need to get it from atomicSwap
@@ -192,10 +209,14 @@ The comment admits the schema wasn't designed for this query pattern.
 
 ## Why This Happened
 
-1. **Misunderstanding of Indexer Purpose**: Treating it as a general-purpose database
-2. **Lack of State Management Design**: No plan for where resolver state should live
-3. **Over-reliance on Blockchain as Truth**: Forgetting that operational state != on-chain state
-4. **Copy-Paste Development**: Using indexer client for everything without considering appropriateness
+1. **Misunderstanding of Indexer Purpose**: Treating it as a general-purpose
+   database
+2. **Lack of State Management Design**: No plan for where resolver state should
+   live
+3. **Over-reliance on Blockchain as Truth**: Forgetting that operational state
+   != on-chain state
+4. **Copy-Paste Development**: Using indexer client for everything without
+   considering appropriateness
 
 ## Consequences If Not Fixed
 
@@ -206,4 +227,6 @@ The comment admits the schema wasn't designed for this query pattern.
 
 ## Next Steps
 
-See [PROPER_ARCHITECTURE.md](./PROPER_ARCHITECTURE.md) for the correct design pattern and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the migration strategy.
+See [PROPER_ARCHITECTURE.md](./PROPER_ARCHITECTURE.md) for the correct design
+pattern and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the migration
+strategy.

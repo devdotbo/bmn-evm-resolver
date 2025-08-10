@@ -1,10 +1,12 @@
 # Bridge-Me-Not Integration Test Suite
 
-This directory contains comprehensive integration tests for the Bridge-Me-Not atomic swap protocol.
+This directory contains comprehensive integration tests for the Bridge-Me-Not
+atomic swap protocol.
 
 ## Overview
 
 The integration test suite validates the complete atomic swap flow:
+
 1. Environment setup and verification
 2. Resolver (Bob) startup and monitoring
 3. Order creation by Alice with ETH safety deposits
@@ -16,9 +18,11 @@ The integration test suite validates the complete atomic swap flow:
 ## Test Scripts
 
 ### `integration-test-flow.ts`
+
 The main integration test that orchestrates the complete atomic swap flow.
 
 **Features:**
+
 - Supports local, testnet, and mainnet environments
 - Validates ETH safety deposits (0.00002 ETH)
 - Monitors order progression through all states
@@ -26,6 +30,7 @@ The main integration test that orchestrates the complete atomic swap flow.
 - Provides detailed error reporting
 
 **Usage:**
+
 ```bash
 # Test on local chains
 deno run --allow-all scripts/integration-test-flow.ts
@@ -38,9 +43,12 @@ deno run --allow-all scripts/integration-test-flow.ts --verbose
 ```
 
 ### `test-flow.sh`
-Shell script that orchestrates the test environment and runs the integration test.
+
+Shell script that orchestrates the test environment and runs the integration
+test.
 
 **Features:**
+
 - Checks prerequisites (deno, nc)
 - Manages local chain startup/shutdown
 - Verifies contract deployments
@@ -48,6 +56,7 @@ Shell script that orchestrates the test environment and runs the integration tes
 - Provides colored output for clarity
 
 **Usage:**
+
 ```bash
 # Run with default settings (local, TKA/TKB)
 ./scripts/test-flow.sh
@@ -60,9 +69,11 @@ Shell script that orchestrates the test environment and runs the integration tes
 ```
 
 ### `setup-test-environment.ts`
+
 Prepares the test environment before running integration tests.
 
 **Features:**
+
 - Verifies contract deployments on both chains
 - Funds test accounts with ETH and tokens (local mode)
 - Sets up token approvals for contracts
@@ -70,6 +81,7 @@ Prepares the test environment before running integration tests.
 - Validates minimum balance requirements
 
 **Usage:**
+
 ```bash
 # Setup local test environment
 deno run --allow-all scripts/setup-test-environment.ts --funding-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -81,6 +93,7 @@ deno run --allow-all scripts/setup-test-environment.ts --network mainnet --skip-
 ## Environment Requirements
 
 ### Local Testing
+
 1. Start local chains:
    ```bash
    cd ../bmn-evm-contracts
@@ -100,6 +113,7 @@ deno run --allow-all scripts/setup-test-environment.ts --network mainnet --skip-
    ```
 
 ### Mainnet Testing
+
 1. Create `.env.mainnet` file with your mainnet private keys
 2. Ensure accounts have sufficient ETH and BMN tokens
 3. Verify contracts are deployed on both Base and Etherlink
@@ -107,17 +121,20 @@ deno run --allow-all scripts/setup-test-environment.ts --network mainnet --skip-
 ## Test Flow Details
 
 ### 1. Environment Setup
+
 - Loads contract addresses from environment or deployment files
 - Verifies all required contracts are deployed
 - Checks account balances (ETH and tokens)
 - Validates network connectivity
 
 ### 2. Resolver Startup
+
 - Starts Bob's resolver in the background
 - Waits for initialization
 - Verifies resolver is monitoring for orders
 
 ### 3. Order Creation
+
 - Alice creates a limit order with:
   - Token amount (e.g., 10 TKA/BMN)
   - ETH safety deposit (0.00002 ETH)
@@ -125,23 +142,27 @@ deno run --allow-all scripts/setup-test-environment.ts --network mainnet --skip-
 - Order is saved to state and file system
 
 ### 4. Order Discovery
+
 - Resolver detects the new order
 - Validates profitability
 - Checks safety deposit
 - Deploys destination escrow on target chain
 
 ### 5. Alice's Withdrawal
+
 - Waits for destination escrow deployment
 - Validates timelock has passed
 - Reveals secret on-chain
 - Claims tokens from destination escrow
 
 ### 6. Bob's Claim
+
 - Monitors for secret reveal event
 - Uses revealed secret to claim from source escrow
 - Updates order status to completed
 
 ### 7. Final Verification
+
 - Checks both orders show completed status
 - Verifies token balances changed correctly
 - Confirms atomic swap succeeded
@@ -178,11 +199,13 @@ deno run --allow-all scripts/setup-test-environment.ts --network mainnet --skip-
 ### Debug Mode
 
 Enable verbose output to see detailed progress:
+
 ```bash
 ./scripts/test-flow.sh --verbose
 ```
 
 Check resolver logs:
+
 ```bash
 tail -f logs/resolver.log
 ```

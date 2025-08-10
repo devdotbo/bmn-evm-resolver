@@ -1,4 +1,4 @@
-import { keccak256, type Hex } from 'viem';
+import { type Hex, keccak256 } from "viem";
 
 export interface SecretRecord {
   hashlock: string;
@@ -7,7 +7,7 @@ export interface SecretRecord {
   escrowAddress: string;
   chainId: number;
   revealedAt: number;
-  status: 'pending' | 'confirmed' | 'failed';
+  status: "pending" | "confirmed" | "failed";
   txHash?: string;
   gasUsed?: string;
 }
@@ -20,7 +20,7 @@ export class SecretManager {
   async init(): Promise<void> {
     // Open KV database (uses default location if no path specified)
     this.kv = await Deno.openKv(this.kvPath);
-    console.log('✅ SecretManager initialized with Deno KV');
+    console.log("✅ SecretManager initialized with Deno KV");
   }
 
   private async ensureKv(): Promise<void> {
@@ -37,7 +37,7 @@ export class SecretManager {
   }): Promise<SecretRecord> {
     await this.ensureKv();
     const hashlock = keccak256(params.secret);
-    
+
     const record: SecretRecord = {
       hashlock,
       secret: params.secret,
@@ -45,34 +45,41 @@ export class SecretManager {
       escrowAddress: params.escrowAddress.toLowerCase(),
       chainId: params.chainId,
       revealedAt: Date.now(),
-      status: 'pending'
+      status: "pending",
     };
 
     // Store in KV
-    await this.kv.set(['secrets', hashlock], record);
-    await this.kv.set(['secrets_by_order', params.orderHash], hashlock);
-    
+    await this.kv.set(["secrets", hashlock], record);
+    await this.kv.set(["secrets_by_order", params.orderHash], hashlock);
+
     console.log(`💾 Stored secret for hashlock: ${hashlock}`);
     return record;
   }
 
   async getSecretByHashlock(hashlock: string): Promise<string | null> {
     await this.ensureKv();
-    const result = await this.kv.get<SecretRecord>(['secrets', hashlock]);
+    const result = await this.kv.get<SecretRecord>(["secrets", hashlock]);
     return result.value?.secret || null;
   }
 
   async getSecretByOrderHash(orderHash: string): Promise<string | null> {
     await this.ensureKv();
-    const hashlockResult = await this.kv.get<string>(['secrets_by_order', orderHash]);
+    const hashlockResult = await this.kv.get<string>([
+      "secrets_by_order",
+      orderHash,
+    ]);
     if (!hashlockResult.value) return null;
-    
+
     return this.getSecretByHashlock(hashlockResult.value);
   }
 
-  async confirmSecret(hashlock: string, txHash: string, gasUsed: bigint): Promise<void> {
+  async confirmSecret(
+    hashlock: string,
+    txHash: string,
+    gasUsed: bigint,
+  ): Promise<void> {
     await this.ensureKv();
-    const result = await this.kv.get<SecretRecord>(['secrets', hashlock]);
+    const result = await this.kv.get<SecretRecord>(["secrets", hashlock]);
     if (!result.value) {
       console.warn(`⚠️ Secret not found for hashlock: ${hashlock}`);
       return;
@@ -80,52 +87,55 @@ export class SecretManager {
 
     const updated: SecretRecord = {
       ...result.value,
-      status: 'confirmed',
+      status: "confirmed",
       txHash,
-      gasUsed: gasUsed.toString()
+      gasUsed: gasUsed.toString(),
     };
 
-    await this.kv.set(['secrets', hashlock], updated);
+    await this.kv.set(["secrets", hashlock], updated);
     console.log(`✅ Confirmed secret for hashlock: ${hashlock}`);
   }
 
   async markFailed(hashlock: string, error: string): Promise<void> {
     await this.ensureKv();
-    const result = await this.kv.get<SecretRecord>(['secrets', hashlock]);
+    const result = await this.kv.get<SecretRecord>(["secrets", hashlock]);
     if (!result.value) return;
 
     const updated: SecretRecord = {
       ...result.value,
-      status: 'failed'
+      status: "failed",
     };
 
-    await this.kv.set(['secrets', hashlock], updated);
+    await this.kv.set(["secrets", hashlock], updated);
     console.log(`❌ Marked secret as failed: ${hashlock}, error: ${error}`);
   }
 
   async getRevealedSecrets(): Promise<SecretRecord[]> {
     await this.ensureKv();
     const secrets: SecretRecord[] = [];
-    const iter = this.kv.list<SecretRecord>({ prefix: ['secrets'] });
-    
+    const iter = this.kv.list<SecretRecord>({ prefix: ["secrets"] });
+
     for await (const entry of iter) {
-      if (entry.value && typeof entry.value === 'object' && 'secret' in entry.value) {
+      if (
+        entry.value && typeof entry.value === "object" &&
+        "secret" in entry.value
+      ) {
         secrets.push(entry.value);
       }
     }
-    
+
     return secrets.sort((a, b) => b.revealedAt - a.revealedAt);
   }
 
   async getPendingSecrets(): Promise<SecretRecord[]> {
     await this.ensureKv();
     const allSecrets = await this.getRevealedSecrets();
-    return allSecrets.filter(s => s.status === 'pending');
+    return allSecrets.filter((s) => s.status === "pending");
   }
 
   async hasSecret(hashlock: string): Promise<boolean> {
     await this.ensureKv();
-    const result = await this.kv.get(['secrets', hashlock]);
+    const result = await this.kv.get(["secrets", hashlock]);
     return result.value !== null;
   }
 
@@ -137,12 +147,12 @@ export class SecretManager {
   }> {
     await this.ensureKv();
     const allSecrets = await this.getRevealedSecrets();
-    
+
     return {
       total: allSecrets.length,
-      pending: allSecrets.filter(s => s.status === 'pending').length,
-      confirmed: allSecrets.filter(s => s.status === 'confirmed').length,
-      failed: allSecrets.filter(s => s.status === 'failed').length
+      pending: allSecrets.filter((s) => s.status === "pending").length,
+      confirmed: allSecrets.filter((s) => s.status === "confirmed").length,
+      failed: allSecrets.filter((s) => s.status === "failed").length,
     };
   }
 

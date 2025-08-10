@@ -1,13 +1,17 @@
 # Indexer-Resolver Coordination for v2.2.0
 
 ## Overview
-This document outlines the coordination points between the resolver and indexer for the v2.2.0 PostInteraction update.
+
+This document outlines the coordination points between the resolver and indexer
+for the v2.2.0 PostInteraction update.
 
 ## Key Changes in v2.2.0
 
 ### Resolver Changes (Completed)
+
 1. **Factory Address Updated**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
-2. **PostInteraction Integration**: Orders now use PostInteraction for atomic escrow creation
+2. **PostInteraction Integration**: Orders now use PostInteraction for atomic
+   escrow creation
 3. **Token Approvals**: Resolver approves factory for token transfers
 4. **Event Monitoring**: Added PostInteractionExecuted event monitoring
 5. **Error Handling**: Comprehensive error handling with retry logic
@@ -17,6 +21,7 @@ This document outlines the coordination points between the resolver and indexer 
 #### 1. New Events to Index
 
 **PostInteractionExecuted Event**
+
 ```solidity
 event PostInteractionExecuted(
     bytes32 indexed orderHash,
@@ -25,11 +30,14 @@ event PostInteractionExecuted(
     address dstEscrow
 )
 ```
-- **Source**: SimplifiedEscrowFactory (0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68)
+
+- **Source**: SimplifiedEscrowFactory
+  (0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68)
 - **Purpose**: Links orders to their created escrows
 - **Critical Fields**: orderHash, srcEscrow, dstEscrow
 
 **PostInteractionFailed Event** (Optional but recommended)
+
 ```solidity
 event PostInteractionFailed(
     bytes32 indexed orderHash,
@@ -37,6 +45,7 @@ event PostInteractionFailed(
     string reason
 )
 ```
+
 - **Source**: SimplifiedEscrowFactory
 - **Purpose**: Track failed PostInteraction attempts for debugging
 
@@ -78,37 +87,41 @@ CREATE TABLE post_interaction_events (
 
 #### 4. API Endpoints to Update
 
-**GET /api/orders/{orderHash}**
-Add fields:
+**GET /api/orders/{orderHash}** Add fields:
+
 - `postInteractionStatus`: Status of PostInteraction execution
 - `srcEscrow`: Source escrow address (if created)
 - `dstEscrow`: Destination escrow address (if created)
 - `postInteractionTxHash`: Transaction that executed PostInteraction
 
-**GET /api/escrows/by-order/{orderHash}**
-New endpoint to get escrows created for a specific order
+**GET /api/escrows/by-order/{orderHash}** New endpoint to get escrows created
+for a specific order
 
-**GET /api/post-interactions**
-List all PostInteraction events with filtering options
+**GET /api/post-interactions** List all PostInteraction events with filtering
+options
 
 ## Coordination Points
 
 ### 1. Order Hash Consistency
+
 - **Resolver**: Calculates order hash using 1inch protocol's hashOrder function
 - **Indexer**: Must use same hash calculation or extract from events
 - **Critical**: Order hash links orders to escrows via PostInteraction
 
 ### 2. Event Timing
+
 - PostInteractionExecuted occurs in SAME transaction as order fill
 - Escrow creation events (EscrowCreated) also in same transaction
 - Indexer should process all events from a transaction atomically
 
 ### 3. Error Scenarios
+
 - If PostInteraction fails, order is still filled but no escrows created
 - Indexer should track these failures for debugging
 - Resolver will retry with new order if PostInteraction fails
 
 ### 4. Backward Compatibility
+
 - Old orders (pre-v2.2.0) won't have PostInteraction events
 - Indexer should handle both old and new order formats
 - Use factory address to determine version
@@ -128,12 +141,14 @@ List all PostInteraction events with filtering options
 ## Testing Coordination
 
 ### Test Scenarios
+
 1. **Happy Path**: Order filled → PostInteraction executed → Escrows created
 2. **Failure Case**: Order filled → PostInteraction failed → No escrows
 3. **Retry Case**: Failed PostInteraction → New order → Success
 4. **Mixed Version**: Some orders with PostInteraction, some without
 
 ### Test Data
+
 - Resolver will create test orders with known hashes
 - Indexer should verify correct linking of orders to escrows
 - Both should verify same escrow addresses calculated
@@ -141,12 +156,14 @@ List all PostInteraction events with filtering options
 ## Monitoring & Alerts
 
 ### Key Metrics
+
 1. PostInteraction success rate
 2. Average time from order to escrow creation
 3. Number of orphaned orders (filled but no escrows)
 4. Factory approval status for resolvers
 
 ### Alerts
+
 - PostInteraction failure rate > 5%
 - Resolver not whitelisted on factory
 - Factory paused
@@ -170,7 +187,9 @@ List all PostInteraction events with filtering options
 ## Appendix: Key Addresses
 
 - **Factory v2.2.0**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
-- **Factory v2.1.0** (old, deprecated): `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
+- **Factory v2.1.0** (old, deprecated):
+  `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
 - **Limit Order Protocol Base**: `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06`
-- **Limit Order Protocol Optimism**: `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7`
+- **Limit Order Protocol Optimism**:
+  `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7`
 - **BMN Token**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`

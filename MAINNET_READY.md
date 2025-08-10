@@ -5,12 +5,14 @@
 ### 🎯 Current Status Summary
 
 **PostInteraction Integration**: ✅ FIXED (v2.2.0)
+
 - Correct bit flags implemented (249, 251)
 - Extension format with proper offsets
 - Extension hash in salt lower 160 bits
 - Callbacks trigger successfully after order fills
 
 **Mainnet Readiness**: ❌ NOT READY
+
 - PostInteraction fix validated on testnet only
 - v2.2.0 contracts need mainnet deployment
 - Resolver needs mainnet whitelisting
@@ -37,11 +39,13 @@ deno run --allow-all alice.ts --action create --resolver 0x3C44CdDdB6a900fa2b585
 #### 🔄 Smart Contracts Status
 
 **TESTNET (Anvil)**
-- [x] **SimplifiedEscrowFactory v2.2.0**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+
+- [x] **SimplifiedEscrowFactory v2.2.0**:
+      `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
   - PostInteraction interface implemented ✅
   - Deployed on local Anvil ✅
   - Version: "2.2.0-postinteraction-fixed"
-  
+
 - [x] **SimpleLimitOrderProtocol**
   - Anvil: `0x5c69B5f05e8a866F1EbFce8fF94b4234ddE6F19b` ✅
   - PostInteraction callbacks working ✅
@@ -51,16 +55,18 @@ deno run --allow-all alice.ts --action create --resolver 0x3C44CdDdB6a900fa2b585
   - Whitelisted on Anvil testnet ✅
 
 **MAINNET (Not Deployed)**
+
 - [ ] **SimplifiedEscrowFactory v2.2.0**: NOT DEPLOYED
   - Base: Needs deployment ❌
   - Optimism: Needs deployment ❌
-  
+
 - [ ] **Resolver Whitelist Status (Mainnet)**
   - Address: TBD
   - Needs whitelisting on Base ❌
   - Needs whitelisting on Optimism ❌
 
 #### ✅ Infrastructure (Working Components)
+
 - [x] **PostInteraction Integration**: FIXED in v2.2.0
   - Correct bit flags (249, 251) ✅
   - Proper extension format ✅
@@ -80,6 +86,7 @@ deno run --allow-all alice.ts --action create --resolver 0x3C44CdDdB6a900fa2b585
   - Order submission ✅
 
 #### ⚠️ Infrastructure (Needs Work)
+
 - [ ] **Ponder Indexer**: Partially working
   - SQL endpoint functional ✅
   - Event monitoring incomplete ⚠️
@@ -113,13 +120,13 @@ deno run --allow-all alice.ts --action create --resolver 0x3C44CdDdB6a900fa2b585
 
 ### 📊 Current Configuration
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| MIN_PROFIT_BPS | 0 | No minimum profit required (configurable) |
-| POLLING_INTERVAL | 10000ms | Check for orders every 10 seconds |
-| Factory Version | v2.2.0 (testnet) | PostInteraction fixed version |
-| Resolver Address | 0x3C44Cd...4293BC | Whitelisted on testnet only |
-| Environment | Testnet/Anvil | NOT deployed to mainnet |
+| Parameter        | Value             | Description                               |
+| ---------------- | ----------------- | ----------------------------------------- |
+| MIN_PROFIT_BPS   | 0                 | No minimum profit required (configurable) |
+| POLLING_INTERVAL | 10000ms           | Check for orders every 10 seconds         |
+| Factory Version  | v2.2.0 (testnet)  | PostInteraction fixed version             |
+| Resolver Address | 0x3C44Cd...4293BC | Whitelisted on testnet only               |
+| Environment      | Testnet/Anvil     | NOT deployed to mainnet                   |
 
 ### 🚨 MAINNET BLOCKERS
 
@@ -178,13 +185,13 @@ Before mainnet deployment, these issues MUST be resolved:
 
 ### 🚨 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| "Resolver not whitelisted" | Contact admin to whitelist resolver address |
-| "No pending swaps" | Check if indexer is running and synced |
+| Issue                          | Solution                                    |
+| ------------------------------ | ------------------------------------------- |
+| "Resolver not whitelisted"     | Contact admin to whitelist resolver address |
+| "No pending swaps"             | Check if indexer is running and synced      |
 | "Failed to connect to indexer" | Verify INDEXER_URL and network connectivity |
-| "Insufficient funds" | Ensure resolver has tokens and ETH for gas |
-| "Secret already revealed" | Normal - another party revealed first |
+| "Insufficient funds"           | Ensure resolver has tokens and ETH for gas  |
+| "Secret already revealed"      | Normal - another party revealed first       |
 
 ### 📞 Support Channels
 
@@ -215,13 +222,16 @@ deno run --allow-all scripts/check-whitelist.ts
 
 ## ⚠️ System Status: TESTNET ONLY
 
-**PostInteraction is FIXED** in v2.2.0 and working correctly on testnet. The system successfully:
+**PostInteraction is FIXED** in v2.2.0 and working correctly on testnet. The
+system successfully:
+
 - Creates limit orders with proper PostInteraction extension
 - Triggers factory callbacks after order fills
 - Creates cross-chain escrows automatically
 - Completes atomic swaps end-to-end
 
 **However, the system is NOT ready for mainnet** because:
+
 - v2.2.0 contracts are not deployed to mainnet
 - Resolver is not whitelisted on mainnet
 - Production testing is incomplete
@@ -236,7 +246,8 @@ deno run --allow-all scripts/check-whitelist.ts
 
 ### 🔗 Key Resources
 
-- **PostInteraction Fix Documentation**: `docs/POSTINTERACTION_FIX_2025-08-08.md`
+- **PostInteraction Fix Documentation**:
+  `docs/POSTINTERACTION_FIX_2025-08-08.md`
 - **Troubleshooting Guide**: `docs/POSTINTERACTION_TROUBLESHOOTING.md`
 - **Technical Architecture**: `ARCHITECTURE.md`
 - **Test Suite**: `test-postinteraction.ts`

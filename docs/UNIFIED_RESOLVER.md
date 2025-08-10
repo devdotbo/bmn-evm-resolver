@@ -3,6 +3,7 @@
 ## Overview
 
 The Unified Resolver is a mainnet-ready implementation that integrates:
+
 - **PonderClient**: SQL over HTTP for indexer queries
 - **SimpleLimitOrderProtocol**: For filling cross-chain atomic swap orders
 - **SecretManager**: Local state management using Deno KV
@@ -18,7 +19,8 @@ The Unified Resolver is a mainnet-ready implementation that integrates:
    - Tracks swap status across chains
 
 2. **Order Filling** (`SimpleLimitOrderProtocol`)
-   - Fills orders through the limit order protocol instead of direct factory calls
+   - Fills orders through the limit order protocol instead of direct factory
+     calls
    - Supports both Base and Optimism chains
    - Handles order signing and execution
 
@@ -30,9 +32,12 @@ The Unified Resolver is a mainnet-ready implementation that integrates:
 ## Contract Addresses
 
 ### Factory V2 (v2.2.0)
-- **Address**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (same on Base and Optimism)
+
+- **Address**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (same on Base and
+  Optimism)
 
 ### SimpleLimitOrderProtocol
+
 - **Base**: `0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06`
 - **Optimism**: `0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7`
 
@@ -76,12 +81,14 @@ deno run --allow-all test-resolver.ts
 ## Workflow
 
 ### 1. Order Discovery
+
 ```typescript
 // The resolver monitors for pending atomic swaps
 const pendingSwaps = await ponderClient.getPendingAtomicSwaps(resolverAddress);
 ```
 
 ### 2. Profitability Check
+
 ```typescript
 // Calculates profit based on safety deposits
 const profitBps = ((dstDeposit - srcDeposit) * 10000n) / srcDeposit;
@@ -91,6 +98,7 @@ if (profitBps >= minProfitBps) {
 ```
 
 ### 3. Order Filling
+
 ```typescript
 // Fill order through SimpleLimitOrderProtocol
 await limitOrderProtocol.fillOrder({
@@ -98,22 +106,24 @@ await limitOrderProtocol.fillOrder({
   r: signature.r,
   vs: signature.vs,
   amount: fillAmount,
-  takerTraits: 0n
+  takerTraits: 0n,
 });
 ```
 
 ### 4. Secret Management
+
 ```typescript
 // Store revealed secrets locally
 await secretManager.storeSecret({
   secret: revealedSecret,
   orderHash: orderHash,
   escrowAddress: escrowAddress,
-  chainId: chainId
+  chainId: chainId,
 });
 ```
 
 ### 5. Withdrawal
+
 ```typescript
 // Withdraw from source escrow using revealed secret
 await escrowSrc.withdraw(secret);
@@ -122,16 +132,19 @@ await escrowSrc.withdraw(secret);
 ## Features
 
 ### Simple & Functional
+
 - No security monitoring or whitelist checks
 - No emergency pause handling
 - Focus on core functionality
 
 ### Mainnet Ready
+
 - Uses v2.2.0 factory addresses
 - Integrates with SimpleLimitOrderProtocol
 - Supports Base and Optimism mainnets
 
 ### Efficient State Management
+
 - Local Deno KV for secret storage
 - Tracks processed orders to avoid duplicates
 - Maintains withdrawal status
@@ -165,6 +178,7 @@ Only orders that meet the minimum profit threshold will be filled.
 ## Error Handling
 
 The resolver includes robust error handling:
+
 - Graceful shutdown on SIGINT/SIGTERM
 - Continues operation on individual order failures
 - Logs all errors for debugging
@@ -227,6 +241,7 @@ The resolver is designed to be extensible:
 ## Support
 
 For issues or questions:
+
 - GitHub Issues: [Report bugs or feature requests]
 - Documentation: [Full documentation]
 - Discord: [Community support]

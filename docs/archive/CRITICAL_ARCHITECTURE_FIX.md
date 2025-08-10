@@ -1,34 +1,47 @@
 # 🚨 CRITICAL ARCHITECTURE FIX REQUIRED 🚨
 
 > **📚 ARCHIVED - ISSUE RESOLVED**
-> 
-> **This document describes architectural issues that were resolved with the PostInteraction fix on 2025-08-08.**
-> 
+>
+> **This document describes architectural issues that were resolved with the
+> PostInteraction fix on 2025-08-08.**
+>
 > The PostInteraction integration now works correctly. See:
-> - **Solution**: [../POSTINTERACTION_FIX_2025-08-08.md](../POSTINTERACTION_FIX_2025-08-08.md)
+>
+> - **Solution**:
+>   [../POSTINTERACTION_FIX_2025-08-08.md](../POSTINTERACTION_FIX_2025-08-08.md)
 > - **Status**: ✅ All architectural issues resolved
 
 ---
 
 ## Date: 2025-01-07 (Historical)
+
 ## Priority: URGENT - System is using wrong approach (NOW FIXED)
 
 ---
 
 ## 🔴 THE FUNDAMENTAL ISSUE (Historical - Resolved)
 
-The current implementation has a **critical architectural misunderstanding**. The system is trying to call functions that **DO NOT EXIST** on the deployed contracts.
+The current implementation has a **critical architectural misunderstanding**.
+The system is trying to call functions that **DO NOT EXIST** on the deployed
+contracts.
 
 ### What's Actually Deployed:
-- **Factory Address**: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` (Base & Optimism)
+
+- **Factory Address**: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` (Base &
+  Optimism)
 - **Contract Type**: `CrossChainEscrowFactory` (NOT SimplifiedEscrowFactory)
 - **Available Method**: `postInteraction` (called by limit order protocol)
-- **NON-EXISTENT Method**: `createSrcEscrow` ❌ (this function does NOT exist on deployed contract)
+- **NON-EXISTENT Method**: `createSrcEscrow` ❌ (this function does NOT exist on
+  deployed contract)
 
 ### The Confusion:
+
 Someone mixed up two different factory contracts:
-1. **CrossChainEscrowFactory** (DEPLOYED) - Uses postInteraction via limit orders
-2. **SimplifiedEscrowFactory** (NOT DEPLOYED) - Has createSrcEscrow for direct calls
+
+1. **CrossChainEscrowFactory** (DEPLOYED) - Uses postInteraction via limit
+   orders
+2. **SimplifiedEscrowFactory** (NOT DEPLOYED) - Has createSrcEscrow for direct
+   calls
 
 ---
 
@@ -70,6 +83,7 @@ Factory → Creates Source Escrow via CREATE2
 ## 🔧 REQUIRED CHANGES
 
 ### 1. ALICE (Client) - Files to Fix:
+
 ```typescript
 // src/alice/limit-order-alice.ts
 // src/alice/mainnet-alice.ts
@@ -101,6 +115,7 @@ const order = {
 ```
 
 ### 2. BOB (Resolver) - Files to Fix:
+
 ```typescript
 // src/resolver/resolver.ts
 // src/resolver/unified-resolver.ts
@@ -134,6 +149,7 @@ async fillOrder(order: Order) {
 ## 🧹 CLEANUP RECOMMENDATIONS
 
 ### Files to REMOVE (Not Needed):
+
 ```
 src/alice/simple-alice.ts              - Uses wrong approach
 src/examples/demo-*.ts                 - Outdated examples
@@ -142,6 +158,7 @@ test/test-simplified-*.ts               - Tests for wrong approach
 ```
 
 ### Files to KEEP and FIX:
+
 ```
 src/alice/limit-order-alice.ts         - Fix to use limit orders properly
 src/alice/mainnet-alice.ts             - Fix to use limit orders properly
@@ -151,6 +168,7 @@ abis/SimpleLimitOrderProtocol.json     - Keep for order filling
 ```
 
 ### ABIs to VERIFY with abi2human:
+
 ```bash
 # Verify correct factory interface
 abi2human abis/CrossChainEscrowFactoryV2.json -oc | grep -E "postInteraction|createSrcEscrow"
@@ -166,24 +184,28 @@ abi2human abis/SimpleLimitOrderProtocol.json -oc | grep fillOrder
 ## 📋 IMPLEMENTATION PLAN
 
 ### Phase 1: Alice Changes (Priority 1)
+
 1. [ ] Remove direct factory calls from `limit-order-alice.ts`
 2. [ ] Implement proper order creation with postInteraction
 3. [ ] Test order signing and submission
 4. [ ] Update `mainnet-alice.ts` similarly
 
 ### Phase 2: Resolver Changes (Priority 2)
+
 1. [ ] Remove factory interaction code from resolver
 2. [ ] Implement proper order filling via protocol
 3. [ ] Update indexer queries to match new flow
 4. [ ] Test order filling mechanism
 
 ### Phase 3: Cleanup (Priority 3)
+
 1. [ ] Remove SimplifiedEscrowFactory ABI
 2. [ ] Delete outdated example files
 3. [ ] Update documentation
 4. [ ] Clean up test files
 
 ### Phase 4: Testing (Priority 4)
+
 1. [ ] Test complete flow: Alice → Order → Bob → Factory → Escrow
 2. [ ] Verify on testnet first
 3. [ ] Monitor gas costs
@@ -221,7 +243,8 @@ cast call 0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A "whitelistedResolvers(addre
 
 ## 📚 REFERENCE DOCUMENTATION
 
-- CrossChainEscrowFactory source: `../bmn-evm-contracts/contracts/CrossChainEscrowFactory.sol`
+- CrossChainEscrowFactory source:
+  `../bmn-evm-contracts/contracts/CrossChainEscrowFactory.sol`
 - SimpleLimitOrderProtocol docs: `../bmn-evm-contracts-limit-order/README.md`
 - Correct flow example: Check 1inch Fusion docs (but adapt for our factory)
 
@@ -230,6 +253,7 @@ cast call 0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A "whitelistedResolvers(addre
 ## 🎯 SUCCESS CRITERIA
 
 After implementing these changes:
+
 1. ✅ Alice creates orders with postInteraction data
 2. ✅ Bob fills orders through protocol
 3. ✅ Factory creates escrows via postInteraction
@@ -254,12 +278,12 @@ After implementing these changes:
 ## CONTACT
 
 For questions about this architecture change:
+
 - Check `../bmn-evm-contracts/ARCHITECTURE.md`
 - Review limit order protocol at `../bmn-evm-contracts-limit-order/`
 - Use abi2human to verify all interfaces
 
 ---
 
-**Document Created**: 2025-01-07
-**Author**: System Architecture Analysis
+**Document Created**: 2025-01-07 **Author**: System Architecture Analysis
 **Status**: URGENT - Implementation Required

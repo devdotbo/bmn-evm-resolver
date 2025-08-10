@@ -19,9 +19,11 @@ This demo simulates the complete atomic swap flow between Base and Optimism.
 // Step 1: Alice creates an order
 console.log("STEP 1: Alice Creates Order");
 console.log("============================");
-const secret = "0x307861373938363435313664366435393539653161313939633439333066353630333434666666383865643863663062613065343966623234313464613864323764";
+const secret =
+  "0x307861373938363435313664366435393539653161313939633439333066353630333434666666383865643863663062613065343966623234313464613864323764";
 const hashlock = keccak256(secret as `0x${string}`);
-const orderHash = "0x6bc85fea9ec88eea7ff09e304db4ef2d6139b3660203f7e48353c2ce780f9109";
+const orderHash =
+  "0x6bc85fea9ec88eea7ff09e304db4ef2d6139b3660203f7e48353c2ce780f9109";
 
 console.log("✅ Alice creates order on Base chain:");
 console.log(`   - Order Hash: ${orderHash}`);
@@ -79,13 +81,21 @@ console.log("   - Atomic swap complete!");
 console.log("");
 
 // Summary
-console.log("════════════════════════════════════════════════════════════════════════");
+console.log(
+  "════════════════════════════════════════════════════════════════════════",
+);
 console.log("                        SWAP COMPLETE!");
-console.log("════════════════════════════════════════════════════════════════════════");
+console.log(
+  "════════════════════════════════════════════════════════════════════════",
+);
 console.log("");
 console.log("Final State:");
-console.log("  • Alice: Started with 1 BMN on Base → Ended with 1 BMN on Optimism ✅");
-console.log("  • Bob:   Started with 1 BMN on Optimism → Ended with 1 BMN on Base ✅");
+console.log(
+  "  • Alice: Started with 1 BMN on Base → Ended with 1 BMN on Optimism ✅",
+);
+console.log(
+  "  • Bob:   Started with 1 BMN on Optimism → Ended with 1 BMN on Base ✅",
+);
 console.log("");
 console.log("Security Properties:");
 console.log("  • Atomic: Either both swaps complete or neither does");

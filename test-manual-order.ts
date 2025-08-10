@@ -10,20 +10,22 @@ import { UnifiedResolver } from "./src/resolver/resolver.ts";
 
 async function createManualOrder() {
   console.log("🔧 Creating manual test order for resolver...");
-  
+
   // Initialize resolver
   const resolver = new UnifiedResolver();
-  
+
   // Create test order data matching what Alice created
   // const secret = "0x307861373938363435313664366435393539653161313939633439333066353630333434666666383865643863663062613065343966623234313464613864323764";
-  const hashlock = "0xda974201617bc68d29fe2ff211f725a55dcfad0dcbdab5347cb171404e8e0841";
-  const orderHash = "0x6bc85fea9ec88eea7ff09e304db4ef2d6139b3660203f7e48353c2ce780f9109";
-  
+  const hashlock =
+    "0xda974201617bc68d29fe2ff211f725a55dcfad0dcbdab5347cb171404e8e0841";
+  const orderHash =
+    "0x6bc85fea9ec88eea7ff09e304db4ef2d6139b3660203f7e48353c2ce780f9109";
+
   // Manually process the order by deploying destination escrow
   console.log("📝 Processing order manually...");
   console.log(`   Order Hash: ${orderHash}`);
   console.log(`   Hashlock: ${hashlock}`);
-  
+
   // Create a mock swap object that the resolver would normally get from the indexer
   const mockSwap = {
     orderHash: orderHash,
@@ -40,15 +42,15 @@ async function createManualOrder() {
     status: "src_created",
     srcCreatedAt: new Date().toISOString(),
   };
-  
+
   // Deploy destination escrow
   console.log("🚀 Deploying destination escrow on Optimism...");
-  
+
   try {
     // Call the resolver's deployDestinationEscrow method directly
     // @ts-ignore - accessing private method for testing
     await resolver.deployDestinationEscrow(mockSwap);
-    
+
     console.log("✅ Destination escrow deployment initiated!");
     console.log("   Alice's monitor should detect this and auto-withdraw");
   } catch (error) {

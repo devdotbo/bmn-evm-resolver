@@ -1,35 +1,42 @@
-import { 
-  createPublicClient, 
-  createWalletClient, 
-  http, 
-  parseAbi, 
-  encodeFunctionData, 
-  keccak256, 
-  toHex,
-  encodeAbiParameters,
-  parseAbiParameters,
-  concat,
-  pad,
-  numberToHex,
-  hexToBigInt,
+import {
   type Address,
-  type Hex
+  concat,
+  createPublicClient,
+  createWalletClient,
+  encodeAbiParameters,
+  encodeFunctionData,
+  type Hex,
+  hexToBigInt,
+  http,
+  keccak256,
+  numberToHex,
+  pad,
+  parseAbi,
+  parseAbiParameters,
+  toHex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
-import { getContractAddresses, CREATE3_ADDRESSES } from "../config/contracts.ts";
-import { 
-  encodePostInteractionData,
+import {
+  CREATE3_ADDRESSES,
+  getContractAddresses,
+} from "../config/contracts.ts";
+import {
   encode1inchExtension,
-  packTimelocks,
-  MAKER_TRAITS,
+  encodePostInteractionData,
+  type EscrowParams,
   generateNonce,
-  type EscrowParams 
+  MAKER_TRAITS,
+  packTimelocks,
 } from "../utils/postinteraction-v2.ts";
-import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with { type: "json" };
-import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with { type: "json" };
+import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with {
+  type: "json",
+};
+import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with {
+  type: "json",
+};
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
 import IERC20Abi from "../../abis/IERC20.json" with { type: "json" };
 import { EscrowWithdrawManager } from "../utils/escrow-withdraw.ts";
@@ -113,14 +120,26 @@ export class LimitOrderAlice {
   async init(): Promise<void> {
     await this.secretManager.init();
     const stats = await this.secretManager.getStatistics();
-    console.log(`📊 Alice SecretManager initialized. Stats: ${JSON.stringify(stats)}`);
+    console.log(
+      `📊 Alice SecretManager initialized. Stats: ${JSON.stringify(stats)}`,
+    );
   }
 
   async createOrder(params: OrderParams): Promise<string> {
-    console.log(`\n🎯 Creating MAINNET atomic swap order via Limit Order Protocol`);
-    console.log(`   From: Chain ${params.srcChainId} (${params.srcChainId === 10 ? 'Optimism' : 'Base'})`);
-    console.log(`   To: Chain ${params.dstChainId} (${params.dstChainId === 10 ? 'Optimism' : 'Base'})`);
-    console.log(`   Amount: ${params.srcAmount / 10n**18n} BMN tokens`);
+    console.log(
+      `\n🎯 Creating MAINNET atomic swap order via Limit Order Protocol`,
+    );
+    console.log(
+      `   From: Chain ${params.srcChainId} (${
+        params.srcChainId === 10 ? "Optimism" : "Base"
+      })`,
+    );
+    console.log(
+      `   To: Chain ${params.dstChainId} (${
+        params.dstChainId === 10 ? "Optimism" : "Base"
+      })`,
+    );
+    console.log(`   Amount: ${params.srcAmount / 10n ** 18n} BMN tokens`);
 
     // Generate secret and hashlock
     const secret = this.generateSecret();
@@ -137,8 +156,12 @@ export class LimitOrderAlice {
     const ESCROW_FACTORY = srcAddresses.escrowFactory;
 
     // Select the correct wallet and client based on source chain
-    const wallet = params.srcChainId === base.id ? this.baseWallet : this.optimismWallet;
-    const client = params.srcChainId === base.id ? this.baseClient : this.optimismClient;
+    const wallet = params.srcChainId === base.id
+      ? this.baseWallet
+      : this.optimismWallet;
+    const client = params.srcChainId === base.id
+      ? this.baseClient
+      : this.optimismClient;
 
     // Check token balance
     const balance = await client.readContract({
@@ -147,11 +170,13 @@ export class LimitOrderAlice {
       functionName: "balanceOf",
       args: [this.account.address],
     });
-    
-    console.log(`💰 Current BMN balance: ${balance / 10n**18n} tokens`);
-    
+
+    console.log(`💰 Current BMN balance: ${balance / 10n ** 18n} tokens`);
+
     if (balance < params.srcAmount) {
-      throw new Error(`Insufficient BMN balance. Have ${balance}, need ${params.srcAmount}`);
+      throw new Error(
+        `Insufficient BMN balance. Have ${balance}, need ${params.srcAmount}`,
+      );
     }
 
     // Approve tokens for the limit order protocol
@@ -167,7 +192,7 @@ export class LimitOrderAlice {
 
     // Calculate timelocks (1 hour for cancellation, 5 minutes for withdrawal)
     const timelocks = packTimelocks(3600, 300);
-    
+
     // Generate unique nonce for escrow creation
     const nonce = generateNonce();
 
@@ -192,20 +217,21 @@ export class LimitOrderAlice {
     // Build the PostInteraction data for v2.2.0
     const postInteractionData = encodePostInteractionData(
       ESCROW_FACTORY as Address,
-      escrowParams
+      escrowParams,
     );
-    
+
     // Build the full extension with proper 1inch format
     const extension = encode1inchExtension(postInteractionData);
-    
+
     // Calculate extension hash (last 160 bits for salt)
     const extensionHash = keccak256(extension);
     const extensionHashLast160 = BigInt(extensionHash) & ((1n << 160n) - 1n);
-    
+
     // Create salt with extension hash (upper bits random, lower 160 bits extension hash)
-    const randomSalt = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) << 160n;
+    const randomSalt =
+      BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) << 160n;
     const salt = randomSalt | extensionHashLast160;
-    
+
     // Build maker traits with POST_INTERACTION flag enabled for v2.2.0
     const makerTraits = MAKER_TRAITS.forPostInteraction();
 
@@ -252,13 +278,17 @@ export class LimitOrderAlice {
     console.log(`   Hashlock: ${hashlock}`);
     console.log(`   Extension data includes factory: ${ESCROW_FACTORY}`);
     console.log(`\n⏳ Waiting for resolver to fill the order...`);
-    
+
     return orderHash;
   }
 
-  private async calculateOrderHash(order: LimitOrder, chainId: number): Promise<string> {
+  private async calculateOrderHash(
+    order: LimitOrder,
+    chainId: number,
+  ): Promise<string> {
     const client = chainId === base.id ? this.baseClient : this.optimismClient;
-    const LIMIT_ORDER_PROTOCOL = getContractAddresses(chainId).limitOrderProtocol;
+    const LIMIT_ORDER_PROTOCOL =
+      getContractAddresses(chainId).limitOrderProtocol;
 
     // Call hashOrder on the contract to get the proper EIP-712 hash
     const orderHash = await client.readContract({
@@ -281,8 +311,9 @@ export class LimitOrderAlice {
   }
 
   private async signOrder(order: LimitOrder, chainId: number): Promise<Hex> {
-    const LIMIT_ORDER_PROTOCOL = getContractAddresses(chainId).limitOrderProtocol;
-    
+    const LIMIT_ORDER_PROTOCOL =
+      getContractAddresses(chainId).limitOrderProtocol;
+
     // EIP-712 domain
     const domain = {
       name: "Bridge-Me-Not Orders",
@@ -336,7 +367,7 @@ export class LimitOrderAlice {
     // Store order details in a format that the resolver can pick up
     // This could be stored in the indexer, IPFS, or a database
     // For now, we'll store it locally for the resolver to read
-    
+
     const orderData = {
       order: {
         salt: data.order.salt.toString(),
@@ -365,15 +396,17 @@ export class LimitOrderAlice {
 
     const orderFile = `${ordersDir}/${data.hashlock}.json`;
     await Deno.writeTextFile(orderFile, JSON.stringify(orderData, null, 2));
-    
+
     console.log(`📁 Order stored for resolver at: ${orderFile}`);
   }
 
   async listOrders(): Promise<any[]> {
     const orders = [];
-    
+
     // Get orders from indexer
-    const swaps = await this.ponderClient.getPendingAtomicSwaps(this.account.address);
+    const swaps = await this.ponderClient.getPendingAtomicSwaps(
+      this.account.address,
+    );
 
     for (const swap of swaps) {
       orders.push({
@@ -383,7 +416,9 @@ export class LimitOrderAlice {
         dstChain: Number(swap.dstChainId),
         srcAmount: swap.srcAmount.toString(),
         dstAmount: swap.dstAmount.toString(),
-        createdAt: new Date(Number(swap.srcCreatedAt || swap.dstCreatedAt || 0) * 1000).toISOString(),
+        createdAt: new Date(
+          Number(swap.srcCreatedAt || swap.dstCreatedAt || 0) * 1000,
+        ).toISOString(),
       });
     }
 
@@ -397,14 +432,18 @@ export class LimitOrderAlice {
     }
 
     const dstChainId = Number(swap.dstChainId);
-    const wallet = dstChainId === base.id ? this.baseWallet : this.optimismWallet;
-    const client = dstChainId === base.id ? this.baseClient : this.optimismClient;
+    const wallet = dstChainId === base.id
+      ? this.baseWallet
+      : this.optimismWallet;
+    const client = dstChainId === base.id
+      ? this.baseClient
+      : this.optimismClient;
 
     const result = await this.withdrawManager.withdrawFromDestination(
       orderHash,
       client,
       wallet,
-      this.account
+      this.account,
     );
 
     if (!result.success) {
@@ -415,23 +454,29 @@ export class LimitOrderAlice {
   private generateSecret(): string {
     const bytes = new Uint8Array(32);
     crypto.getRandomValues(bytes);
-    return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+    return `0x${
+      Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("")
+    }`;
   }
 
   async monitorAndWithdraw(pollingInterval = 10000): Promise<void> {
     console.log("👁️  Starting auto-monitoring for destination escrows...");
-    
+
     while (true) {
       try {
         const orders = await this.listOrders();
-        
+
         for (const order of orders) {
-          const swap = await this.ponderClient.getAtomicSwapByOrderHash(order.orderHash);
-          
-          if (swap && swap.dstEscrowAddress && swap.status === 'dst_created') {
-            console.log(`\n🎯 Found destination escrow for order ${order.orderHash}`);
+          const swap = await this.ponderClient.getAtomicSwapByOrderHash(
+            order.orderHash,
+          );
+
+          if (swap && swap.dstEscrowAddress && swap.status === "dst_created") {
+            console.log(
+              `\n🎯 Found destination escrow for order ${order.orderHash}`,
+            );
             console.log(`   Auto-withdrawing...`);
-            
+
             try {
               await this.withdrawFromDestination(order.orderHash);
               console.log(`✅ Successfully auto-withdrew!`);
@@ -443,8 +488,8 @@ export class LimitOrderAlice {
       } catch (error) {
         console.error("❌ Error in monitoring loop:", error);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, pollingInterval));
+
+      await new Promise((resolve) => setTimeout(resolve, pollingInterval));
     }
   }
 }

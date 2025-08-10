@@ -22,7 +22,7 @@ services:
       # Bind mount project data dir
       - ./data:/app/data
     ports:
-      - "8001:8001"  # Alice API
+      - "8001:8001" # Alice API
     restart: unless-stopped
     depends_on:
       - bob
@@ -66,7 +66,7 @@ services:
       # Bind mount project data dir
       - ./data:/app/data
     ports:
-      - "8002:8002"  # Bob-Resolver API
+      - "8002:8002" # Bob-Resolver API
     restart: unless-stopped
     # No dependencies - Bob-Resolver is the main service
     networks:

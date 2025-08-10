@@ -12,27 +12,34 @@ async function testSecretManager() {
 
   // Test 1: Store a secret
   console.log("Test 1: Storing a secret");
-  const testSecret = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`;
+  const testSecret =
+    "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`;
   const testOrderHash = "0xorder123" as `0x${string}`;
-  
+
   const record = await manager.storeSecret({
     secret: testSecret,
     orderHash: testOrderHash,
     escrowAddress: "0xescrow123",
-    chainId: 8453 // Base
+    chainId: 8453, // Base
   });
-  
+
   console.log("✅ Secret stored:", record.hashlock);
 
   // Test 2: Retrieve secret by hashlock
   console.log("\nTest 2: Retrieving secret by hashlock");
   const retrieved = await manager.getSecretByHashlock(record.hashlock);
-  console.log("✅ Retrieved secret:", retrieved === testSecret ? "MATCH" : "MISMATCH");
+  console.log(
+    "✅ Retrieved secret:",
+    retrieved === testSecret ? "MATCH" : "MISMATCH",
+  );
 
   // Test 3: Retrieve secret by order hash
   console.log("\nTest 3: Retrieving secret by order hash");
   const retrievedByOrder = await manager.getSecretByOrderHash(testOrderHash);
-  console.log("✅ Retrieved by order:", retrievedByOrder === testSecret ? "MATCH" : "MISMATCH");
+  console.log(
+    "✅ Retrieved by order:",
+    retrievedByOrder === testSecret ? "MATCH" : "MISMATCH",
+  );
 
   // Test 4: Check if secret exists
   console.log("\nTest 4: Checking if secret exists");
@@ -57,14 +64,15 @@ async function testSecretManager() {
 
   // Test 8: Store another secret and mark as failed
   console.log("\nTest 8: Testing failed secret");
-  const failedSecret = "0xfailed1234567890abcdef1234567890abcdef1234567890abcdef1234567890" as `0x${string}`;
+  const failedSecret =
+    "0xfailed1234567890abcdef1234567890abcdef1234567890abcdef1234567890" as `0x${string}`;
   const failedRecord = await manager.storeSecret({
     secret: failedSecret,
     orderHash: "0xfailed123" as `0x${string}`,
     escrowAddress: "0xescrowfailed",
-    chainId: 10 // Optimism
+    chainId: 10, // Optimism
   });
-  
+
   await manager.markFailed(failedRecord.hashlock, "Transaction reverted");
   const finalStats = await manager.getStatistics();
   console.log("✅ Final statistics:", JSON.stringify(finalStats, null, 2));

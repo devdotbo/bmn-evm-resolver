@@ -1,5 +1,10 @@
-import { createPublicClient, http, type Address, type PublicClient } from "viem";
-import { optimism, base } from "viem/chains";
+import {
+  type Address,
+  createPublicClient,
+  http,
+  type PublicClient,
+} from "viem";
+import { base, optimism } from "viem/chains";
 import { CREATE3_ADDRESSES } from "../config/contracts.ts";
 
 // Factory ABI for security checks
@@ -43,7 +48,7 @@ export interface FactorySecurityStatus {
 export async function checkWhitelistStatus(
   client: PublicClient,
   factoryAddress: Address,
-  resolverAddress: Address
+  resolverAddress: Address,
 ): Promise<boolean> {
   try {
     const isWhitelisted = await client.readContract({
@@ -64,7 +69,7 @@ export async function checkWhitelistStatus(
  */
 export async function checkPauseStatus(
   client: PublicClient,
-  factoryAddress: Address
+  factoryAddress: Address,
 ): Promise<boolean> {
   try {
     const isPaused = await client.readContract({
@@ -84,7 +89,7 @@ export async function checkPauseStatus(
  */
 export async function getFactoryVersion(
   client: PublicClient,
-  factoryAddress: Address
+  factoryAddress: Address,
 ): Promise<string> {
   try {
     const version = await client.readContract({
@@ -106,7 +111,7 @@ export async function checkFactorySecurity(
   chainId: number,
   factoryAddress: Address,
   resolverAddress: Address,
-  rpcUrl?: string
+  rpcUrl?: string,
 ): Promise<FactorySecurityStatus> {
   // Determine chain and RPC
   const chain = chainId === 10 ? optimism : chainId === 8453 ? base : undefined;
@@ -146,9 +151,11 @@ export class FactorySecurityMonitor {
 
   constructor(
     private resolverAddress: Address,
-    private chains: Array<{ chainId: number; factoryAddress: Address; rpcUrl?: string }>,
+    private chains: Array<
+      { chainId: number; factoryAddress: Address; rpcUrl?: string }
+    >,
     private onStatusChange?: (status: FactorySecurityStatus) => void,
-    private intervalMs: number = 60000 // Check every minute
+    private intervalMs: number = 60000, // Check every minute
   ) {}
 
   /**
@@ -156,10 +163,10 @@ export class FactorySecurityMonitor {
    */
   async start(): Promise<void> {
     console.log("🔒 Starting factory security monitoring...");
-    
+
     // Initial check
     await this.checkAll();
-    
+
     // Set up interval
     this.intervalId = setInterval(() => {
       this.checkAll().catch(console.error);
@@ -181,53 +188,58 @@ export class FactorySecurityMonitor {
    * Check all configured chains
    */
   private async checkAll(): Promise<void> {
-    const checks = this.chains.map(async ({ chainId, factoryAddress, rpcUrl }) => {
-      try {
-        const status = await checkFactorySecurity(
-          chainId,
-          factoryAddress,
-          this.resolverAddress,
-          rpcUrl
-        );
+    const checks = this.chains.map(
+      async ({ chainId, factoryAddress, rpcUrl }) => {
+        try {
+          const status = await checkFactorySecurity(
+            chainId,
+            factoryAddress,
+            this.resolverAddress,
+            rpcUrl,
+          );
 
-        // Check for changes
-        const lastStatus = this.lastStatus.get(chainId);
-        if (lastStatus) {
-          if (
-            lastStatus.isWhitelisted !== status.isWhitelisted ||
-            lastStatus.isPaused !== status.isPaused ||
-            lastStatus.version !== status.version
-          ) {
-            console.log(`⚠️ Security status changed on chain ${chainId}:`, {
-              whitelisted: `${lastStatus.isWhitelisted} → ${status.isWhitelisted}`,
-              paused: `${lastStatus.isPaused} → ${status.isPaused}`,
-              version: `${lastStatus.version} → ${status.version}`,
-            });
-            
-            if (this.onStatusChange) {
-              this.onStatusChange(status);
+          // Check for changes
+          const lastStatus = this.lastStatus.get(chainId);
+          if (lastStatus) {
+            if (
+              lastStatus.isWhitelisted !== status.isWhitelisted ||
+              lastStatus.isPaused !== status.isPaused ||
+              lastStatus.version !== status.version
+            ) {
+              console.log(`⚠️ Security status changed on chain ${chainId}:`, {
+                whitelisted:
+                  `${lastStatus.isWhitelisted} → ${status.isWhitelisted}`,
+                paused: `${lastStatus.isPaused} → ${status.isPaused}`,
+                version: `${lastStatus.version} → ${status.version}`,
+              });
+
+              if (this.onStatusChange) {
+                this.onStatusChange(status);
+              }
             }
           }
-        }
 
-        // Log warnings
-        if (!status.isWhitelisted) {
-          console.error(`❌ Resolver NOT whitelisted on chain ${chainId}`);
-        }
-        if (status.isPaused) {
-          console.warn(`⏸️ Factory PAUSED on chain ${chainId}`);
-        }
-        if (!status.version.includes("2.1.0")) {
-          console.warn(`⚠️ Unexpected factory version on chain ${chainId}: ${status.version}`);
-        }
+          // Log warnings
+          if (!status.isWhitelisted) {
+            console.error(`❌ Resolver NOT whitelisted on chain ${chainId}`);
+          }
+          if (status.isPaused) {
+            console.warn(`⏸️ Factory PAUSED on chain ${chainId}`);
+          }
+          if (!status.version.includes("2.1.0")) {
+            console.warn(
+              `⚠️ Unexpected factory version on chain ${chainId}: ${status.version}`,
+            );
+          }
 
-        this.lastStatus.set(chainId, status);
-        return status;
-      } catch (error) {
-        console.error(`Error checking chain ${chainId}:`, error);
-        return null;
-      }
-    });
+          this.lastStatus.set(chainId, status);
+          return status;
+        } catch (error) {
+          console.error(`Error checking chain ${chainId}:`, error);
+          return null;
+        }
+      },
+    );
 
     await Promise.all(checks);
   }
@@ -281,7 +293,7 @@ export async function verifyMigration(resolverAddress: Address): Promise<void> {
         chainId,
         factoryAddress,
         resolverAddress,
-        rpcUrl
+        rpcUrl,
       );
 
       console.log(`Factory: ${factoryAddress}`);

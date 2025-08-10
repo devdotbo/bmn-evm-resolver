@@ -2,11 +2,14 @@
 
 ## Overview
 
-The resolver uses SQLite for local state management, chosen for its simplicity, performance, and zero-configuration deployment. This document defines the complete database schema for the resolver's operational state.
+The resolver uses SQLite for local state management, chosen for its simplicity,
+performance, and zero-configuration deployment. This document defines the
+complete database schema for the resolver's operational state.
 
 ## Database Selection Rationale
 
 ### Why SQLite?
+
 - **Embedded**: No separate database process required
 - **Performance**: Sub-millisecond queries for local data
 - **Reliability**: ACID compliant with full transaction support
@@ -14,6 +17,7 @@ The resolver uses SQLite for local state management, chosen for its simplicity, 
 - **Size**: Handles up to 281TB of data (more than enough)
 
 ### Why NOT PostgreSQL/MySQL?
+
 - Resolver needs local, fast access to its own state
 - No need for multi-user concurrent access
 - Deployment simplicity is paramount
@@ -24,6 +28,7 @@ The resolver uses SQLite for local state management, chosen for its simplicity, 
 ### 1. Core Tables
 
 #### revealed_secrets
+
 Stores all secrets revealed by this resolver instance.
 
 ```sql
@@ -92,6 +97,7 @@ CREATE INDEX idx_revealed_secrets_pending ON revealed_secrets(status)
 ```
 
 #### monitored_swaps
+
 Tracks all atomic swaps we're actively monitoring.
 
 ```sql
@@ -174,6 +180,7 @@ CREATE INDEX idx_monitored_swaps_chains ON monitored_swaps(src_chain_id, dst_cha
 ```
 
 #### resolver_decisions
+
 Audit log of all decisions made by the resolver.
 
 ```sql
@@ -232,6 +239,7 @@ CREATE INDEX idx_resolver_decisions_time ON resolver_decisions(created_at);
 ### 2. Analytics Tables
 
 #### gas_estimates
+
 Historical gas usage for better estimation.
 
 ```sql
@@ -270,6 +278,7 @@ CREATE INDEX idx_gas_estimates_time ON gas_estimates(estimated_at);
 ```
 
 #### profit_tracking
+
 Track profitability over time.
 
 ```sql
@@ -310,6 +319,7 @@ CREATE INDEX idx_profit_tracking_period ON profit_tracking(period_type, period_s
 ### 3. Configuration Tables
 
 #### resolver_config
+
 Runtime configuration that can be updated without restart.
 
 ```sql
@@ -333,6 +343,7 @@ INSERT INTO resolver_config (key, value, value_type, description) VALUES
 ```
 
 #### chain_config
+
 Per-chain configuration.
 
 ```sql
@@ -361,6 +372,7 @@ INSERT INTO chain_config (chain_id, chain_name, rpc_url, block_time_seconds, con
 ### 4. Audit & Security Tables
 
 #### audit_log
+
 Complete audit trail of all operations.
 
 ```sql
@@ -400,6 +412,7 @@ CREATE INDEX idx_audit_log_time ON audit_log(created_at);
 ```
 
 #### access_log
+
 Track all data access for security.
 
 ```sql
@@ -432,6 +445,7 @@ CREATE INDEX idx_access_log_time ON access_log(created_at);
 ### 5. Maintenance Tables
 
 #### schema_migrations
+
 Track database schema versions.
 
 ```sql
@@ -443,6 +457,7 @@ CREATE TABLE schema_migrations (
 ```
 
 #### health_checks
+
 System health monitoring.
 
 ```sql
@@ -470,6 +485,7 @@ CREATE INDEX idx_health_checks_component ON health_checks(component, created_at)
 ## Data Retention Policies
 
 ### Retention Rules
+
 ```sql
 -- Delete old audit logs after 90 days
 DELETE FROM audit_log WHERE created_at < unixepoch() - (90 * 24 * 60 * 60);
@@ -489,6 +505,7 @@ ANALYZE;
 ## Performance Optimizations
 
 ### Write-Ahead Logging
+
 ```sql
 PRAGMA journal_mode = WAL;           -- Better concurrent access
 PRAGMA synchronous = NORMAL;         -- Balance safety/speed
@@ -497,6 +514,7 @@ PRAGMA temp_store = MEMORY;          -- Temp tables in RAM
 ```
 
 ### Query Optimization
+
 ```sql
 -- Analyze tables regularly
 ANALYZE revealed_secrets;
@@ -514,6 +532,7 @@ ORDER BY revealed_at DESC;
 ## Backup Strategy
 
 ### Continuous Backup
+
 ```bash
 #!/bin/bash
 # backup.sh - Run every hour
@@ -530,6 +549,7 @@ find $BACKUP_DIR -name "resolver_*.db" -mtime +7 -delete
 ```
 
 ### Point-in-Time Recovery
+
 ```sql
 -- Enable point-in-time recovery
 PRAGMA wal_checkpoint(TRUNCATE);
@@ -543,6 +563,7 @@ PRAGMA wal_checkpoint(TRUNCATE);
 ## Migration Scripts
 
 ### Initial Setup
+
 ```sql
 -- migrations/001_initial_schema.sql
 BEGIN TRANSACTION;
@@ -566,6 +587,7 @@ COMMIT;
 ```
 
 ### Adding New Column
+
 ```sql
 -- migrations/002_add_mev_protection.sql
 BEGIN TRANSACTION;
@@ -583,6 +605,7 @@ COMMIT;
 ## Monitoring Queries
 
 ### Key Metrics
+
 ```sql
 -- Pending secrets count
 SELECT COUNT(*) as pending_count
@@ -618,6 +641,7 @@ ORDER BY hour;
 ## Security Considerations
 
 ### Encryption
+
 ```sql
 -- Secrets should be encrypted before storage
 -- Use SQLCipher for transparent encryption
@@ -625,6 +649,7 @@ PRAGMA key = 'your-encryption-key';
 ```
 
 ### Access Control
+
 ```sql
 -- Create read-only view for monitoring
 CREATE VIEW monitoring_stats AS
@@ -641,12 +666,14 @@ FROM revealed_secrets;
 ## Disaster Recovery
 
 ### Corruption Detection
+
 ```sql
 PRAGMA integrity_check;
 PRAGMA foreign_key_check;
 ```
 
 ### Recovery Procedure
+
 1. Stop resolver immediately
 2. Restore from most recent backup
 3. Replay transactions from WAL if available
@@ -656,13 +683,17 @@ PRAGMA foreign_key_check;
 ## Future Considerations
 
 ### Sharding Strategy
+
 When the resolver scales to multiple instances:
+
 - Shard by order_hash prefix
 - Use distributed SQLite (rqlite)
 - Or migrate to PostgreSQL with partitioning
 
 ### Archive Strategy
+
 For long-term storage:
+
 - Move old records to archive tables
 - Compress and store in object storage
 - Keep only active data in main tables

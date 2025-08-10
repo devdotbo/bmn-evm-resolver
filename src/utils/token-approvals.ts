@@ -1,9 +1,9 @@
 import {
   type Address,
   type Hash,
+  parseAbi,
   type PublicClient,
   type WalletClient,
-  parseAbi,
 } from "viem";
 import { CREATE3_ADDRESSES } from "../config/contracts.ts";
 
@@ -15,13 +15,13 @@ const ERC20_ABI = parseAbi([
 
 /**
  * Token Approval Manager for v2.2.0 Factory
- * 
+ *
  * Manages token approvals required for the SimplifiedEscrowFactory's
  * PostInteraction to transfer tokens from the resolver to escrows.
  */
 export class TokenApprovalManager {
   private factoryAddress: Address;
-  
+
   constructor(factoryAddress?: Address) {
     this.factoryAddress = factoryAddress || CREATE3_ADDRESSES.ESCROW_FACTORY_V2;
   }
@@ -40,13 +40,13 @@ export class TokenApprovalManager {
     wallet: WalletClient,
     tokenAddress: Address,
     owner: Address,
-    requiredAmount: bigint
+    requiredAmount: bigint,
   ): Promise<Hash | null> {
     // Check current allowance
     const currentAllowance = await this.getAllowance(
       client,
       tokenAddress,
-      owner
+      owner,
     );
 
     console.log(`📊 Current allowance for factory: ${currentAllowance}`);
@@ -61,17 +61,17 @@ export class TokenApprovalManager {
     // Approve the factory for max uint256 to avoid repeated approvals
     console.log("🔓 Approving factory for token transfers...");
     const approvalAmount = 2n ** 256n - 1n; // Max uint256
-    
+
     const hash = await this.approveToken(
       wallet,
       tokenAddress,
-      approvalAmount
+      approvalAmount,
     );
 
     // Wait for confirmation
     await client.waitForTransactionReceipt({ hash });
     console.log(`✅ Factory approved. Tx: ${hash}`);
-    
+
     return hash;
   }
 
@@ -85,7 +85,7 @@ export class TokenApprovalManager {
   async getAllowance(
     client: PublicClient,
     tokenAddress: Address,
-    owner: Address
+    owner: Address,
   ): Promise<bigint> {
     const allowance = await client.readContract({
       address: tokenAddress,
@@ -93,7 +93,7 @@ export class TokenApprovalManager {
       functionName: "allowance",
       args: [owner, this.factoryAddress],
     }) as bigint;
-    
+
     return allowance;
   }
 
@@ -107,7 +107,7 @@ export class TokenApprovalManager {
   async approveToken(
     wallet: WalletClient,
     tokenAddress: Address,
-    amount: bigint
+    amount: bigint,
   ): Promise<Hash> {
     const hash = await wallet.writeContract({
       address: tokenAddress,
@@ -118,7 +118,7 @@ export class TokenApprovalManager {
       chain: wallet.chain || undefined,
       account: wallet.account!,
     });
-    
+
     return hash as Hash;
   }
 
@@ -132,7 +132,7 @@ export class TokenApprovalManager {
   async getBalance(
     client: PublicClient,
     tokenAddress: Address,
-    account: Address
+    account: Address,
   ): Promise<bigint> {
     const balance = await client.readContract({
       address: tokenAddress,
@@ -140,7 +140,7 @@ export class TokenApprovalManager {
       functionName: "balanceOf",
       args: [account],
     }) as bigint;
-    
+
     return balance;
   }
 
@@ -156,23 +156,23 @@ export class TokenApprovalManager {
     client: PublicClient,
     wallet: WalletClient,
     tokens: Address[],
-    owner: Address
+    owner: Address,
   ): Promise<Hash[]> {
     const approvalHashes: Hash[] = [];
-    
+
     for (const token of tokens) {
       try {
         // Check if approval is needed
         const allowance = await this.getAllowance(client, token, owner);
-        
+
         if (allowance === 0n) {
           console.log(`🔓 Approving token ${token}...`);
           const hash = await this.approveToken(
             wallet,
             token,
-            2n ** 256n - 1n // Max uint256
+            2n ** 256n - 1n, // Max uint256
           );
-          
+
           // Wait for confirmation before proceeding to next token
           await client.waitForTransactionReceipt({ hash });
           approvalHashes.push(hash);
@@ -184,7 +184,7 @@ export class TokenApprovalManager {
         console.error(`❌ Failed to approve token ${token}:`, error);
       }
     }
-    
+
     return approvalHashes;
   }
 
@@ -196,7 +196,7 @@ export class TokenApprovalManager {
    */
   async revokeApproval(
     wallet: WalletClient,
-    tokenAddress: Address
+    tokenAddress: Address,
   ): Promise<Hash> {
     const hash = await wallet.writeContract({
       address: tokenAddress,
@@ -206,7 +206,7 @@ export class TokenApprovalManager {
       chain: wallet.chain || undefined,
       account: wallet.account!,
     });
-    
+
     return hash as Hash;
   }
 }
@@ -223,20 +223,20 @@ export async function ensureFactoryApproval(
   client: PublicClient,
   wallet: WalletClient,
   tokenAddress: Address,
-  amount: bigint
+  amount: bigint,
 ): Promise<Hash | null> {
   const manager = new TokenApprovalManager();
   const account = wallet.account;
-  
+
   if (!account) {
     throw new Error("Wallet account not found");
   }
-  
+
   return await manager.ensureApproval(
     client,
     wallet,
     tokenAddress,
     account.address,
-    amount
+    amount,
   );
 }

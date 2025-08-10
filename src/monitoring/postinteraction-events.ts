@@ -1,31 +1,31 @@
 import {
-  createPublicClient,
-  type PublicClient,
   type Address,
+  createPublicClient,
+  decodeEventLog,
   type Log,
   parseAbiItem,
-  decodeEventLog,
+  type PublicClient,
 } from "viem";
 import { CREATE3_ADDRESSES } from "../config/contracts.ts";
 
 /**
  * PostInteraction Event Monitor for v2.2.0
- * 
+ *
  * Monitors SimplifiedEscrowFactory events related to PostInteraction execution,
  * allowing the resolver to track escrow creation and handle failures.
  */
 
 // Event signatures for v2.2.0 SimplifiedEscrowFactory
 const POST_INTERACTION_EXECUTED_EVENT = parseAbiItem(
-  "event PostInteractionExecuted(bytes32 indexed orderHash, address indexed taker, address srcEscrow, address dstEscrow)"
+  "event PostInteractionExecuted(bytes32 indexed orderHash, address indexed taker, address srcEscrow, address dstEscrow)",
 );
 
 const ESCROW_CREATED_EVENT = parseAbiItem(
-  "event EscrowCreated(address indexed escrowAddress, uint8 indexed escrowType, bytes32 indexed immutablesHash)"
+  "event EscrowCreated(address indexed escrowAddress, uint8 indexed escrowType, bytes32 indexed immutablesHash)",
 );
 
 const POST_INTERACTION_FAILED_EVENT = parseAbiItem(
-  "event PostInteractionFailed(bytes32 indexed orderHash, address indexed taker, string reason)"
+  "event PostInteractionFailed(bytes32 indexed orderHash, address indexed taker, string reason)",
 );
 
 export interface PostInteractionExecutedEvent {
@@ -69,7 +69,7 @@ export class PostInteractionEventMonitor {
    * @returns Unwatch function to stop listening
    */
   watchPostInteractionExecuted(
-    callback: (event: PostInteractionExecutedEvent) => void
+    callback: (event: PostInteractionExecutedEvent) => void,
   ): () => void {
     const unwatch = this.client.watchContractEvent({
       address: this.factoryAddress,
@@ -82,7 +82,7 @@ export class PostInteractionEventMonitor {
             data: log.data,
             topics: log.topics,
           });
-          
+
           callback({
             orderHash: decoded.args.orderHash as `0x${string}`,
             taker: decoded.args.taker as Address,
@@ -104,7 +104,7 @@ export class PostInteractionEventMonitor {
    * @returns Unwatch function to stop listening
    */
   watchEscrowCreated(
-    callback: (event: EscrowCreatedEvent) => void
+    callback: (event: EscrowCreatedEvent) => void,
   ): () => void {
     const unwatch = this.client.watchContractEvent({
       address: this.factoryAddress,
@@ -117,7 +117,7 @@ export class PostInteractionEventMonitor {
             data: log.data,
             topics: log.topics,
           });
-          
+
           callback({
             escrowAddress: decoded.args.escrowAddress as Address,
             escrowType: Number(decoded.args.escrowType),
@@ -138,7 +138,7 @@ export class PostInteractionEventMonitor {
    * @returns Unwatch function to stop listening
    */
   watchPostInteractionFailed(
-    callback: (event: PostInteractionFailedEvent) => void
+    callback: (event: PostInteractionFailedEvent) => void,
   ): () => void {
     const unwatch = this.client.watchContractEvent({
       address: this.factoryAddress,
@@ -151,7 +151,7 @@ export class PostInteractionEventMonitor {
             data: log.data,
             topics: log.topics,
           });
-          
+
           callback({
             orderHash: decoded.args.orderHash as `0x${string}`,
             taker: decoded.args.taker as Address,
@@ -174,7 +174,7 @@ export class PostInteractionEventMonitor {
    */
   async getHistoricalPostInteractionExecuted(
     fromBlock: bigint,
-    toBlock?: bigint
+    toBlock?: bigint,
   ): Promise<PostInteractionExecutedEvent[]> {
     const logs = await this.client.getContractEvents({
       address: this.factoryAddress,
@@ -298,7 +298,7 @@ export class PostInteractionEventMonitor {
    */
   async waitForPostInteraction(
     orderHash: `0x${string}`,
-    timeout: number = 60000
+    timeout: number = 60000,
   ): Promise<PostInteractionExecutedEvent> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {

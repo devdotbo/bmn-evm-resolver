@@ -14,7 +14,7 @@ async function testConnection() {
     // Debug: Check what's in the schema
     console.log("📋 Available tables in schema:");
     console.log(Object.keys(schema));
-    
+
     // Create client
     const client = createClient(`${INDEXER_URL}/sql`, { schema });
     console.log("✅ Client created successfully\n");
@@ -27,7 +27,7 @@ async function testConnection() {
         .from(schema.atomicSwap)
         .limit(5)
         .execute();
-      
+
       console.log(`  ✅ Found ${swaps.length} atomic swaps`);
     } catch (error) {
       console.error("  ❌ Error querying atomicSwap:", error);
@@ -41,14 +41,13 @@ async function testConnection() {
         .from(schema.srcEscrow)
         .limit(5)
         .execute();
-      
+
       console.log(`  ✅ Found ${escrows.length} source escrows`);
     } catch (error) {
       console.error("  ❌ Error querying srcEscrow:", error);
     }
 
     console.log("\n✨ Connection test completed!");
-
   } catch (error) {
     console.error("\n❌ Test failed:", error);
     if (error instanceof Error) {

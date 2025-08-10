@@ -2,13 +2,13 @@
 
 /**
  * Test Factory Connection Script
- * 
+ *
  * Tests the resolver's ability to interact with the new v2.1.0 factory
  * Performs read operations to verify connectivity and permissions
  */
 
-import { createPublicClient, http, type Address } from "viem";
-import { optimism, base } from "viem/chains";
+import { type Address, createPublicClient, http } from "viem";
+import { base, optimism } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { CREATE3_ADDRESSES } from "../src/config/contracts.ts";
 
@@ -73,14 +73,24 @@ class FactoryConnectionTester {
     this.resolverAddress = resolverAddress;
   }
 
-  private addResult(test: string, passed: boolean, details?: string, error?: string) {
+  private addResult(
+    test: string,
+    passed: boolean,
+    details?: string,
+    error?: string,
+  ) {
     this.results.push({ test, passed, details, error });
     const symbol = passed ? "✅" : "❌";
     const message = details || error || "";
     console.log(`${symbol} ${test}: ${message}`);
   }
 
-  async testChain(chainId: number, chainName: string, factoryAddress: Address, rpcUrl: string) {
+  async testChain(
+    chainId: number,
+    chainName: string,
+    factoryAddress: Address,
+    rpcUrl: string,
+  ) {
     console.log(`\n🔗 Testing ${chainName} (Chain ${chainId})`);
     console.log(`Factory: ${factoryAddress}`);
     console.log("-".repeat(50));
@@ -97,14 +107,14 @@ class FactoryConnectionTester {
       this.addResult(
         `${chainName}: RPC Connection`,
         true,
-        `Connected (block ${blockNumber})`
+        `Connected (block ${blockNumber})`,
       );
     } catch (error) {
       this.addResult(
         `${chainName}: RPC Connection`,
         false,
         undefined,
-        String(error)
+        String(error),
       );
       return; // Can't continue without RPC
     }
@@ -116,7 +126,7 @@ class FactoryConnectionTester {
       this.addResult(
         `${chainName}: Factory Exists`,
         exists,
-        exists ? "Contract deployed" : "No contract at address"
+        exists ? "Contract deployed" : "No contract at address",
       );
       if (!exists) return;
     } catch (error) {
@@ -124,7 +134,7 @@ class FactoryConnectionTester {
         `${chainName}: Factory Exists`,
         false,
         undefined,
-        String(error)
+        String(error),
       );
       return;
     }
@@ -140,14 +150,14 @@ class FactoryConnectionTester {
       this.addResult(
         `${chainName}: Factory Version`,
         isV2,
-        `Version: ${version}`
+        `Version: ${version}`,
       );
     } catch (error) {
       this.addResult(
         `${chainName}: Factory Version`,
         false,
         undefined,
-        String(error)
+        String(error),
       );
     }
 
@@ -162,14 +172,14 @@ class FactoryConnectionTester {
       this.addResult(
         `${chainName}: Whitelist Status`,
         isWhitelisted,
-        isWhitelisted ? "Resolver whitelisted" : "Not whitelisted"
+        isWhitelisted ? "Resolver whitelisted" : "Not whitelisted",
       );
     } catch (error) {
       this.addResult(
         `${chainName}: Whitelist Status`,
         false,
         undefined,
-        String(error)
+        String(error),
       );
     }
 
@@ -183,14 +193,14 @@ class FactoryConnectionTester {
       this.addResult(
         `${chainName}: Pause Status`,
         !isPaused,
-        isPaused ? "Factory is paused" : "Factory operational"
+        isPaused ? "Factory is paused" : "Factory operational",
       );
     } catch (error) {
       this.addResult(
         `${chainName}: Pause Status`,
         false,
         undefined,
-        String(error)
+        String(error),
       );
     }
 
@@ -204,14 +214,14 @@ class FactoryConnectionTester {
       this.addResult(
         `${chainName}: Owner Access`,
         true,
-        `Owner: ${owner}`
+        `Owner: ${owner}`,
       );
     } catch (error) {
       this.addResult(
         `${chainName}: Owner Access`,
         false,
         undefined,
-        String(error)
+        String(error),
       );
     }
 
@@ -232,14 +242,14 @@ class FactoryConnectionTester {
       this.addResult(
         `${chainName}: Implementation Addresses`,
         true,
-        `Src: ${srcImpl.slice(0, 10)}..., Dst: ${dstImpl.slice(0, 10)}...`
+        `Src: ${srcImpl.slice(0, 10)}..., Dst: ${dstImpl.slice(0, 10)}...`,
       );
     } catch (error) {
       this.addResult(
         `${chainName}: Implementation Addresses`,
         false,
         undefined,
-        String(error)
+        String(error),
       );
     }
   }
@@ -249,17 +259,19 @@ class FactoryConnectionTester {
     console.log("TEST SUMMARY");
     console.log("=".repeat(60));
 
-    const passed = this.results.filter(r => r.passed).length;
-    const failed = this.results.filter(r => !r.passed).length;
+    const passed = this.results.filter((r) => r.passed).length;
+    const failed = this.results.filter((r) => !r.passed).length;
     const passRate = ((passed / this.results.length) * 100).toFixed(1);
 
-    console.log(`\nTests Passed: ${passed}/${this.results.length} (${passRate}%)`);
-    
+    console.log(
+      `\nTests Passed: ${passed}/${this.results.length} (${passRate}%)`,
+    );
+
     if (failed > 0) {
       console.log("\n❌ Failed Tests:");
       this.results
-        .filter(r => !r.passed)
-        .forEach(r => {
+        .filter((r) => !r.passed)
+        .forEach((r) => {
           console.log(`  - ${r.test}: ${r.error || r.details}`);
         });
     }
@@ -275,9 +287,9 @@ class FactoryConnectionTester {
 }
 
 async function main() {
-  console.log("=" .repeat(60));
+  console.log("=".repeat(60));
   console.log("FACTORY CONNECTION TEST");
-  console.log("=" .repeat(60));
+  console.log("=".repeat(60));
 
   // Get resolver address
   const privateKey = Deno.env.get("RESOLVER_PRIVATE_KEY");
@@ -300,7 +312,7 @@ async function main() {
     10,
     "Optimism",
     CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
-    Deno.env.get("OPTIMISM_RPC") || "https://mainnet.optimism.io"
+    Deno.env.get("OPTIMISM_RPC") || "https://mainnet.optimism.io",
   );
 
   // Test Base
@@ -308,7 +320,7 @@ async function main() {
     8453,
     "Base",
     CREATE3_ADDRESSES.ESCROW_FACTORY_V2,
-    Deno.env.get("BASE_RPC") || "https://mainnet.base.org"
+    Deno.env.get("BASE_RPC") || "https://mainnet.base.org",
   );
 
   // Print summary
@@ -320,7 +332,9 @@ async function main() {
   console.log("=".repeat(60));
 
   if (allPassed) {
-    console.log("\n✅ Your resolver is ready to interact with the v2.1.0 factory!");
+    console.log(
+      "\n✅ Your resolver is ready to interact with the v2.1.0 factory!",
+    );
     console.log("\nNext steps:");
     console.log("1. Run a test swap with small amounts");
     console.log("2. Monitor for any transaction reverts");
@@ -338,7 +352,7 @@ async function main() {
 
 // Run the test
 if (import.meta.main) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error("❌ Test failed:", error);
     Deno.exit(1);
   });

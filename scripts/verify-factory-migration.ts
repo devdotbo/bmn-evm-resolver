@@ -2,7 +2,7 @@
 
 /**
  * Factory Migration Verification Script
- * 
+ *
  * This script verifies the migration from factory v1.1.0 to v2.1.0
  * It checks:
  * - Factory version
@@ -11,7 +11,10 @@
  * - Connection health
  */
 
-import { verifyMigration, checkFactorySecurity } from "../src/utils/factory-security.ts";
+import {
+  checkFactorySecurity,
+  verifyMigration,
+} from "../src/utils/factory-security.ts";
 import { CREATE3_ADDRESSES } from "../src/config/contracts.ts";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -27,9 +30,13 @@ const colors = {
 };
 
 function printHeader(text: string) {
-  console.log(`\n${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}`);
+  console.log(
+    `\n${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}`,
+  );
   console.log(`${colors.bright}${colors.cyan}${text}${colors.reset}`);
-  console.log(`${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}\n`);
+  console.log(
+    `${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}\n`,
+  );
 }
 
 function printSection(text: string) {
@@ -56,14 +63,18 @@ async function main() {
   const privateKey = Deno.env.get("RESOLVER_PRIVATE_KEY");
   if (!privateKey) {
     printError("RESOLVER_PRIVATE_KEY not set in environment");
-    printWarning("Please set RESOLVER_PRIVATE_KEY to verify your resolver's status");
+    printWarning(
+      "Please set RESOLVER_PRIVATE_KEY to verify your resolver's status",
+    );
     Deno.exit(1);
   }
 
   const account = privateKeyToAccount(privateKey as `0x${string}`);
   const resolverAddress = account.address;
 
-  console.log(`Resolver Address: ${colors.bright}${resolverAddress}${colors.reset}`);
+  console.log(
+    `Resolver Address: ${colors.bright}${resolverAddress}${colors.reset}`,
+  );
   console.log(`Timestamp: ${new Date().toISOString()}`);
 
   // Factory addresses
@@ -116,12 +127,12 @@ async function main() {
         chain.chainId,
         chain.v2Factory,
         resolverAddress,
-        chain.rpcUrl
+        chain.rpcUrl,
       );
 
       console.log(`  Factory: ${chain.v2Factory}`);
       console.log(`  Version: ${v2Status.version}`);
-      
+
       // Version check
       if (v2Status.version.includes("2.1.0")) {
         printSuccess(`Version confirmed: ${v2Status.version}`);
@@ -165,16 +176,17 @@ async function main() {
             chain.chainId,
             chain.v1Factory,
             resolverAddress,
-            chain.rpcUrl
+            chain.rpcUrl,
           );
           console.log(`  V1 Factory: ${chain.v1Factory}`);
           console.log(`  V1 Version: ${v1Status.version}`);
           printWarning("V1 factory is INSECURE and will be deprecated");
         } catch (error) {
-          console.log("  Could not check V1 factory (may not have security features)");
+          console.log(
+            "  Could not check V1 factory (may not have security features)",
+          );
         }
       }
-
     } catch (error) {
       printError(`Failed to check ${chain.name}: ${error}`);
       allChecksPass = false;
@@ -202,7 +214,7 @@ async function main() {
 
   // Final summary
   printHeader("VERIFICATION COMPLETE");
-  
+
   if (allChecksPass) {
     printSuccess("All checks passed! Resolver is ready for V2.1.0 factory.");
     console.log("\nNext steps:");

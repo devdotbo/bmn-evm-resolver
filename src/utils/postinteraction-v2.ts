@@ -1,16 +1,16 @@
 import {
-  encodeAbiParameters,
-  parseAbiParameters,
-  concat,
-  getAddress,
-  keccak256,
   type Address,
+  concat,
+  encodeAbiParameters,
+  getAddress,
   type Hex,
+  keccak256,
+  parseAbiParameters,
 } from "viem";
 
 /**
  * PostInteraction v2.2.0 Extension Data Encoder
- * 
+ *
  * Encodes escrow parameters for the SimplifiedEscrowFactory's postInteraction method
  * as specified in the v2.2.0 integration guide.
  */
@@ -40,7 +40,7 @@ export interface EscrowParams {
  */
 export function encodePostInteractionData(
   factoryAddress: Address,
-  params: EscrowParams
+  params: EscrowParams,
 ): Hex {
   // Normalize & validate addresses (throws on invalid formats)
   const normalizedFactory = getAddress(factoryAddress);
@@ -58,7 +58,7 @@ export function encodePostInteractionData(
   // Encode all escrow parameters according to v2.2.0 spec
   const escrowData = encodeAbiParameters(
     parseAbiParameters(
-      "address srcImplementation, address dstImplementation, uint256 timelocks, bytes32 hashlock, address srcMaker, address srcTaker, address srcToken, uint256 srcAmount, uint256 srcSafetyDeposit, address dstReceiver, address dstToken, uint256 dstAmount, uint256 dstSafetyDeposit, uint256 nonce"
+      "address srcImplementation, address dstImplementation, uint256 timelocks, bytes32 hashlock, address srcMaker, address srcTaker, address srcToken, uint256 srcAmount, uint256 srcSafetyDeposit, address dstReceiver, address dstToken, uint256 dstAmount, uint256 dstSafetyDeposit, uint256 nonce",
     ),
     [
       normalizedParams.srcImplementation,
@@ -75,7 +75,7 @@ export function encodePostInteractionData(
       normalizedParams.dstAmount,
       normalizedParams.dstSafetyDeposit,
       normalizedParams.nonce,
-    ]
+    ],
   );
 
   // Concatenate factory address (20 bytes) + escrow parameters
@@ -85,11 +85,11 @@ export function encodePostInteractionData(
 /**
  * Encodes the full extension data for 1inch Limit Order Protocol
  * Following the offset-based structure from ExtensionLib.sol
- * 
+ *
  * Extension structure:
  * - First 32 bytes: Offsets array
  * - Remaining bytes: Concatenated dynamic fields
- * 
+ *
  * Dynamic fields (in order):
  * 0. MakerAssetSuffix
  * 1. TakerAssetSuffix
@@ -100,7 +100,7 @@ export function encodePostInteractionData(
  * 6. PreInteractionData
  * 7. PostInteractionData
  * 8. CustomData
- * 
+ *
  * @param postInteractionData The PostInteraction data (factory address + params)
  * @returns Full extension data with offsets
  */
@@ -108,22 +108,22 @@ export function encode1inchExtension(postInteractionData: Hex): Hex {
   // Create offsets array (32 bytes total, 4 bytes per field)
   // Each offset points to the END of the corresponding field
   const offsets = new Uint8Array(32);
-  
+
   // All fields are empty except PostInteractionData (field 7)
   // Fields 0-6 have offset 0 (empty)
   // Field 7 (PostInteractionData) has offset = length of postInteractionData
   // Field 8 (CustomData) also has the same offset (no custom data)
-  
+
   const postInteractionLength = (postInteractionData.length - 2) / 2; // Remove 0x and divide by 2 for bytes
-  
+
   // Set offset for PostInteractionData (field 7) at bytes [28..31]
   offsets[28] = (postInteractionLength >> 24) & 0xff;
   offsets[29] = (postInteractionLength >> 16) & 0xff;
   offsets[30] = (postInteractionLength >> 8) & 0xff;
   offsets[31] = postInteractionLength & 0xff;
-  
+
   // Combine offsets + postInteractionData
-  const offsetsHex = `0x${Buffer.from(offsets).toString('hex')}` as Hex;
+  const offsetsHex = `0x${Buffer.from(offsets).toString("hex")}` as Hex;
   return concat([offsetsHex, postInteractionData]);
 }
 
@@ -135,12 +135,12 @@ export function encode1inchExtension(postInteractionData: Hex): Hex {
  */
 export function packTimelocks(
   srcCancellationDelay: number,
-  dstWithdrawalDelay: number
+  dstWithdrawalDelay: number,
 ): bigint {
   const now = Math.floor(Date.now() / 1000);
   const srcCancellationTimestamp = BigInt(now + srcCancellationDelay);
   const dstWithdrawalTimestamp = BigInt(now + dstWithdrawalDelay);
-  
+
   // Pack: high 128 bits for src cancellation, low 128 bits for dst withdrawal
   return (srcCancellationTimestamp << 128n) | dstWithdrawalTimestamp;
 }
@@ -153,7 +153,7 @@ export function packTimelocks(
  */
 export function packDeposits(
   srcSafetyDeposit: bigint,
-  dstSafetyDeposit: bigint
+  dstSafetyDeposit: bigint,
 ): bigint {
   // Pack: high 128 bits for dst deposit, low 128 bits for src deposit
   return (dstSafetyDeposit << 128n) | srcSafetyDeposit;
@@ -164,13 +164,13 @@ export function packDeposits(
  * Based on MakerTraitsLib.sol from 1inch protocol
  */
 export const MAKER_TRAITS = {
-  HAS_EXTENSION: 1n << 249n,       // Bit 249: Has extension data
-  POST_INTERACTION: 1n << 251n,    // Bit 251: Enable post interaction call
-  
+  HAS_EXTENSION: 1n << 249n, // Bit 249: Has extension data
+  POST_INTERACTION: 1n << 251n, // Bit 251: Enable post interaction call
+
   // Create traits for PostInteraction orders
   forPostInteraction(): bigint {
     return this.HAS_EXTENSION | this.POST_INTERACTION;
-  }
+  },
 };
 
 /**

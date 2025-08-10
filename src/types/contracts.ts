@@ -5,4 +5,3 @@ export interface ContractAddresses {
   limitOrderProtocol: Address;
   tokens: Record<string, Address>;
 }
-

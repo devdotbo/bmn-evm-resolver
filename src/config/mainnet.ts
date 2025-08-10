@@ -11,53 +11,61 @@ export const MAINNET_CONFIG = {
   BASE: {
     chainId: 8453,
     chain: baseMainnet,
-    rpcUrl: Deno.env.get("BASE_RPC_URL") || `https://rpc.ankr.com/base/${Deno.env.get("ANKR_API_KEY") || ""}`,
-    wsUrl: Deno.env.get("BASE_WS_URL") || `wss://rpc.ankr.com/base/ws/${Deno.env.get("ANKR_API_KEY") || ""}`,
+    rpcUrl: Deno.env.get("BASE_RPC_URL") ||
+      `https://rpc.ankr.com/base/${Deno.env.get("ANKR_API_KEY") || ""}`,
+    wsUrl: Deno.env.get("BASE_WS_URL") ||
+      `wss://rpc.ankr.com/base/ws/${Deno.env.get("ANKR_API_KEY") || ""}`,
     explorer: "https://basescan.org",
-    deploymentBlock: parseInt(Deno.env.get("BASE_DEPLOYMENT_BLOCK") || "33809842"),
+    deploymentBlock: parseInt(
+      Deno.env.get("BASE_DEPLOYMENT_BLOCK") || "33809842",
+    ),
   },
-  
+
   // Optimism Mainnet (destination chain for normal flow)
   OPTIMISM: {
     chainId: 10,
     chain: optimismMainnet,
-    rpcUrl: Deno.env.get("OPTIMISM_RPC_URL") || `https://rpc.ankr.com/optimism/${Deno.env.get("ANKR_API_KEY") || ""}`,
-    wsUrl: Deno.env.get("OPTIMISM_WS_URL") || `wss://rpc.ankr.com/optimism/ws/${Deno.env.get("ANKR_API_KEY") || ""}`,
+    rpcUrl: Deno.env.get("OPTIMISM_RPC_URL") ||
+      `https://rpc.ankr.com/optimism/${Deno.env.get("ANKR_API_KEY") || ""}`,
+    wsUrl: Deno.env.get("OPTIMISM_WS_URL") ||
+      `wss://rpc.ankr.com/optimism/ws/${Deno.env.get("ANKR_API_KEY") || ""}`,
     explorer: "https://optimistic.etherscan.io",
-    deploymentBlock: parseInt(Deno.env.get("OPTIMISM_DEPLOYMENT_BLOCK") || "139404873"),
+    deploymentBlock: parseInt(
+      Deno.env.get("OPTIMISM_DEPLOYMENT_BLOCK") || "139404873",
+    ),
   },
-  
+
   // Contract addresses (same on both chains via CREATE3)
   CONTRACTS: {
     // Production deployment - CREATE3 deterministic addresses
     crossChainEscrowFactory: CREATE3_ADDRESSES.ESCROW_FACTORY,
-    
+
     // Test deployment for development
     testEscrowFactory: CREATE3_ADDRESSES.ESCROW_FACTORY, // Same as production for now
-    
+
     // BMN Token (same on both chains via CREATE3)
     bmnToken: CREATE3_ADDRESSES.BMN_TOKEN,
-    
+
     // Resolver Factory
     resolverFactory: CREATE3_ADDRESSES.RESOLVER_FACTORY,
   },
-  
+
   // Timelock configuration (in seconds)
   TIMELOCKS: {
     // Source chain timelocks
-    srcWithdrawal: 300,         // 0-5 min (Taker only)
-    srcPublicWithdrawal: 600,   // 5-10 min (Anyone)
-    srcCancellation: 900,       // 10-15 min (Maker only)
+    srcWithdrawal: 300, // 0-5 min (Taker only)
+    srcPublicWithdrawal: 600, // 5-10 min (Anyone)
+    srcCancellation: 900, // 10-15 min (Maker only)
     srcPublicCancellation: 900, // 15+ min (Anyone)
-    
+
     // Destination chain timelocks (with offsets)
-    dstWithdrawal: 600,         // 10 min
-    dstCancellation: 1200,      // 20 min
+    dstWithdrawal: 600, // 10 min
+    dstCancellation: 1200, // 20 min
   },
-  
+
   // Safety deposit amount (in wei)
   SAFETY_DEPOSIT: SAFETY_DEPOSIT_ETH.toString(), // 0.00002 ETH (~$0.03-0.04 at $2000/ETH)
-  
+
   // Token decimals
   BMN_DECIMALS: 18,
 };
@@ -81,7 +89,7 @@ export function getMainnetChains(reverse = false): {
       dstChain: baseMainnet,
     };
   }
-  
+
   return {
     srcChainId: MAINNET_CONFIG.BASE.chainId,
     dstChainId: MAINNET_CONFIG.OPTIMISM.chainId,

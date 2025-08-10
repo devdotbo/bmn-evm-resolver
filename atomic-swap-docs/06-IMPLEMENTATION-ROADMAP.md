@@ -2,13 +2,15 @@
 
 ## Overview
 
-This roadmap outlines the step-by-step implementation plan for building a production-ready atomic swap system.
+This roadmap outlines the step-by-step implementation plan for building a
+production-ready atomic swap system.
 
 ## Phase 1: Foundation (Week 1-2)
 
 ### Smart Contracts
 
 #### Tasks:
+
 1. **Basic HTLC Contract**
    - [ ] Implement core HTLC functions
    - [ ] Add ERC20 support
@@ -27,6 +29,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
    - [ ] Verification scripts
 
 **Deliverables:**
+
 - Functional HTLC contract
 - 100% test coverage
 - Deployed on testnets (Sepolia, Base Goerli, Optimism Goerli)
@@ -34,6 +37,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Basic Infrastructure
 
 #### Tasks:
+
 1. **Project Setup**
    ```bash
    mkdir atomic-swap-implementation
@@ -47,10 +51,10 @@ This roadmap outlines the step-by-step implementation plan for building a produc
    // hardhat.config.js
    module.exports = {
      networks: {
-       sepolia: { /* config */ },
-       baseGoerli: { /* config */ },
-       optimismGoerli: { /* config */ }
-     }
+       sepolia: {/* config */},
+       baseGoerli: {/* config */},
+       optimismGoerli: {/* config */},
+     },
    };
    ```
 
@@ -64,6 +68,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Core Alice Functionality
 
 #### Tasks:
+
 1. **Secret Management**
    - [ ] Secure secret generation
    - [ ] Secret storage (encrypted)
@@ -84,14 +89,15 @@ This roadmap outlines the step-by-step implementation plan for building a produc
    ```typescript
    // alice-cli.ts
    class AliceCLI {
-     async create(args: CreateArgs) { /* ... */ }
-     async list() { /* ... */ }
-     async withdraw(orderId: string) { /* ... */ }
-     async refund(orderId: string) { /* ... */ }
+     async create(args: CreateArgs) {/* ... */}
+     async list() {/* ... */}
+     async withdraw(orderId: string) {/* ... */}
+     async refund(orderId: string) {/* ... */}
    }
    ```
 
 **Deliverables:**
+
 - Functional Alice client
 - CLI interface
 - Database integration
@@ -102,6 +108,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Core Bob Functionality
 
 #### Tasks:
+
 1. **Order Discovery**
    - [ ] Multi-chain event monitoring
    - [ ] Order filtering logic
@@ -123,6 +130,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
    - [ ] Multi-token support
 
 **Deliverables:**
+
 - Functional Bob resolver
 - Automated response system
 - Profit tracking
@@ -133,6 +141,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### End-to-End Testing
 
 #### Tasks:
+
 1. **Integration Tests**
    - [ ] Full swap flow testing
    - [ ] Multi-chain testing
@@ -154,6 +163,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Documentation
 
 #### Tasks:
+
 1. **Technical Documentation**
    - [ ] API documentation
    - [ ] Contract documentation
@@ -171,6 +181,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Security Hardening
 
 #### Tasks:
+
 1. **Security Review**
    - [ ] Internal code review
    - [ ] Threat modeling
@@ -190,6 +201,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
    - [ ] Implement fixes
 
 **Deliverables:**
+
 - Security report
 - Audit report
 - Fixed vulnerabilities
@@ -200,6 +212,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Infrastructure Setup
 
 #### Tasks:
+
 1. **Production Environment**
    - [ ] Set up production servers
    - [ ] Configure databases
@@ -221,6 +234,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Mainnet Preparation
 
 #### Tasks:
+
 1. **Contract Deployment**
    - [ ] Deploy to mainnet
    - [ ] Verify contracts
@@ -238,6 +252,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Soft Launch
 
 #### Tasks:
+
 1. **Beta Testing**
    - [ ] Select beta users
    - [ ] Limited mainnet testing
@@ -253,6 +268,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Public Launch
 
 #### Tasks:
+
 1. **Marketing & Communication**
    - [ ] Announcement blog post
    - [ ] Social media campaign
@@ -270,6 +286,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ### Maintenance & Improvements
 
 #### Ongoing Tasks:
+
 1. **Regular Maintenance**
    - Security updates
    - Dependency updates
@@ -292,42 +309,45 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 
 ### Team Composition
 
-| Role | Phase 1-3 | Phase 4-6 | Phase 7-8 |
-|------|-----------|-----------|-----------|
-| Smart Contract Dev | 2 | 1 | 1 |
-| Backend Dev | 1 | 2 | 2 |
-| Frontend Dev | 0 | 1 | 2 |
-| DevOps | 0 | 1 | 1 |
-| Security | 0 | 1 | 1 |
-| Product Manager | 1 | 1 | 1 |
+| Role               | Phase 1-3 | Phase 4-6 | Phase 7-8 |
+| ------------------ | --------- | --------- | --------- |
+| Smart Contract Dev | 2         | 1         | 1         |
+| Backend Dev        | 1         | 2         | 2         |
+| Frontend Dev       | 0         | 1         | 2         |
+| DevOps             | 0         | 1         | 1         |
+| Security           | 0         | 1         | 1         |
+| Product Manager    | 1         | 1         | 1         |
 
 ### Budget Estimation
 
-| Category | Estimated Cost |
-|----------|---------------|
-| Development (3 months) | $150,000 |
-| Audit | $50,000 |
-| Infrastructure (1 year) | $24,000 |
-| Marketing | $20,000 |
-| Legal & Compliance | $15,000 |
-| Bug Bounty | $25,000 |
-| **Total** | **$284,000** |
+| Category                | Estimated Cost |
+| ----------------------- | -------------- |
+| Development (3 months)  | $150,000       |
+| Audit                   | $50,000        |
+| Infrastructure (1 year) | $24,000        |
+| Marketing               | $20,000        |
+| Legal & Compliance      | $15,000        |
+| Bug Bounty              | $25,000        |
+| **Total**               | **$284,000**   |
 
 ## Success Metrics
 
 ### Technical Metrics
+
 - Smart contract gas efficiency < 150k per operation
 - System uptime > 99.9%
 - Transaction success rate > 99%
 - Response time < 2 seconds
 
 ### Business Metrics
+
 - Daily swap volume > $100k
 - Active users > 100
 - Total value locked > $1M
 - Profit margin > 0.1%
 
 ### Security Metrics
+
 - Zero critical vulnerabilities
 - All high-risk issues resolved
 - Bug bounty participation > 10 researchers
@@ -336,6 +356,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ## Risk Management
 
 ### Technical Risks
+
 1. **Smart contract bugs**
    - Mitigation: Extensive testing, audits, bug bounty
 2. **Network congestion**
@@ -344,6 +365,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
    - Mitigation: Confirmation requirements, monitoring
 
 ### Business Risks
+
 1. **Low adoption**
    - Mitigation: Marketing, partnerships, incentives
 2. **Competition**
@@ -352,6 +374,7 @@ This roadmap outlines the step-by-step implementation plan for building a produc
    - Mitigation: Legal compliance, adaptable architecture
 
 ### Operational Risks
+
 1. **Key management**
    - Mitigation: Hardware wallets, multisig, rotation
 2. **Team availability**
@@ -362,24 +385,28 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 ## Development Tools & Stack
 
 ### Smart Contracts
+
 - Solidity 0.8.x
 - Hardhat
 - OpenZeppelin contracts
 - Tenderly for debugging
 
 ### Backend
+
 - Node.js / TypeScript
 - Ethers.js
 - PostgreSQL
 - Redis for caching
 
 ### Infrastructure
+
 - Docker
 - Kubernetes
 - AWS/GCP
 - GitHub Actions
 
 ### Monitoring
+
 - Prometheus
 - Grafana
 - Sentry
@@ -387,15 +414,15 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 
 ## Milestones & Deliverables
 
-| Milestone | Deliverable | Timeline |
-|-----------|------------|----------|
-| M1: Foundation | HTLC contracts on testnet | Week 2 |
-| M2: Alice MVP | Functional Alice client | Week 4 |
-| M3: Bob MVP | Functional Bob resolver | Week 6 |
-| M4: Integration | End-to-end working system | Week 8 |
-| M5: Security | Audit complete | Week 10 |
-| M6: Production | Mainnet deployment | Week 12 |
-| M7: Launch | Public availability | Week 14 |
+| Milestone       | Deliverable               | Timeline |
+| --------------- | ------------------------- | -------- |
+| M1: Foundation  | HTLC contracts on testnet | Week 2   |
+| M2: Alice MVP   | Functional Alice client   | Week 4   |
+| M3: Bob MVP     | Functional Bob resolver   | Week 6   |
+| M4: Integration | End-to-end working system | Week 8   |
+| M5: Security    | Audit complete            | Week 10  |
+| M6: Production  | Mainnet deployment        | Week 12  |
+| M7: Launch      | Public availability       | Week 14  |
 
 ## Next Steps
 
@@ -419,11 +446,13 @@ This roadmap outlines the step-by-step implementation plan for building a produc
 
 ## Conclusion
 
-This roadmap provides a structured approach to building a production-ready atomic swap system. The key to success is:
+This roadmap provides a structured approach to building a production-ready
+atomic swap system. The key to success is:
 
 1. **Incremental development** - Build and test in phases
 2. **Security first** - Prioritize security at every step
 3. **User focus** - Make it easy and safe to use
 4. **Continuous improvement** - Iterate based on feedback
 
-With proper execution of this roadmap, we can deliver a robust, secure, and user-friendly atomic swap solution within 14 weeks.
+With proper execution of this roadmap, we can deliver a robust, secure, and
+user-friendly atomic swap solution within 14 weeks.

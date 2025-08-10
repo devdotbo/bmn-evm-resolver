@@ -25,7 +25,7 @@ export function getIndexerConfig(): IndexerConfig {
     tablePrefix,
     retryAttempts,
     retryDelay,
-    timeout
+    timeout,
   };
 }
 
@@ -40,7 +40,7 @@ export const LOCAL_INDEXER_CONFIG: IndexerConfig = {
   tablePrefix: "", // No prefix for local development
   retryAttempts: 3,
   retryDelay: 500,
-  timeout: 10000
+  timeout: 10000,
 };
 
 /**
@@ -54,7 +54,7 @@ export const PRODUCTION_INDEXER_CONFIG_TEMPLATE: IndexerConfig = {
   tablePrefix: Deno.env.get("INDEXER_TABLE_PREFIX") || "bmn",
   retryAttempts: 5,
   retryDelay: 2000,
-  timeout: 60000
+  timeout: 60000,
 };
 
 /**
@@ -62,7 +62,8 @@ export const PRODUCTION_INDEXER_CONFIG_TEMPLATE: IndexerConfig = {
  */
 export function isLocalIndexer(): boolean {
   const sqlUrl = Deno.env.get("INDEXER_URL") || "";
-  return sqlUrl.includes("localhost") || sqlUrl.includes("127.0.0.1") || sqlUrl === "";
+  return sqlUrl.includes("localhost") || sqlUrl.includes("127.0.0.1") ||
+    sqlUrl === "";
 }
 
 /**
@@ -73,7 +74,10 @@ export function validateIndexerConfig(config: IndexerConfig): void {
     throw new Error("Indexer SQL URL is required");
   }
 
-  if (!config.sqlUrl.startsWith("http://") && !config.sqlUrl.startsWith("https://")) {
+  if (
+    !config.sqlUrl.startsWith("http://") &&
+    !config.sqlUrl.startsWith("https://")
+  ) {
     throw new Error("Indexer SQL URL must start with http:// or https://");
   }
 

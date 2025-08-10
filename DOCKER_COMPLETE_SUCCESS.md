@@ -2,7 +2,8 @@
 
 ## Current Architecture
 
-The BMN resolver system uses Docker Compose for orchestration with three core services.
+The BMN resolver system uses Docker Compose for orchestration with three core
+services.
 
 ## Service Status
 
@@ -117,6 +118,7 @@ All services share a named volume `bmn-data` mounted at `/app/data`:
 ## Environment Configuration
 
 1. Create `.env` from `.env.example`:
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
@@ -135,6 +137,7 @@ cp .env.example .env
 ## Build Optimization
 
 All Dockerfiles use:
+
 - Multi-stage builds for efficient caching
 - `BUILDKIT_INLINE_CACHE=1` for layer caching
 - Non-root user execution
@@ -144,6 +147,7 @@ All Dockerfiles use:
 ## Health Monitoring
 
 Each service exposes health endpoints:
+
 - **Endpoint**: `/health`
 - **Response**: `{"status":"healthy","service":"<service-name>"}`
 - **Used by**: Docker health checks
@@ -151,16 +155,20 @@ Each service exposes health endpoints:
 ## Recent Updates (2025-08-07)
 
 ### Infrastructure Changes
+
 - Removed monitoring stack (Prometheus/Grafana) - use health endpoints instead
 - Removed Redis service - not required for current architecture
 - Standardized Docker tasks: `resolver:docker`, `alice:docker`, `bob:docker`
 - Improved environment variable handling
 
 ### Key Improvements
-1. **Service Resilience**: All services run continuously with proper error handling
+
+1. **Service Resilience**: All services run continuously with proper error
+   handling
 2. **Health Monitoring**: Simple HTTP health checks for each service
 3. **Graceful Shutdown**: All services handle SIGINT/SIGTERM properly
-4. **Configuration Management**: Environment variables injected by Docker Compose
+4. **Configuration Management**: Environment variables injected by Docker
+   Compose
 5. **Named Volumes**: Persistent data storage across container restarts
 
 ## Troubleshooting
@@ -205,6 +213,5 @@ docker-compose build --no-cache
 - ✅ Environment variable injection working
 
 ---
-**Status**: OPERATIONAL
-**Last Updated**: 2025-08-09
-**Services**: 3/3 Healthy
+
+**Status**: OPERATIONAL **Last Updated**: 2025-08-09 **Services**: 3/3 Healthy

@@ -2,7 +2,9 @@
 
 ## Overview
 
-The atomic swap requires minimal smart contracts focused on security and simplicity. We need Hash Time-Locked Contracts (HTLCs) on each chain that can lock, unlock with a secret, or refund tokens.
+The atomic swap requires minimal smart contracts focused on security and
+simplicity. We need Hash Time-Locked Contracts (HTLCs) on each chain that can
+lock, unlock with a secret, or refund tokens.
 
 ## Core Contracts
 
@@ -154,7 +156,7 @@ contract HTLCFactory {
 2. **Safe Token Transfers**
    ```solidity
    using SafeERC20 for IERC20;
-   
+
    function createHTLC(...) external {
        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
    }
@@ -217,7 +219,7 @@ const factoryAddress = "0x..."; // Same on all chains
 // Deploy on Base
 const htlcBase = await factory.deployHTLC(salt);
 
-// Deploy on Optimism  
+// Deploy on Optimism
 const htlcOptimism = await factory.deployHTLC(salt);
 
 // Both will have the same address
@@ -321,35 +323,35 @@ npx hardhat verify --network optimism \
 
 ```javascript
 async function deployHTLC() {
-    const HTLC = await ethers.getContractFactory("HTLC");
-    
-    // Deploy on multiple chains
-    const chains = ['base', 'optimism', 'arbitrum'];
-    const deployments = {};
-    
-    for (const chain of chains) {
-        const provider = new ethers.providers.JsonRpcProvider(RPC_URLS[chain]);
-        const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-        
-        const htlc = await HTLC.connect(wallet).deploy();
-        await htlc.deployed();
-        
-        deployments[chain] = htlc.address;
-        console.log(`HTLC deployed on ${chain}: ${htlc.address}`);
-    }
-    
-    return deployments;
+  const HTLC = await ethers.getContractFactory("HTLC");
+
+  // Deploy on multiple chains
+  const chains = ["base", "optimism", "arbitrum"];
+  const deployments = {};
+
+  for (const chain of chains) {
+    const provider = new ethers.providers.JsonRpcProvider(RPC_URLS[chain]);
+    const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+
+    const htlc = await HTLC.connect(wallet).deploy();
+    await htlc.deployed();
+
+    deployments[chain] = htlc.address;
+    console.log(`HTLC deployed on ${chain}: ${htlc.address}`);
+  }
+
+  return deployments;
 }
 ```
 
 ## Gas Costs Estimation
 
-| Operation | Estimated Gas | Cost (at 30 gwei) |
-|-----------|--------------|-------------------|
-| Deploy HTLC | ~800,000 | ~0.024 ETH |
-| Create HTLC | ~120,000 | ~0.0036 ETH |
-| Withdraw | ~80,000 | ~0.0024 ETH |
-| Refund | ~60,000 | ~0.0018 ETH |
+| Operation   | Estimated Gas | Cost (at 30 gwei) |
+| ----------- | ------------- | ----------------- |
+| Deploy HTLC | ~800,000      | ~0.024 ETH        |
+| Create HTLC | ~120,000      | ~0.0036 ETH       |
+| Withdraw    | ~80,000       | ~0.0024 ETH       |
+| Refund      | ~60,000       | ~0.0018 ETH       |
 
 ## Next Steps
 

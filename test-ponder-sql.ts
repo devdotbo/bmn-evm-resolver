@@ -17,7 +17,8 @@ function pretty(obj: unknown) {
 }
 
 async function main() {
-  const indexerBase = Deno.env.get("INDEXER_URL") || "https://index-bmn.up.railway.app";
+  const indexerBase = Deno.env.get("INDEXER_URL") ||
+    "https://index-bmn.up.railway.app";
   const sqlUrl = `${indexerBase.replace(/\/$/, "")}/sql`;
 
   console.log("🧪 Testing Ponder SQL over HTTP via @ponder/client (untyped)");
