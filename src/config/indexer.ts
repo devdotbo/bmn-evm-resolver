@@ -50,8 +50,8 @@ export const LOCAL_INDEXER_CONFIG: IndexerConfig = {
  * - Longer timeouts for reliability
  */
 export const PRODUCTION_INDEXER_CONFIG_TEMPLATE: IndexerConfig = {
-  sqlUrl: process.env.INDEXER_URL || "https://indexer.example.com/sql",
-  tablePrefix: process.env.INDEXER_TABLE_PREFIX || "bmn",
+  sqlUrl: Deno.env.get("INDEXER_URL") || "https://indexer.example.com/sql",
+  tablePrefix: Deno.env.get("INDEXER_TABLE_PREFIX") || "bmn",
   retryAttempts: 5,
   retryDelay: 2000,
   timeout: 60000
