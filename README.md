@@ -39,9 +39,13 @@ Withdraw from destination (reveals secret):
 deno task alice --action withdraw --order 0xOrderHash
 ```
 
-## Architecture
+## Architecture (Two-Party Atomic Swaps)
 
-- **Resolver**: Monitors orders via indexer, deploys destination escrows, claims source funds
+- **Bob-Resolver**: Unified service that acts as both coordinator and counterparty
+  - Monitors orders via indexer
+  - Fills profitable limit orders
+  - Deploys destination escrows
+  - Claims source funds when secrets are revealed
 - **Alice**: Creates orders, withdraws from destination by revealing secret
 - **Indexer**: Ponder-based indexer tracking on-chain events (SQL over HTTP)
 
