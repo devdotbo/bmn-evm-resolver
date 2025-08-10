@@ -13,12 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `test-ponder-sql.ts` uses untyped `client.db.execute(sql\`...\`)` and passes against Railway
   - Removed confusion from raw curl 404s; clients work as intended with Hono middleware
 
-### Fixed - 2025-08-10
-- Eliminated `drizzle-orm` runtime resolution errors inside containers by switching `PonderClient` to direct SQL-over-HTTP (POST /sql) and updating Docker config
-  - Replaced `@ponder/client` usage at runtime with lightweight HTTP client in `src/indexer/ponder-client.ts`
-  - Set `DENO_NODE_MODULES_DIR=none` and removed `/app/node_modules` to avoid npm bin/symlink issues
-  - Relaxed Docker `deno cache` to avoid strict lockfile failures
-  - Result: `docker compose build` and `up` start cleanly; Bob-Resolver runs healthy
+
 
 ### Changed - 2025-08-10
 - Unified Dockerfile with multi-stage targets `alice` and `bob`; compose now builds from a single Dockerfile
@@ -37,39 +32,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All services now use @ponder/client library for SQL over HTTP
 - **Optimized Docker builds following Deno best practices**
   - Added production environment variables: `DENO_NO_UPDATE_CHECK=1` and `DENO_NO_PROMPT=1`
-  - Simplified Dockerfiles to single-stage builds for consistency
-  - Fixed npm module version conflicts by using deno.json import map
-  - Added `--frozen` flag to prevent lockfile modifications during Docker builds
+  - Unified single Dockerfile with `alice` and `bob` targets
+  - Fixed npm module version conflicts by using `deno.json` import map
   - Services build successfully with proper dependency caching
-  - **Known Issue**: Runtime module resolution error with drizzle-orm path mismatch
-    - @ponder/client@0.12.3 looks for drizzle-orm in wrong cache location
-    - This appears to be a Deno npm module resolution issue
 
 ### Fixed - 2025-08-10
-- **Fixed SQL over HTTP implementation to use @ponder/client library**
-  - Replaced custom SQL implementation with official @ponder/client library
-  - Fixed 404 errors by using correct protocol and endpoints
-  - Updated ponder.schema.ts to use npm:ponder@0.12.0 import for Deno compatibility
-  - Created PonderClientV2 using @ponder/client with type-safe Drizzle queries
-  - Fixed test-ponder-sql.ts to use createClient from @ponder/client
-  - Updated INDEXER_URL to use deployed indexer at https://index-bmn.up.railway.app
-  - Added support for live queries with automatic fallback to polling
+- **Consolidated on @ponder/client for SQL over HTTP**
+  - Official client handles SQL endpoint and middleware correctly
+  - `test-ponder-sql.ts` uses `createClient` and untyped `db.execute`
+  - Default `INDEXER_URL` updated to Railway deployment in compose
 
 ### Fixed - 2025-08-10
-- **Fixed PonderClient implementation for Direct SQL over HTTP**
-  - Updated SQL query execution to use correct POST /sql endpoint format
-  - Changed from incorrect /sql/db endpoint to direct /sql endpoint
-  - Fixed request body format to use `{ sql: query }` instead of query parameters
-  - Properly handle response with 'data' field instead of 'rows'
-  - Fixed SQL parameter replacement for direct query execution
-  - Added proper string escaping for SQL parameters
+- Removed legacy notes about custom HTTP client and `/sql/db`; project uses `@ponder/client` exclusively
 
 ### Added - 2025-08-10
 - **Added test-ponder-sql.ts: SQL endpoint verification script**
-  - Tests Ponder Direct SQL endpoint via HTTP POST to /sql
-  - Includes automatic 10-second timeout for script termination
-  - Tests both PonderClient methods and raw SQL queries
-  - Verifies connectivity to https://index-bmn.up.railway.app
+  - Verifies SQL-over-HTTP via `@ponder/client` against Railway
+  - Includes automatic 10-second timeout
   - Run with: `deno run --allow-net --allow-env test-ponder-sql.ts`
 
 ### Added - 2025-08-10
@@ -80,10 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced error handling for pending-orders directory creation
 
 ### Changed - 2025-08-10
-- **Updated Docker networking configuration**
-  - Changed INDEXER_URL from host.docker.internal:42069 to bmn-indexer:42069
-  - Services now use Docker network name for inter-container communication
-  - Improved network isolation and reliability
+- **Docker compose defaults**: `INDEXER_URL` points to `https://index-bmn.up.railway.app`
 
 ### Changed - 2025-08-10
 - **Updated Docker infrastructure for two-party atomic swap architecture**
@@ -134,16 +110,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ensured proper POST_INTERACTION_CALL_FLAG is set in order flags
 
 ### Added
-- **Implemented real Ponder SQL client for atomic swap queries** - Replaced stubbed PonderClient with fully functional HTTP-based SQL implementation
-  - Implements the @ponder/client protocol without requiring the npm package
-  - Added proper SQL query execution with POST requests to `/sql/db` endpoint
-  - Implemented retry logic with configurable attempts and delays
-  - Added camelCase to snake_case column name conversion
-  - Proper BigInt handling for numeric fields
-  - Full implementation of critical methods: `getSwaps()`, `getSwapsByHashlock()`, `getCompletedSwaps()`, `getRevealedSecrets()`
-  - Graceful error handling that returns empty results instead of throwing
-  - Support for table prefixes in multi-tenant deployments
-  - Polling-based subscription support for real-time updates
+- **Indexer helpers** in `PonderClient` for atomic swap queries
+  - Implemented `getActiveSwaps()`, `getPendingAtomicSwaps()`, `getRecentWithdrawals()`
+  - Retry logic and polling-based subscription support
 
 ### Fixed
 - **Fixed environment variable access in indexer config** - Replaced `process.env` with `Deno.env.get()` in PRODUCTION_INDEXER_CONFIG_TEMPLATE to ensure compatibility with Deno runtime
@@ -164,10 +133,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `ChainStatistics` interface for chain metrics
   - Added `PonderSQLClient` type for Ponder SQL client
   - Fixed async/await issues in `getRevealedSecrets` method
-- **Reorganized import mappings** to resolve Deno warnings
-  - Created dedicated `import_map.json` file
-  - Moved import definitions from `deno.json` to centralized import map
-  - Added explicit mappings for viem submodules (accounts, chains, actions, utils)
 - **Enhanced error handling** in service shutdown routines
   - Added descriptive comments to empty catch blocks in `resolver-service.ts`
   - Improved cleanup error handling during service shutdown
@@ -225,7 +190,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified docker-compose.yml configuration with named volumes
 - Updated all Dockerfiles to use Deno 2.4.3 and proper cache permissions
 - Removed deprecated version field from docker-compose.yml
-- Updated INDEXER_URL environment variable to use host.docker.internal
+- Updated INDEXER_URL environment variable to use host.docker.internal (later changed to Railway URL by default)
 
 ### Added - 2025-01-08
 - prometheus.yml configuration file for metrics collection
@@ -350,7 +315,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created single `UnifiedResolver` class combining all resolver functionality
 - Removed `demo-resolver.ts`, `base-resolver.ts`, `simple-resolver.ts` in favor of unified implementation
 - Full integration with SimpleLimitOrderProtocol for order filling
-- Uses factory v2.1.0 at 0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A
+- Uses factory v2.2.0 at 0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68 (CREATE3; same on Base/Optimism)
 
 #### 2. **Limit Order Protocol Integration**
 - Created `LimitOrderAlice` for EIP-712 signed order creation
@@ -393,9 +358,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `demo-complete-flow.ts` - End-to-end flow demonstration
 
 ### Changed
-- Modified default profit requirement from 0.5% (50 bps) to 0% (0 bps)
-  - Updated `run-resolver.ts` line 22 and 33
-  - Allows resolver to fill orders at break-even for testing
+<!-- Removed outdated note about modifying default profit bps in non-existent `run-resolver.ts`. Current default is 50 bps in `src/resolver/resolver.ts`. -->
 
 - Migrated from GraphQL to SQL over HTTP architecture
   - Resolver now uses SQL over HTTP via Ponder indexer
@@ -403,7 +366,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Queries atomic swap data using PonderClient
 
 ### Security
-- Factory v2.1.0 with enhanced security features
+- Factory v2.2.0 with enhanced security features
   - Resolver whitelist implementation
   - Emergency pause functionality
   - Signature verification improvements
