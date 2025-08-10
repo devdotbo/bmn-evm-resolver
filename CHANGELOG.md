@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - 2025-08-10
+- **Major refactoring: Consolidated PonderClient and cleaned up deprecated files**
+  - Removed 10 deprecated files including old service wrappers and duplicate implementations
+  - Deleted old PonderClient implementation that used raw HTTP POST requests
+  - Renamed PonderClientV2 to PonderClient as the single implementation
+  - Updated all imports across the codebase to use the consolidated PonderClient
+  - Added AtomicSwap type export to PonderClient for type safety
+  - Cleaned up duplicate alice files (removed mainnet-alice.ts)
+  - Removed unused service files: alice.ts, resolver.ts, bob-service.ts, resolver-service.ts
+  - Active services now: alice-service.ts and bob-resolver-service.ts (used by Docker)
+  - All services now use @ponder/client library for SQL over HTTP
+
 ### Fixed - 2025-08-10
 - **Fixed SQL over HTTP implementation to use @ponder/client library**
   - Replaced custom SQL implementation with official @ponder/client library
