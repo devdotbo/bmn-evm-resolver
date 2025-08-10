@@ -17,10 +17,9 @@ docker-compose down
 
 The BMN resolver system uses Docker Compose for orchestration with the following services:
 
-### Core Services
-- **resolver**: Main coordination service (port 8000)
+### Core Services (Two-Party Architecture)
 - **alice**: Swap initiator service (port 8001)
-- **bob**: Swap acceptor/taker service (port 8002)
+- **bob**: Unified Bob-Resolver service - acts as both coordinator and counterparty (port 8002)
 
 ### Supporting Services
 - None (monitoring stack removed; use service health endpoints).
@@ -83,9 +82,8 @@ cp .env.example .env
 ## Monitoring
 
 - **Service Health**:
-  - Resolver: http://localhost:8000/health
   - Alice: http://localhost:8001/health
-  - Bob: http://localhost:8002/health
+  - Bob-Resolver: http://localhost:8002/health
 
 ## Docker Build Optimization
 
@@ -104,10 +102,10 @@ All Dockerfiles use multi-stage builds for:
 docker-compose ps
 
 # View detailed logs
-docker-compose logs --tail=100 resolver
+docker-compose logs --tail=100 bob
 
 # Access container shell
-docker-compose exec resolver sh
+docker-compose exec bob sh
 
 # Reset everything
 docker-compose down -v
