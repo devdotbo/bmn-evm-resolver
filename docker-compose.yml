@@ -1,40 +1,4 @@
 services:
-  # Main resolver service (acts as coordinator and Bob/taker)
-  resolver:
-    build:
-      context: .
-      dockerfile: Dockerfile.resolver
-      # Always use cache by default
-      args:
-        - BUILDKIT_INLINE_CACHE=1
-    container_name: bmn-resolver
-    hostname: resolver
-    environment:
-      - DENO_ENV=production
-      - DENO_KV_PATH=/app/data/kv/resolver.db
-      - DENO_DIR=/app/data/cache
-      - SERVICE_NAME=resolver
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - INDEXER_URL=http://host.docker.internal:42069
-    env_file:
-      - .env
-    volumes:
-      # Shared data directory for persistent storage
-      - bmn-data:/app/data
-    ports:
-      - "8000:8000"  # Resolver API
-    restart: unless-stopped
-    networks:
-      - bmn-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "10"
-    labels:
-      - "com.bmn.service=resolver"
-      - "com.bmn.role=coordinator"
-
   # Alice service (swap initiator)
   alice:
     build:
@@ -51,7 +15,7 @@ services:
       - SERVICE_NAME=alice
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - INDEXER_URL=http://host.docker.internal:42069
-      - RESOLVER_URL=http://resolver:8000
+      - RESOLVER_URL=http://bob:8002
     env_file:
       - .env
     volumes:
@@ -61,7 +25,7 @@ services:
       - "8001:8001"  # Alice API
     restart: unless-stopped
     depends_on:
-      - resolver
+      - bob
     networks:
       - bmn-network
     logging:
@@ -73,34 +37,38 @@ services:
       - "com.bmn.service=alice"
       - "com.bmn.role=initiator"
 
-  # Bob service (swap acceptor/taker - separate instance of resolver)
+  # Bob-Resolver service (unified swap acceptor/taker and resolver coordinator)
   bob:
     build:
       context: .
       dockerfile: Dockerfile.bob
       args:
         - BUILDKIT_INLINE_CACHE=1
-    container_name: bmn-bob
+    container_name: bmn-bob-resolver
     hostname: bob
     environment:
       - DENO_ENV=production
       - DENO_KV_PATH=/app/data/kv/bob.db
       - DENO_DIR=/app/data/cache
-      - SERVICE_NAME=bob
-      - SERVICE_MODE=bob
+      - SERVICE_NAME=bob-resolver
+      - SERVICE_MODE=bob-resolver
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - INDEXER_URL=http://host.docker.internal:42069
-      - RESOLVER_URL=http://resolver:8000
+      # Environment variables for unified Bob-Resolver service
+      - RESOLVER_PRIVATE_KEY=${RESOLVER_PRIVATE_KEY}
+      - BOB_PRIVATE_KEY=${BOB_PRIVATE_KEY:-${RESOLVER_PRIVATE_KEY}}
+      - ANKR_API_KEY=${ANKR_API_KEY}
+      - POLLING_INTERVAL=${POLLING_INTERVAL:-10000}
+      - MIN_PROFIT_BPS=${MIN_PROFIT_BPS:-0}
     env_file:
       - .env
     volumes:
       # Shared data directory
       - bmn-data:/app/data
     ports:
-      - "8002:8002"  # Bob API
+      - "8002:8002"  # Bob-Resolver API
     restart: unless-stopped
-    depends_on:
-      - resolver
+    # No dependencies - Bob-Resolver is the main service
     networks:
       - bmn-network
     logging:
@@ -109,8 +77,8 @@ services:
         max-size: "50m"
         max-file: "10"
     labels:
-      - "com.bmn.service=bob"
-      - "com.bmn.role=acceptor"
+      - "com.bmn.service=bob-resolver"
+      - "com.bmn.role=acceptor-resolver"
 
   # Monitoring stack removed: redis, prometheus, grafana
 
