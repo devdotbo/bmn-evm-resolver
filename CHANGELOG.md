@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - 2025-08-10
+- **Fixed PonderClient implementation for Direct SQL over HTTP**
+  - Updated SQL query execution to use correct POST /sql endpoint format
+  - Changed from incorrect /sql/db endpoint to direct /sql endpoint
+  - Fixed request body format to use `{ sql: query }` instead of query parameters
+  - Properly handle response with 'data' field instead of 'rows'
+  - Fixed SQL parameter replacement for direct query execution
+  - Added proper string escaping for SQL parameters
+
+### Added - 2025-08-10
+- **Added missing indexer integration methods**
+  - Implemented `getActiveSwaps()` method in PonderClient for finding swap opportunities
+  - Added `getWithdrawableEscrows()` method in EscrowWithdrawManager
+  - Added generic `withdraw()` method for processing escrow withdrawals
+  - Enhanced error handling for pending-orders directory creation
+  - Created test-ponder-sql.ts script for SQL endpoint verification
+
+### Changed - 2025-08-10
+- **Updated Docker networking configuration**
+  - Changed INDEXER_URL from host.docker.internal:42069 to bmn-indexer:42069
+  - Services now use Docker network name for inter-container communication
+  - Improved network isolation and reliability
+
 ### Changed - 2025-08-10
 - **Updated Docker infrastructure for two-party atomic swap architecture**
   - Removed separate Resolver service and Dockerfile.resolver
