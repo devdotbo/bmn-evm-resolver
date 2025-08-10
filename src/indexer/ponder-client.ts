@@ -5,8 +5,49 @@
  * over HTTP to interact with the Ponder indexer.
  */
 
-import { createClient, eq, desc, and, or, isNotNull } from "@ponder/client";
-import * as schema from "./ponder.schema.ts";
+// TODO: @ponder/client doesn't exist as npm package - need to implement SQL client
+// import { createClient, eq, desc, and, or, isNotNull } from "@ponder/client";
+// import * as schema from "./ponder.schema.ts";
+
+// Stub implementations for now
+const createClient = (url: string, options: any) => ({
+  db: {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          orderBy: () => ({
+            execute: () => Promise.resolve([]),
+            limit: () => ({ execute: () => Promise.resolve([]) })
+          }),
+          limit: () => ({ execute: () => Promise.resolve([]) }),
+          execute: () => Promise.resolve([])
+        }),
+        leftJoin: () => ({
+          where: () => ({
+            orderBy: () => ({
+              limit: () => ({ execute: () => Promise.resolve([]) })
+            })
+          })
+        })
+      })
+    })
+  },
+  live: (query: any, onUpdate: any, onError: any) => {}
+});
+
+const eq = (a: any, b: any) => ({ eq: [a, b] });
+const desc = (a: any) => ({ desc: a });
+const and = (...args: any[]) => ({ and: args });
+const or = (...args: any[]) => ({ or: args });
+const isNotNull = (a: any) => ({ isNotNull: a });
+
+const schema = {
+  srcEscrow: {} as any,
+  dstEscrow: {} as any,
+  atomicSwap: {} as any,
+  escrowWithdrawal: {} as any,
+  chainStatistics: {} as any
+};
 
 export interface IndexerConfig {
   url: string;

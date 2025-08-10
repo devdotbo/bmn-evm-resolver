@@ -75,7 +75,7 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   
   // Base Mainnet
   8453: {
-    escrowFactory: (Deno.env.get("BASE_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // CrossChainEscrowFactory v2.1.0 (SECURE)
+    escrowFactory: (Deno.env.get("BASE_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // SimplifiedEscrowFactory v2.2.0 (PostInteraction)
     limitOrderProtocol: (Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL") || CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE) as Address, // SimpleLimitOrderProtocol (deployed)
     tokens: {
       BMN: (Deno.env.get("BASE_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
@@ -85,7 +85,7 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   
   // Optimism Mainnet
   10: {
-    escrowFactory: (Deno.env.get("OPTIMISM_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // CrossChainEscrowFactory v2.1.0 (SECURE)
+    escrowFactory: (Deno.env.get("OPTIMISM_ESCROW_FACTORY") || CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // SimplifiedEscrowFactory v2.2.0 (PostInteraction)
     limitOrderProtocol: (Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL") || CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM) as Address, // SimpleLimitOrderProtocol (deployed)
     tokens: {
       BMN: (Deno.env.get("OPTIMISM_TOKEN_BMN") || CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply

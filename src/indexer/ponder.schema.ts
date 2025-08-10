@@ -1,4 +1,6 @@
-import { onchainTable } from "ponder";
+// Stub schema - actual schema is in bmn-evm-contracts-indexer project
+// import { onchainTable } from "ponder";
+const onchainTable = (name: string, fn: any) => ({});
 
 // Factory events tracking
 export const srcEscrow = onchainTable("src_escrow", (t) => ({

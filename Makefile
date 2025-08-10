@@ -69,7 +69,6 @@ up:
 	@echo "Resolver: http://localhost:8000"
 	@echo "Alice:    http://localhost:8001"
 	@echo "Bob:      http://localhost:8002"
-	@echo "Grafana:  http://localhost:3000"
 
 # Stop all services
 down:
@@ -199,8 +198,6 @@ health:
 	@curl -s http://localhost:8000/health > /dev/null && echo "✓ Resolver: Healthy" || echo "✗ Resolver: Unhealthy"
 	@curl -s http://localhost:8001/health > /dev/null && echo "✓ Alice: Healthy" || echo "✗ Alice: Unhealthy"
 	@curl -s http://localhost:8002/health > /dev/null && echo "✓ Bob: Healthy" || echo "✗ Bob: Unhealthy"
-	@curl -s http://localhost:9090/-/healthy > /dev/null && echo "✓ Prometheus: Healthy" || echo "✗ Prometheus: Unhealthy"
-	@curl -s http://localhost:3000/api/health > /dev/null && echo "✓ Grafana: Healthy" || echo "✗ Grafana: Unhealthy"
 
 # View resource usage
 stats:
