@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Implemented real Ponder SQL client for atomic swap queries** - Replaced stubbed PonderClient with fully functional HTTP-based SQL implementation
+  - Implements the @ponder/client protocol without requiring the npm package
+  - Added proper SQL query execution with POST requests to `/sql/db` endpoint
+  - Implemented retry logic with configurable attempts and delays
+  - Added camelCase to snake_case column name conversion
+  - Proper BigInt handling for numeric fields
+  - Full implementation of critical methods: `getSwaps()`, `getSwapsByHashlock()`, `getCompletedSwaps()`, `getRevealedSecrets()`
+  - Graceful error handling that returns empty results instead of throwing
+  - Support for table prefixes in multi-tenant deployments
+  - Polling-based subscription support for real-time updates
+
 ### Fixed
 - **Fixed environment variable access in indexer config** - Replaced `process.env` with `Deno.env.get()` in PRODUCTION_INDEXER_CONFIG_TEMPLATE to ensure compatibility with Deno runtime
 
