@@ -15,8 +15,8 @@ docker ps
 ```
 
 ## Service URLs
-- Resolver API: http://localhost:8000
-- Bob API: http://localhost:8002
+- Alice API: http://localhost:8001
+- Bob-Resolver API: http://localhost:8002
 - Indexer: http://localhost:42069
 - Grafana: http://localhost:3000 (admin/admin)
 - Redis: localhost:6379
@@ -24,10 +24,10 @@ docker ps
 ## Common Commands
 ```bash
 # View logs
-docker-compose logs -f resolver
+docker-compose logs -f bob
 
 # Restart a service
-docker-compose restart resolver
+docker-compose restart bob
 
 # Stop everything
 docker-compose down
@@ -51,9 +51,8 @@ docker-compose up -d --build
 
 ## What Needs Fixing
 ❌ Alice service (exits immediately)  
-❌ Health check endpoints (not implemented)  
 ❌ Prometheus configuration  
-⚠️ Resolver/Bob marked unhealthy (but working)  
+✅ Health check endpoints (implemented)  
 
 ## Environment Setup
 ```bash
@@ -71,9 +70,8 @@ bmn-evm-contracts-indexer/
 └── API (port 42069)
 
 bmn-evm-resolver/
-├── resolver (port 8000) - Main coordinator
-├── bob (port 8002) - Order taker
-├── alice (port 8001) - Order initiator [BROKEN]
+├── bob (port 8002) - Unified Bob-Resolver (coordinator + taker)
+├── alice (port 8001) - Order initiator
 ├── redis (port 6379) - Cache/pub-sub
 └── monitoring (Grafana/Prometheus)
 ```
@@ -84,10 +82,10 @@ bmn-evm-resolver/
 make -C ../bmn-evm-contracts-indexer check-events
 
 # Enter container shell
-docker-compose exec resolver sh
+docker-compose exec bob sh
 
 # Check service health
-curl http://localhost:8000/health  # Not implemented yet
+curl http://localhost:8002/health
 
 # View Redis data
 docker-compose exec redis redis-cli
