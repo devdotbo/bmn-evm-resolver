@@ -171,7 +171,33 @@ class BobResolverService {
     try {
       // Read pending orders from directory
       const pendingOrdersDir = "./pending-orders";
-      for await (const entry of Deno.readDir(pendingOrdersDir)) {
+      const completedOrdersDir = "./completed-orders";
+      
+      // Check if directories exist
+      try {
+        await Deno.stat(pendingOrdersDir);
+      } catch {
+        console.log(`📁 Creating pending-orders directory...`);
+        await Deno.mkdir(pendingOrdersDir, { recursive: true });
+      }
+      
+      try {
+        await Deno.stat(completedOrdersDir);
+      } catch {
+        console.log(`📁 Creating completed-orders directory...`);
+        await Deno.mkdir(completedOrdersDir, { recursive: true });
+      }
+      
+      // Read directory entries
+      let entries;
+      try {
+        entries = Deno.readDir(pendingOrdersDir);
+      } catch (error) {
+        console.log(`⚠️ No pending orders to process`);
+        return;
+      }
+      
+      for await (const entry of entries) {
         if (entry.isFile && entry.name.endsWith(".json")) {
           const orderPath = `${pendingOrdersDir}/${entry.name}`;
           const orderData = JSON.parse(await Deno.readTextFile(orderPath));
@@ -192,7 +218,7 @@ class BobResolverService {
               this.processedOrders.add(orderId);
               
               // Move to completed
-              await Deno.rename(orderPath, `./completed-orders/${entry.name}`);
+              await Deno.rename(orderPath, `${completedOrdersDir}/${entry.name}`);
               console.log(`✅ Order filled successfully: ${orderId}`);
             }
           }
