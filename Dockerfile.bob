@@ -1,5 +1,5 @@
 # Multi-stage build for optimized caching and smaller image
-# Bob service is essentially the resolver acting as the taker/acceptor
+# Unified Bob-Resolver service: acts as both coordinator and taker/acceptor
 FROM denoland/deno:alpine-2.4.3 AS base
 
 # Install necessary system dependencies
@@ -44,7 +44,7 @@ USER deno
 RUN deno cache --unstable-kv \
     resolver.ts \
     run-resolver.ts \
-    bob-service.ts \
+    bob-resolver-service.ts \
     src/**/*.ts
 USER root
 
@@ -64,11 +64,11 @@ RUN mkdir -p /app/data/secrets /app/data/orders /app/data/logs /app/data/cache /
 # Switch to non-root user
 USER deno
 
-# Set environment variables for Bob mode
+# Set environment variables for unified Bob-Resolver mode
 ENV DENO_DIR=/app/data/cache \
     DENO_KV_PATH=/app/data/kv/bob.db \
     NODE_ENV=production \
-    SERVICE_MODE=bob
+    SERVICE_MODE=bob-resolver
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -77,11 +77,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Use tini to handle signals properly
 ENTRYPOINT ["/sbin/tini", "--"]
 
-# Default command - Bob service with health checks
+# Default command - Unified Bob-Resolver service with health checks
 CMD ["deno", "run", \
      "--allow-net", \
      "--allow-env", \
      "--allow-read", \
      "--allow-write", \
      "--unstable-kv", \
-     "bob-service.ts"]
+     "bob-resolver-service.ts"]
