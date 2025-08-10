@@ -178,19 +178,37 @@ export class PonderClient {
   }
 
   /**
-   * Execute SQL query using Ponder's Direct SQL over HTTP protocol
-   * Reference: POST to /sql with body { sql: "SELECT * FROM table" }
+   * Execute SQL query using Ponder's SQL over HTTP protocol
+   * Reference: https://ponder.sh/docs/query/sql-over-http
+   * POST to /sql with body { sql: "SELECT * FROM table" }
+   * Note: Ponder doesn't support parameterized queries ($1, $2, etc.)
+   * We must embed values directly in the SQL string with proper escaping
    */
   private async executeSql(query: string, params: any[] = []): Promise<SQLResponse> {
     let lastError: Error | null = null;
     
-    // Replace $1, $2 parameters with actual values for direct SQL
+    // Replace $1, $2 placeholders with properly escaped values
+    // Ponder SQL endpoint doesn't support parameterized queries
     let finalQuery = query;
     params.forEach((param, index) => {
       const placeholder = `$${index + 1}`;
-      // Properly escape string parameters
-      const value = typeof param === 'string' ? `'${param.replace(/'/g, "''")}''` : param;
-      finalQuery = finalQuery.replace(placeholder, String(value));
+      let value: string;
+      
+      if (param === null || param === undefined) {
+        value = 'NULL';
+      } else if (typeof param === 'string') {
+        // Escape single quotes by doubling them, then wrap in single quotes
+        value = `'${param.replace(/'/g, "''")}'`;
+      } else if (typeof param === 'number' || typeof param === 'bigint') {
+        value = String(param);
+      } else if (typeof param === 'boolean') {
+        value = param ? 'TRUE' : 'FALSE';
+      } else {
+        // For other types, convert to string and escape
+        value = `'${String(param).replace(/'/g, "''")}'`;
+      }
+      
+      finalQuery = finalQuery.replace(placeholder, value);
     });
     
     for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
@@ -198,13 +216,22 @@ export class PonderClient {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
         
-        // Direct SQL over HTTP - POST to /sql with { sql: query }
-        const response = await fetch(this.sqlUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ sql: finalQuery }),
+        // The deployed indexer uses /sql/db endpoint with SuperJSON format
+        // Using the simple serializer to format the query properly
+        const url = new URL(`${this.sqlUrl}/db`);
+        
+        // Create the query object in the format expected by Ponder
+        const queryObj = {
+          sql: finalQuery,
+          params: [],
+          typings: null
+        };
+        
+        // Use SimpleSerializer to properly format the query with SuperJSON-like format
+        url.searchParams.set("sql", SimpleSerializer.stringify(queryObj));
+        
+        const response = await fetch(url.toString(), {
+          method: "GET",
           signal: controller.signal,
         });
         

@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed - 2025-08-10
+- **Fixed SQL over HTTP implementation to use @ponder/client library**
+  - Replaced custom SQL implementation with official @ponder/client library
+  - Fixed 404 errors by using correct protocol and endpoints
+  - Updated ponder.schema.ts to use npm:ponder@0.12.0 import for Deno compatibility
+  - Created PonderClientV2 using @ponder/client with type-safe Drizzle queries
+  - Fixed test-ponder-sql.ts to use createClient from @ponder/client
+  - Updated INDEXER_URL to use deployed indexer at https://index-bmn.up.railway.app
+  - Added support for live queries with automatic fallback to polling
+
+### Fixed - 2025-08-10
 - **Fixed PonderClient implementation for Direct SQL over HTTP**
   - Updated SQL query execution to use correct POST /sql endpoint format
   - Changed from incorrect /sql/db endpoint to direct /sql endpoint
@@ -17,12 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added proper string escaping for SQL parameters
 
 ### Added - 2025-08-10
+- **Added test-ponder-sql.ts: SQL endpoint verification script**
+  - Tests Ponder Direct SQL endpoint via HTTP POST to /sql
+  - Includes automatic 10-second timeout for script termination
+  - Tests both PonderClient methods and raw SQL queries
+  - Verifies connectivity to https://index-bmn.up.railway.app
+  - Run with: `deno run --allow-net --allow-env test-ponder-sql.ts`
+
+### Added - 2025-08-10
 - **Added missing indexer integration methods**
   - Implemented `getActiveSwaps()` method in PonderClient for finding swap opportunities
   - Added `getWithdrawableEscrows()` method in EscrowWithdrawManager
   - Added generic `withdraw()` method for processing escrow withdrawals
   - Enhanced error handling for pending-orders directory creation
-  - Created test-ponder-sql.ts script for SQL endpoint verification
 
 ### Changed - 2025-08-10
 - **Updated Docker networking configuration**

@@ -58,8 +58,9 @@ COPY --from=build --chown=deno:deno /app /app
 COPY --from=deps --chown=deno:deno /home/deno/.cache/deno /home/deno/.cache/deno
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /app/data/secrets /app/data/orders /app/data/logs /app/data/cache /app/data/kv && \
-    chown -R deno:deno /app/data
+RUN mkdir -p /app/data/secrets /app/data/orders /app/data/logs /app/data/cache /app/data/kv \
+    /app/pending-orders /app/completed-orders && \
+    chown -R deno:deno /app/data /app/pending-orders /app/completed-orders
 
 # Switch to non-root user
 USER deno
