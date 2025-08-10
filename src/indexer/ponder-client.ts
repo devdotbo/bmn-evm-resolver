@@ -178,29 +178,33 @@ export class PonderClient {
   }
 
   /**
-   * Execute SQL query using Ponder's protocol
+   * Execute SQL query using Ponder's Direct SQL over HTTP protocol
+   * Reference: POST to /sql with body { sql: "SELECT * FROM table" }
    */
   private async executeSql(query: string, params: any[] = []): Promise<SQLResponse> {
     let lastError: Error | null = null;
     
-    // Build SQL query object for Ponder API
-    const sqlQuery: SQLQuery = {
-      sql: query,
-      params: params,
-    };
-    
-    // Create URL with query parameter (Ponder expects this format)
-    const url = new URL(`${this.sqlUrl}/db`);
-    url.searchParams.set("sql", SimpleSerializer.stringify(sqlQuery));
+    // Replace $1, $2 parameters with actual values for direct SQL
+    let finalQuery = query;
+    params.forEach((param, index) => {
+      const placeholder = `$${index + 1}`;
+      // Properly escape string parameters
+      const value = typeof param === 'string' ? `'${param.replace(/'/g, "''")}''` : param;
+      finalQuery = finalQuery.replace(placeholder, String(value));
+    });
     
     for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
         
-        // Ponder expects POST request to /sql/db endpoint
-        const response = await fetch(url.toString(), {
+        // Direct SQL over HTTP - POST to /sql with { sql: query }
+        const response = await fetch(this.sqlUrl, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sql: finalQuery }),
           signal: controller.signal,
         });
         
@@ -217,17 +221,10 @@ export class PonderClient {
           throw new Error(result.error);
         }
         
-        // Convert array-based rows to object format if needed
-        if (result.rows && Array.isArray(result.rows) && result.rows.length > 0) {
-          // Check if rows are already objects
-          if (!result.rows[0] || typeof result.rows[0] !== "object" || Array.isArray(result.rows[0])) {
-            // Rows are arrays, we need column names to convert them
-            // For now, we'll return as-is and handle in parseRow
-            return result;
-          }
-        }
+        // The response should have a 'data' field with rows
+        const rows = result.data || result.rows || [];
         
-        return result;
+        return { rows };
       } catch (error) {
         lastError = error as Error;
         
@@ -618,6 +615,39 @@ export class PonderClient {
         }));
     } catch (error) {
       console.error("❌ Error fetching recent withdrawals:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get active swaps that need processing
+   * Used by BobResolverService to find swap opportunities
+   */
+  async getActiveSwaps(): Promise<Array<{
+    id: string;
+    escrowSrc?: string;
+    escrowDst?: string;
+    [key: string]: any;
+  }>> {
+    const query = `
+      SELECT * FROM ${this.getTableName("atomic_swap")}
+      WHERE status IN ('pending', 'src_created')
+        AND (dst_escrow_address IS NULL OR dst_escrow_address = '')
+      ORDER BY src_created_at DESC NULLS LAST
+      LIMIT 100
+    `;
+    
+    try {
+      const result = await this.executeSql(query);
+      
+      return (result.rows || []).map(row => ({
+        id: row.id || row.order_hash,
+        escrowSrc: row.src_escrow_address,
+        escrowDst: row.dst_escrow_address,
+        ...row
+      }));
+    } catch (error) {
+      console.error("❌ Error in getActiveSwaps:", error);
       return [];
     }
   }
