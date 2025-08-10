@@ -21,10 +21,11 @@ import {
   packDeposits,
   MAKER_TRAITS,
   generateNonce,
+  encode1inchExtension,
   type EscrowParams 
 } from "../src/utils/postinteraction-v2.ts";
 import { CREATE3_ADDRESSES } from "../src/config/contracts.ts";
-import { parseUnits, formatUnits, type Address, type Hex, keccak256, encodePacked } from "viem";
+import { parseUnits, formatUnits, type Address, type Hex, keccak256, encodePacked, decodeAbiParameters, encodeAbiParameters } from "viem";
 
 // Test Constants - Using checksummed addresses for viem compatibility
 const TEST_ADDRESSES = {
@@ -139,11 +140,11 @@ Deno.test("PostInteraction v2.2.0 Unit Tests", async (t) => {
   await t.step("should generate maker traits for PostInteraction", () => {
     const traits = MAKER_TRAITS.forPostInteraction();
     
-    // Should have HAS_EXTENSION flag (bit 2)
-    assertEquals((traits & (1n << 2n)) > 0n, true, "Should have HAS_EXTENSION flag");
+    // Should have HAS_EXTENSION flag (bit 249)
+    assertEquals((traits & (1n << 249n)) > 0n, true, "Should have HAS_EXTENSION flag at bit 249");
     
-    // Should have POST_INTERACTION flag (bit 7)
-    assertEquals((traits & (1n << 7n)) > 0n, true, "Should have POST_INTERACTION flag");
+    // Should have POST_INTERACTION flag (bit 251)
+    assertEquals((traits & (1n << 251n)) > 0n, true, "Should have POST_INTERACTION flag at bit 251");
     
     // Combined value should be correct
     assertEquals(traits, MAKER_TRAITS.HAS_EXTENSION | MAKER_TRAITS.POST_INTERACTION);
@@ -765,6 +766,264 @@ Deno.test("PostInteraction v2.2.0 Mock Contract Tests", async (t) => {
 });
 
 // ============================================================================
+// 1INCH EXTENSION FORMAT TESTS
+// ============================================================================
+
+Deno.test("PostInteraction v2.2.0 1inch Extension Format", async (t) => {
+  
+  await t.step("should encode 1inch extension with correct offset structure", () => {
+    const params = createTestEscrowParams();
+    const postInteractionData = encodePostInteractionData(TEST_ADDRESSES.FACTORY_V2_2, params);
+    
+    // Encode using the 1inch extension format
+    const extension = encode1inchExtension(postInteractionData);
+    
+    // Extension should start with 0x
+    assert(extension.startsWith("0x"), "Extension should be hex string");
+    
+    // First 32 bytes should be the offset structure
+    const offsetBytes = extension.slice(2, 66); // Remove 0x, take first 64 hex chars (32 bytes)
+    
+    // Convert to bytes for inspection
+    const offsetBuffer = Buffer.from(offsetBytes, 'hex');
+    
+    // First 28 bytes should be zeros (padding)
+    for (let i = 0; i < 28; i++) {
+      assertEquals(offsetBuffer[i], 0, `Byte ${i} should be 0 for padding`);
+    }
+    
+    // Bytes 28-31 (last 4 bytes) should contain the PostInteraction data length
+    const lengthBytes = offsetBuffer.slice(28, 32);
+    const dataLength = lengthBytes.readUInt32BE(0);
+    
+    // PostInteraction data starts after the offset (32 bytes)
+    const actualDataLength = (extension.length - 2 - 64) / 2; // Hex chars to bytes
+    assertEquals(dataLength, actualDataLength, "Offset should contain correct data length");
+    
+    // Verify the PostInteraction data matches
+    const extractedData = "0x" + extension.slice(66);
+    assertEquals(extractedData, postInteractionData, "PostInteraction data should match");
+  });
+  
+  await t.step("should include extension hash in salt (lower 160 bits)", () => {
+    const params = createTestEscrowParams();
+    const postInteractionData = encodePostInteractionData(TEST_ADDRESSES.FACTORY_V2_2, params);
+    const extension = encode1inchExtension(postInteractionData);
+    
+    // Calculate extension hash
+    const extensionHash = keccak256(extension);
+    
+    // Extract lower 160 bits (20 bytes, 40 hex chars)
+    const lower160Bits = "0x" + extensionHash.slice(-40);
+    
+    // This would be included in the order salt when creating the limit order
+    // The salt structure for 1inch orders with PostInteraction:
+    // - Upper 96 bits: regular salt data
+    // - Lower 160 bits: extension hash
+    
+    assertExists(lower160Bits, "Should extract lower 160 bits of extension hash");
+    assertEquals(lower160Bits.length, 42, "Lower 160 bits should be 20 bytes (40 hex + 0x)");
+    
+    // Simulate how it would be combined with salt
+    const regularSalt = "0x" + "1".repeat(24); // Upper 96 bits (12 bytes)
+    const fullSalt = regularSalt + lower160Bits.slice(2); // Combine without extra 0x
+    
+    assertEquals(fullSalt.length, 66, "Full salt should be 32 bytes (64 hex + 0x)");
+    assert(fullSalt.endsWith(lower160Bits.slice(2)), "Salt should end with extension hash");
+  });
+  
+  await t.step("should properly encode PostInteraction data for factory", () => {
+    const params = createTestEscrowParams({
+      srcImplementation: TEST_ADDRESSES.SRC_IMPL,
+      dstImplementation: TEST_ADDRESSES.DST_IMPL,
+      timelocks: packTimelocks(3600, 300),
+      hashlock: TEST_HASHLOCK,
+      srcMaker: TEST_ADDRESSES.ALICE,
+      srcTaker: TEST_ADDRESSES.BOB,
+      srcToken: TEST_ADDRESSES.BMN_TOKEN,
+      srcAmount: parseUnits("100", 18),
+      srcSafetyDeposit: parseUnits("10", 18),
+      dstReceiver: TEST_ADDRESSES.CHARLIE,
+      dstToken: TEST_ADDRESSES.BMN_TOKEN,
+      dstAmount: parseUnits("95", 18),
+      dstSafetyDeposit: parseUnits("10", 18),
+      nonce: 12345n,
+    });
+    
+    const postInteractionData = encodePostInteractionData(TEST_ADDRESSES.FACTORY_V2_2, params);
+    
+    // Verify structure: factory address + encoded parameters
+    const factoryAddress = postInteractionData.slice(0, 42);
+    assertEquals(factoryAddress.toLowerCase(), TEST_ADDRESSES.FACTORY_V2_2.toLowerCase());
+    
+    // Extract and verify encoded parameters
+    const encodedParams = "0x" + postInteractionData.slice(42);
+    
+    // The encoded params should be ABI encoded with the expected structure
+    // Each parameter is padded to 32 bytes
+    const paramCount = 14; // Number of parameters in EscrowParams
+    const expectedLength = paramCount * 64 + 2; // Each param is 32 bytes (64 hex) + 0x
+    assertEquals(encodedParams.length, expectedLength, "Encoded params should have correct length");
+    
+    // Decode to verify (using the same encoding schema)
+    const types = [
+      'address', // srcImplementation
+      'address', // dstImplementation  
+      'uint256', // timelocks
+      'bytes32', // hashlock
+      'address', // srcMaker
+      'address', // srcTaker
+      'address', // srcToken
+      'uint256', // srcAmount
+      'uint256', // srcSafetyDeposit
+      'address', // dstReceiver
+      'address', // dstToken
+      'uint256', // dstAmount
+      'uint256', // dstSafetyDeposit
+      'uint256', // nonce
+    ];
+    
+    const decoded = decodeAbiParameters(types, encodedParams as Hex);
+    
+    // Verify decoded values match input
+    assertEquals(decoded[0], params.srcImplementation);
+    assertEquals(decoded[1], params.dstImplementation);
+    assertEquals(decoded[2], params.timelocks);
+    assertEquals(decoded[3], params.hashlock);
+    assertEquals(decoded[4], params.srcMaker);
+    assertEquals(decoded[5], params.srcTaker);
+    assertEquals(decoded[6], params.srcToken);
+    assertEquals(decoded[7], params.srcAmount);
+    assertEquals(decoded[8], params.srcSafetyDeposit);
+    assertEquals(decoded[9], params.dstReceiver);
+    assertEquals(decoded[10], params.dstToken);
+    assertEquals(decoded[11], params.dstAmount);
+    assertEquals(decoded[12], params.dstSafetyDeposit);
+    assertEquals(decoded[13], params.nonce);
+  });
+  
+  await t.step("should validate complete 1inch extension workflow", () => {
+    // Step 1: Create escrow parameters
+    const params = createTestEscrowParams();
+    
+    // Step 2: Encode PostInteraction data
+    const postInteractionData = encodePostInteractionData(TEST_ADDRESSES.FACTORY_V2_2, params);
+    
+    // Step 3: Encode as 1inch extension
+    const extension = encode1inchExtension(postInteractionData);
+    
+    // Step 4: Calculate extension hash for salt
+    const extensionHash = keccak256(extension);
+    const extensionHashLower160 = "0x" + extensionHash.slice(-40);
+    
+    // Step 5: Create maker traits with correct bit flags
+    const makerTraits = MAKER_TRAITS.forPostInteraction();
+    
+    // Validate bit 249 (HAS_EXTENSION)
+    assert((makerTraits & (1n << 249n)) > 0n, "Should have HAS_EXTENSION at bit 249");
+    
+    // Validate bit 251 (POST_INTERACTION)
+    assert((makerTraits & (1n << 251n)) > 0n, "Should have POST_INTERACTION at bit 251");
+    
+    // Step 6: Simulate order structure
+    const order = {
+      makerTraits,
+      salt: "0x" + "0".repeat(24) + extensionHashLower160.slice(2), // Upper 96 bits zero, lower 160 bits hash
+      extension,
+    };
+    
+    // Validate complete structure
+    assertExists(order.makerTraits, "Order should have maker traits");
+    assertExists(order.salt, "Order should have salt with extension hash");
+    assertExists(order.extension, "Order should have extension data");
+    
+    // Validate salt structure
+    assertEquals(order.salt.length, 66, "Salt should be 32 bytes");
+    assert(order.salt.endsWith(extensionHashLower160.slice(2)), "Salt should end with extension hash");
+    
+    // Validate extension can be parsed back
+    const offsetHex = extension.slice(2, 66);
+    const offsetBuffer = Buffer.from(offsetHex, 'hex');
+    const dataLength = offsetBuffer.readUInt32BE(28);
+    const extractedPostInteraction = "0x" + extension.slice(66, 66 + dataLength * 2);
+    
+    assertEquals(extractedPostInteraction, postInteractionData, "Should extract correct PostInteraction data");
+  });
+  
+  await t.step("should handle edge cases in 1inch extension format", () => {
+    // Test with minimum viable parameters
+    const minParams = createTestEscrowParams({
+      srcAmount: 1n,
+      dstAmount: 1n,
+      srcSafetyDeposit: 0n,
+      dstSafetyDeposit: 0n,
+      timelocks: packTimelocks(1, 1),
+    });
+    
+    const minPostInteraction = encodePostInteractionData(TEST_ADDRESSES.FACTORY_V2_2, minParams);
+    const minExtension = encode1inchExtension(minPostInteraction);
+    
+    // Verify offset structure even with minimum data
+    const minOffset = minExtension.slice(2, 66);
+    const minOffsetBuffer = Buffer.from(minOffset, 'hex');
+    const minDataLength = minOffsetBuffer.readUInt32BE(28);
+    
+    assert(minDataLength > 0, "Should have non-zero data length");
+    assertEquals(minDataLength, (minExtension.length - 66) / 2, "Offset should match actual data length");
+    
+    // Test with maximum viable parameters
+    const maxUint256 = (1n << 256n) - 1n;
+    const maxParams = createTestEscrowParams({
+      srcAmount: maxUint256,
+      dstAmount: maxUint256,
+      srcSafetyDeposit: (1n << 128n) - 1n, // Max uint128
+      dstSafetyDeposit: (1n << 128n) - 1n,
+      timelocks: packTimelocks(365 * 24 * 3600, 365 * 24 * 3600), // 1 year
+      nonce: maxUint256,
+    });
+    
+    const maxPostInteraction = encodePostInteractionData(TEST_ADDRESSES.FACTORY_V2_2, maxParams);
+    const maxExtension = encode1inchExtension(maxPostInteraction);
+    
+    // Verify it still encodes correctly
+    assertExists(maxExtension);
+    assert(maxExtension.startsWith("0x"));
+    
+    // Verify offset is still valid
+    const maxOffset = maxExtension.slice(2, 66);
+    const maxOffsetBuffer = Buffer.from(maxOffset, 'hex');
+    const maxDataLength = maxOffsetBuffer.readUInt32BE(28);
+    
+    assertEquals(maxDataLength, (maxExtension.length - 66) / 2, "Max params offset should match data length");
+  });
+  
+  await t.step("should correctly compare with incorrect bit flag implementations", () => {
+    // Test what would happen with wrong bit flags (the old implementation)
+    const wrongBit2 = 1n << 2n;  // Wrong: bit 2
+    const wrongBit7 = 1n << 7n;  // Wrong: bit 7
+    const wrongTraits = wrongBit2 | wrongBit7;
+    
+    // Correct bit flags
+    const correctBit249 = 1n << 249n;  // Correct: bit 249
+    const correctBit251 = 1n << 251n;  // Correct: bit 251
+    const correctTraits = correctBit249 | correctBit251;
+    
+    // These should be completely different values
+    assertNotEquals(wrongTraits, correctTraits, "Wrong and correct traits should differ");
+    
+    // Wrong traits would be a small number (132 = 0x84)
+    assert(wrongTraits < 256n, "Wrong traits would be less than 256");
+    
+    // Correct traits would be a huge number (bits 249 and 251 set)
+    assert(correctTraits > (1n << 248n), "Correct traits should be huge number");
+    
+    // Verify our MAKER_TRAITS implementation uses correct bits
+    const implementedTraits = MAKER_TRAITS.forPostInteraction();
+    assertEquals(implementedTraits, correctTraits, "Implementation should use correct bit flags");
+  });
+});
+
+// ============================================================================
 // LIMIT ORDER INTEGRATION TESTS
 // ============================================================================
 
@@ -853,5 +1112,12 @@ if (import.meta.main) {
   console.log("  ✅ Performance Benchmarks - Speed and efficiency");
   console.log("  ✅ Advanced Integration - Complex scenarios");
   console.log("  ✅ Mock Contract Tests - Simulated interactions");
+  console.log("  ✅ 1inch Extension Format Tests - Bit flags 249/251, offset structure, extension hash");
   console.log("  ✅ Limit Order Integration - 1inch protocol integration\n");
+  console.log("Key validations:");
+  console.log("  🔧 Bit 249 for HAS_EXTENSION flag");
+  console.log("  🔧 Bit 251 for POST_INTERACTION flag");
+  console.log("  🔧 32-byte offset with PostInteraction length at bytes 28-31");
+  console.log("  🔧 Extension hash (lower 160 bits) included in order salt");
+  console.log("  🔧 Proper ABI encoding of escrow parameters\n");
 }
