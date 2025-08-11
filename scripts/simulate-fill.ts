@@ -8,10 +8,19 @@ import {
   createPublicClient,
   http,
   decodeErrorResult,
+  encodeFunctionData,
+  decodeAbiParameters,
+  parseAbiParameters,
 } from "viem";
 import SimpleLimitOrderProtocolAbi from "../abis/SimpleLimitOrderProtocol.json" with { type: "json" };
 
 function getRpc(chain: "base" | "optimism") {
+  const local = Deno.env.get("LOCAL_RPC");
+  const localBase = Deno.env.get("LOCAL_BASE_RPC");
+  const localOp = Deno.env.get("LOCAL_OP_RPC");
+  if (chain === "base" && (localBase || local)) return http((localBase || local) as string);
+  if (chain === "optimism" && (localOp || local)) return http((localOp || local) as string);
+
   const key = Deno.env.get("ANKR_API_KEY") || "";
   if (chain === "base") return http(key ? `https://rpc.ankr.com/base/${key}` : "https://mainnet.base.org");
   return http(key ? `https://rpc.ankr.com/optimism/${key}` : "https://mainnet.optimism.io");
@@ -84,9 +93,58 @@ async function main() {
     throw new Error(`argsExtensionLength mismatch: ${argsLenFromTraits} vs ${argsLen}`);
   }
 
+  // Try decode extraData inside extension for sanity
+  try {
+    const ext = data.extensionData as Hex;
+    if (ext && ext.length >= 66) {
+      const postSeg = ("0x" + ext.slice(66)) as Hex;
+      if ((postSeg.length - 2) / 2 >= 20) {
+        const extra = ("0x" + postSeg.slice(42)) as Hex;
+        const [hashlock, dstChainId, dstToken, deposits, timelocks] = decodeAbiParameters(
+          parseAbiParameters("bytes32,uint256,address,uint256,uint256"),
+          extra,
+        );
+        const now = BigInt(Math.floor(Date.now() / 1000));
+        const srcCancel = (timelocks as bigint) >> 128n;
+        const dstWithdraw = (timelocks as bigint) & ((1n << 128n) - 1n);
+        console.log("   decoded extraData:");
+        console.log("     hashlock:", hashlock);
+        console.log("     dstChainId:", dstChainId);
+        console.log("     dstToken:", dstToken);
+        console.log("     deposits:", deposits);
+        console.log("     timelocks:", timelocks);
+        console.log("     time(now, srcCancel, dstWithdraw):", now, srcCancel, dstWithdraw);
+      }
+    }
+  } catch (_e) {}
+
   try {
     const account = (Deno.env.get("RESOLVER_ADDRESS") ||
       "0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5") as Address;
+
+    // Print raw calldata for debug_traceCall
+    const calldata = encodeFunctionData({
+      abi: SimpleLimitOrderProtocolAbi.abi,
+      functionName: "fillOrderArgs",
+      args: [
+        {
+          salt: BigInt(data.order.salt),
+          maker: data.order.maker,
+          receiver: data.order.receiver,
+          makerAsset: data.order.makerAsset,
+          takerAsset: data.order.takerAsset,
+          makingAmount: BigInt(data.order.makingAmount),
+          takingAmount: BigInt(data.order.takingAmount),
+          makerTraits: BigInt(data.order.makerTraits),
+        },
+        r,
+        vs,
+        BigInt(data.order.makingAmount),
+        takerTraits,
+        data.extensionData as Hex,
+      ],
+    });
+    console.log("calldata:", calldata);
     await client.simulateContract({
       address: protocol,
       abi: SimpleLimitOrderProtocolAbi.abi,

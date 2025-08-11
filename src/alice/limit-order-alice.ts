@@ -206,6 +206,7 @@ export class LimitOrderAlice {
       dstImplementation: CREATE3_ADDRESSES.ESCROW_DST_IMPL,
       timelocks: timelocks,
       hashlock: hashlock as Hex,
+      dstChainId: BigInt(params.dstChainId),
       srcMaker: this.account.address,
       srcTaker: params.resolverAddress as Address, // Resolver will be the taker
       srcToken: BMN_TOKEN,

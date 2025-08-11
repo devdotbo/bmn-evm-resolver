@@ -21,6 +21,8 @@ export interface EscrowParams {
   dstImplementation: Address;
   timelocks: bigint;
   hashlock: Hex;
+  // Destination chain where the receiver will withdraw
+  dstChainId?: bigint | number;
   srcMaker: Address;
   srcTaker: Address;
   srcToken: Address;
@@ -34,10 +36,16 @@ export interface EscrowParams {
 }
 
 /**
- * Encodes PostInteraction data for 1inch protocol (not the full extension)
+ * Encodes PostInteraction data expected by SimplifiedEscrowFactory.postInteraction
+ * Layout: 20 bytes target (factory) + abi.encode(bytes32,uint256,address,uint256,uint256)
+ *   - hashlock
+ *   - dstChainId
+ *   - dstToken
+ *   - deposits  = (dstSafetyDeposit << 128) | srcSafetyDeposit
+ *   - timelocks = (srcCancellationTimestamp << 128) | dstWithdrawalTimestamp
  * @param factoryAddress The SimplifiedEscrowFactory address
  * @param params Escrow creation parameters
- * @returns PostInteraction data (factory address + escrow parameters)
+ * @returns PostInteraction data (factory address + 5-tuple payload)
  */
 export function encodePostInteractionData(
   factoryAddress: Address,
@@ -56,31 +64,23 @@ export function encodePostInteractionData(
     dstToken: getAddress(params.dstToken),
   } as EscrowParams;
 
-  // Encode all escrow parameters according to v2.2.0 spec
-  const escrowData = encodeAbiParameters(
-    parseAbiParameters(
-      "address srcImplementation, address dstImplementation, uint256 timelocks, bytes32 hashlock, address srcMaker, address srcTaker, address srcToken, uint256 srcAmount, uint256 srcSafetyDeposit, address dstReceiver, address dstToken, uint256 dstAmount, uint256 dstSafetyDeposit, uint256 nonce",
-    ),
+  const dstChainId = BigInt(normalizedParams.dstChainId ?? 0);
+  const deposits = packDeposits(
+    normalizedParams.srcSafetyDeposit,
+    normalizedParams.dstSafetyDeposit,
+  );
+  const payload = encodeAbiParameters(
+    parseAbiParameters("bytes32 hashlock, uint256 dstChainId, address dstToken, uint256 deposits, uint256 timelocks"),
     [
-      normalizedParams.srcImplementation,
-      normalizedParams.dstImplementation,
-      normalizedParams.timelocks,
       normalizedParams.hashlock,
-      normalizedParams.srcMaker,
-      normalizedParams.srcTaker,
-      normalizedParams.srcToken,
-      normalizedParams.srcAmount,
-      normalizedParams.srcSafetyDeposit,
-      normalizedParams.dstReceiver,
+      dstChainId,
       normalizedParams.dstToken,
-      normalizedParams.dstAmount,
-      normalizedParams.dstSafetyDeposit,
-      normalizedParams.nonce,
+      deposits,
+      normalizedParams.timelocks,
     ],
   );
-
-  // Concatenate factory address (20 bytes) + escrow parameters
-  return concat([normalizedFactory as Hex, escrowData]);
+  // Concatenate factory address (20 bytes) + payload
+  return concat([normalizedFactory as Hex, payload]);
 }
 
 /**

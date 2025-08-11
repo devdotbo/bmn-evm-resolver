@@ -4,7 +4,9 @@ import {
   encodeFunctionData,
   decodeErrorResult,
   type Hex,
+  decodeAbiParameters,
   parseAbi,
+  parseAbiParameters,
   type PublicClient,
   type WalletClient,
 } from "viem";
@@ -185,6 +187,34 @@ export async function fillLimitOrder(
   console.log(`     argsExtLen:   ${argsExtLenFromTraits}`);
   console.log(`     threshold:    ${threshold}`);
   console.log(`   amount:         ${params.fillAmount}`);
+
+  // Decode postInteraction extraData for quick sanity checks (if extension present)
+  try {
+    const ext = params.extensionData as Hex;
+    if (ext && ext.length >= 66) {
+      const postSeg = `0x${ext.slice(66)}` as Hex; // strip offsets word
+      if ((postSeg.length - 2) / 2 >= 20) {
+        const extra = `0x${postSeg.slice(42)}` as Hex; // drop 20-byte target
+        // Try decode (bytes32,uint256,address,uint256,uint256)
+        const [hashlock, dstChainId, dstToken, deposits, timelocks] = decodeAbiParameters(
+          parseAbiParameters("bytes32,uint256,address,uint256,uint256"),
+          extra,
+        );
+        console.log("   decoded extraData:");
+        console.log("     hashlock:", hashlock);
+        console.log("     dstChainId:", dstChainId);
+        console.log("     dstToken:", dstToken);
+        console.log("     deposits:", deposits);
+        console.log("     timelocks:", timelocks);
+        const now = BigInt(Math.floor(Date.now() / 1000));
+        const srcCancel = (timelocks as bigint) >> 128n;
+        const dstWithdraw = (timelocks as bigint) & ((1n << 128n) - 1n);
+        console.log("     time(now, srcCancel, dstWithdraw):", now, srcCancel, dstWithdraw);
+      }
+    }
+  } catch (_e) {
+    // ignore decode issues; factory may differ
+  }
 
   // Try simulate first; if provider rejects due to gas quirks, fall back to direct send with manual gas.
   let hash: Hex;
