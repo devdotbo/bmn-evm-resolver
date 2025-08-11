@@ -67,6 +67,23 @@ async function main() {
   const { r, vs } = splitSig(data.signature);
   const takerTraits = computeTakerTraits(data.order, data.extensionData);
 
+  // Pre-flight & diagnostics
+  const argsLen = BigInt(toHexBytes(data.extensionData));
+  const argsLenFromTraits = (takerTraits >> 224n) & ((1n << 24n) - 1n);
+  const makerAmountFlagOn = (takerTraits & (1n << 255n)) !== 0n;
+  const offsetsWord = (data.extensionData as string).slice(0, 66);
+  console.log("🧩 1inch extension diagnostics");
+  console.log(`   bytes(extension): ${argsLen}`);
+  console.log(`   offsets[0..31]:  ${offsetsWord}`);
+  console.log("   takerTraits:");
+  console.log(`     maker-amount: ${makerAmountFlagOn ? "on" : "off"}`);
+  console.log(`     argsExtLen:   ${argsLenFromTraits}`);
+  console.log(`     threshold:    ${BigInt(data.order.takingAmount) & ((1n<<185n)-1n)}`);
+  console.log(`   amount:         ${BigInt(data.order.makingAmount)}`);
+  if (argsLenFromTraits !== argsLen) {
+    throw new Error(`argsExtensionLength mismatch: ${argsLenFromTraits} vs ${argsLen}`);
+  }
+
   try {
     const account = (Deno.env.get("RESOLVER_ADDRESS") ||
       "0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5") as Address;

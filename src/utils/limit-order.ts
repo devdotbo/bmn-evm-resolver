@@ -166,6 +166,26 @@ export async function fillLimitOrder(
       ? params.takerTraits
       : defaultTakerTraits;
 
+  // Pre-flight: extension length must match takerTraits.argsExtensionLength
+  const argsExtLenFromTraits = (takerTraits >> 224n) & ((1n << 24n) - 1n);
+  if (argsExtLenFromTraits !== computedArgsExtLenBytes) {
+    throw new Error(
+      `argsExtensionLength mismatch: takerTraits=${argsExtLenFromTraits} vs bytes(extension)=${computedArgsExtLenBytes}`,
+    );
+  }
+
+  // Diagnostics logging
+  const makerAmountFlagOn = (takerTraits & (1n << 255n)) !== 0n;
+  const offsetsWord = (params.extensionData || "0x").slice(0, 66);
+  console.log("🧩 1inch extension diagnostics");
+  console.log(`   bytes(extension): ${computedArgsExtLenBytes}`);
+  console.log(`   offsets[0..31]:  ${offsetsWord}`);
+  console.log("   takerTraits:");
+  console.log(`     maker-amount: ${makerAmountFlagOn ? "on" : "off"}`);
+  console.log(`     argsExtLen:   ${argsExtLenFromTraits}`);
+  console.log(`     threshold:    ${threshold}`);
+  console.log(`   amount:         ${params.fillAmount}`);
+
   // Try simulate first; if provider rejects due to gas quirks, fall back to direct send with manual gas.
   let hash: Hex;
   try {
