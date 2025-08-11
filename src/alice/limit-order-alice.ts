@@ -1,3 +1,6 @@
+// Minimal declarations for non-Deno linters
+declare const Deno: any;
+
 import {
   type Address,
   concat,
@@ -13,6 +16,7 @@ import {
   pad,
   parseAbi,
   parseAbiParameters,
+  formatUnits,
   toHex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -139,7 +143,7 @@ export class LimitOrderAlice {
         params.dstChainId === 10 ? "Optimism" : "Base"
       })`,
     );
-    console.log(`   Amount: ${params.srcAmount / 10n ** 18n} BMN tokens`);
+    console.log(`   Amount: ${formatUnits(params.srcAmount, 18)} BMN tokens`);
 
     // Generate secret and hashlock
     const secret = this.generateSecret();
@@ -171,7 +175,7 @@ export class LimitOrderAlice {
       args: [this.account.address],
     });
 
-    console.log(`💰 Current BMN balance: ${balance / 10n ** 18n} tokens`);
+    console.log(`💰 Current BMN balance: ${formatUnits(balance, 18)} tokens`);
 
     if (balance < params.srcAmount) {
       throw new Error(
@@ -362,23 +366,23 @@ export class LimitOrderAlice {
   }
 
   async listOrders(): Promise<any[]> {
-    const orders = [];
+    const orders: any[] = [];
 
     // Get orders from indexer
-    const swaps = await this.ponderClient.getPendingAtomicSwaps(
+    const swaps: any[] = await this.ponderClient.getPendingAtomicSwaps(
       this.account.address,
     );
 
     for (const swap of swaps) {
       orders.push({
-        orderHash: swap.orderHash,
-        status: swap.status,
-        srcChain: swap.srcChainId,
-        dstChain: Number(swap.dstChainId),
-        srcAmount: swap.srcAmount.toString(),
-        dstAmount: swap.dstAmount.toString(),
+        orderHash: (swap as any).orderHash,
+        status: (swap as any).status,
+        srcChain: (swap as any).srcChainId,
+        dstChain: Number((swap as any).dstChainId),
+        srcAmount: ((swap as any).srcAmount ?? 0n).toString(),
+        dstAmount: ((swap as any).dstAmount ?? 0n).toString(),
         createdAt: new Date(
-          Number(swap.srcCreatedAt || swap.dstCreatedAt || 0) * 1000,
+          Number((swap as any).srcCreatedAt || (swap as any).dstCreatedAt || 0) * 1000,
         ).toISOString(),
       });
     }
