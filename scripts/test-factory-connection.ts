@@ -9,7 +9,7 @@
 
 import { type Address, createPublicClient, http } from "viem";
 import { base, optimism } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { CREATE3_ADDRESSES } from "../src/config/contracts.ts";
 
 // Factory ABI for testing
@@ -298,7 +298,7 @@ async function main() {
     Deno.exit(1);
   }
 
-  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const account = privateKeyToAccount(privateKey as `0x${string}`, { nonceManager });
   const resolverAddress = account.address;
 
   console.log(`\nResolver Address: ${resolverAddress}`);

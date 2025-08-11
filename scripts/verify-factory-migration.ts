@@ -16,7 +16,7 @@ import {
   verifyMigration,
 } from "../src/utils/factory-security.ts";
 import { CREATE3_ADDRESSES } from "../src/config/contracts.ts";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, nonceManager } from "viem/accounts";
 
 // Colors for console output
 const colors = {
@@ -69,7 +69,7 @@ async function main() {
     Deno.exit(1);
   }
 
-  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const account = privateKeyToAccount(privateKey as `0x${string}`, { nonceManager });
   const resolverAddress = account.address;
 
   console.log(

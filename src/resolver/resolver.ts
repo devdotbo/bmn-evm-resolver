@@ -9,7 +9,7 @@ import {
   http,
   parseAbi,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { type AtomicSwap, PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
@@ -82,7 +82,7 @@ export class UnifiedResolver {
       throw new Error("RESOLVER_PRIVATE_KEY not set");
     }
 
-    this.account = privateKeyToAccount(privateKey as `0x${string}`);
+    this.account = privateKeyToAccount(privateKey as `0x${string}`, { nonceManager });
     this.pollingInterval = config.pollingInterval || 10000; // 10 seconds
     this.minProfitBps = config.minProfitBps || 50; // 0.5% minimum profit
 

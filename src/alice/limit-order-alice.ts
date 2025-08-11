@@ -20,7 +20,7 @@ import {
   toHex,
   hashTypedData,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { PonderClient } from "../indexer/ponder-client.ts";
 import { SecretManager } from "../state/SecretManager.ts";
@@ -94,7 +94,7 @@ export class LimitOrderAlice {
       throw new Error("ALICE_PRIVATE_KEY not set");
     }
 
-    this.account = privateKeyToAccount(privateKey as `0x${string}`);
+    this.account = privateKeyToAccount(privateKey as `0x${string}`, { nonceManager });
 
     const ankrKey = ANKR_API_KEY;
     const localBase = Deno.env.get("LOCAL_BASE_RPC");

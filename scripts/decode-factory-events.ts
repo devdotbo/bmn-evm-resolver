@@ -46,11 +46,16 @@ async function main() {
   const receipt = await client.getTransactionReceipt({ hash: tx });
   const factoryLower = factory.toLowerCase();
 
+  // Support both legacy v2.2 docs events and SimplifiedEscrowFactory events
   const eventParsers = [
-    parseAbiItem("event SrcEscrowCreated(address indexed escrowAddress, uint8 indexed escrowType, bytes32 indexed immutablesHash)"),
-    parseAbiItem("event DstEscrowCreated(address indexed escrowAddress, uint8 indexed escrowType, bytes32 indexed immutablesHash)"),
+    // Legacy/docs style
     parseAbiItem("event PostInteractionExecuted(bytes32 indexed orderHash, address indexed taker, address srcEscrow, address dstEscrow)"),
     parseAbiItem("event PostInteractionFailed(bytes32 indexed orderHash, address indexed taker, string reason)"),
+    parseAbiItem("event EscrowCreated(address indexed escrowAddress, uint8 indexed escrowType, bytes32 indexed immutablesHash)"),
+    // SimplifiedEscrowFactory (deployed)
+    parseAbiItem("event PostInteractionEscrowCreated(address indexed escrow, bytes32 indexed hashlock, address indexed protocol, address taker, uint256 amount)"),
+    parseAbiItem("event SrcEscrowCreated(address indexed escrow, bytes32 indexed orderHash, address indexed maker, address taker, uint256 amount)"),
+    parseAbiItem("event DstEscrowCreated(address indexed escrow, bytes32 indexed hashlock, address indexed taker)"),
   ];
 
   const found: Array<Record<string, unknown>> = [];
@@ -72,10 +77,12 @@ async function main() {
     }
   }
 
+  const replacer = (_key: string, value: unknown) =>
+    typeof value === "bigint" ? value.toString() : value;
   if (found.length === 0) {
-    console.log(JSON.stringify({ tx, info: "no factory events found", factory }, null, 2));
+    console.log(JSON.stringify({ tx, info: "no factory events found", factory }, replacer, 2));
   } else {
-    console.log(JSON.stringify(found, null, 2));
+    console.log(JSON.stringify(found, replacer, 2));
   }
 }
 

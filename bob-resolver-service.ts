@@ -31,7 +31,7 @@ import {
   type Hash,
   http,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { PonderClient } from "./src/indexer/ponder-client.ts";
 import { SecretManager } from "./src/state/SecretManager.ts";
@@ -85,7 +85,7 @@ class BobResolverService {
     this.withdrawManager = new EscrowWithdrawManager();
 
     // Setup account
-    this.account = privateKeyToAccount(config.privateKey as `0x${string}`);
+    this.account = privateKeyToAccount(config.privateKey as `0x${string}`, { nonceManager });
 
     // Setup RPC clients
     const rpcUrl = (chain: string) => {

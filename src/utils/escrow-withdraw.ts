@@ -418,7 +418,7 @@ export class EscrowWithdrawManager {
             : `https://rpc.ankr.com/optimism/${ankrKey}`,
         ),
       });
-      const { privateKeyToAccount } = await import("viem/accounts");
+      const { privateKeyToAccount, nonceManager } = await import("viem/accounts");
       const pk = (Deno.env.get("RESOLVER_PRIVATE_KEY") ||
         Deno.env.get("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
       if (!pk) {
@@ -433,7 +433,7 @@ export class EscrowWithdrawManager {
             ? `https://rpc.ankr.com/base/${ankrKey}`
             : `https://rpc.ankr.com/optimism/${ankrKey}`,
         ),
-        account: privateKeyToAccount(pk),
+        account: privateKeyToAccount(pk, { nonceManager }),
       });
 
       const result = escrow.isSource

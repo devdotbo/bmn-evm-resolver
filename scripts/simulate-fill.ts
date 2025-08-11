@@ -16,7 +16,7 @@ import {
   recoverAddress,
   parseAbi,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { base, optimism } from "viem/chains";
 import { getContractAddresses } from "../src/config/contracts.ts";
 import SimpleLimitOrderProtocolAbi from "../abis/SimpleLimitOrderProtocol.json" with { type: "json" };
@@ -168,7 +168,7 @@ async function main() {
     const makerPk = Deno.env.get("ALICE_PRIVATE_KEY");
     const takerPk = Deno.env.get("RESOLVER_PRIVATE_KEY") || Deno.env.get("BOB_PRIVATE_KEY");
     if (makerPk) {
-      const makerAccount = privateKeyToAccount(makerPk as `0x${string}`);
+      const makerAccount = privateKeyToAccount(makerPk as `0x${string}`, { nonceManager });
       const makerWallet = createWalletClient({
         account: makerAccount,
         chain: (chainId === 8453 ? base : optimism) as any,
@@ -184,7 +184,7 @@ async function main() {
       );
     }
     if (takerPk) {
-      const takerAccount = privateKeyToAccount(takerPk as `0x${string}`);
+      const takerAccount = privateKeyToAccount(takerPk as `0x${string}`, { nonceManager });
       const takerWallet = createWalletClient({
         account: takerAccount,
         chain: (chainId === 8453 ? base : optimism) as any,
