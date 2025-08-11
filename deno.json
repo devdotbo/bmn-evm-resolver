@@ -20,6 +20,7 @@
     "resolver:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv src/resolver/resolver.ts",
     "resolver:test:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv test-resolver.ts",
     "alice:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv alice-service.ts",
-    "order:create": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env scripts/create-order.ts"
+    "order:create": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env scripts/create-order.ts",
+    "decode:factory": "deno run --allow-net --allow-env --allow-read scripts/decode-factory-events.ts"
   }
 }
