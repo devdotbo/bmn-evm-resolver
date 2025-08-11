@@ -6,12 +6,19 @@ import {
   Address,
   Hex,
   createPublicClient,
+  createWalletClient,
   http,
   decodeErrorResult,
   encodeFunctionData,
   decodeAbiParameters,
   parseAbiParameters,
+  hashTypedData,
+  recoverAddress,
+  parseAbi,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { base, optimism } from "viem/chains";
+import { getContractAddresses } from "../src/config/contracts.ts";
 import SimpleLimitOrderProtocolAbi from "../abis/SimpleLimitOrderProtocol.json" with { type: "json" };
 
 function getRpc(chain: "base" | "optimism") {
@@ -51,6 +58,40 @@ function splitSig(sig: string): { r: Hex; vs: Hex } {
   return { r, vs: ("0x" + sWithV) as Hex };
 }
 
+async function ensureAllowance(
+  client: any,
+  wallet: any,
+  token: Address,
+  owner: Address,
+  spender: Address,
+  minAmount: bigint,
+): Promise<void> {
+  const allowance = await client.readContract({
+    address: token,
+    abi: parseAbi([
+      "function allowance(address owner, address spender) view returns (uint256)",
+    ]),
+    functionName: "allowance",
+    args: [owner, spender],
+  });
+  if ((allowance as bigint) >= minAmount) {
+    console.log(`allowance ok for ${owner} -> ${spender}: ${allowance}`);
+    return;
+  }
+  console.log(`approving ${spender} for ${owner} amount ${minAmount}`);
+  const hash = await wallet.writeContract({
+    address: token,
+    abi: parseAbi([
+      "function approve(address spender, uint256 amount) returns (bool)",
+    ]),
+    functionName: "approve",
+    args: [spender, minAmount * 10n],
+    account: wallet.account as any,
+  });
+  await client.waitForTransactionReceipt({ hash });
+  console.log(`approve tx: ${hash}`);
+}
+
 async function main() {
   const file = Deno.args[0] || (await (async () => {
     for await (const entry of Deno.readDir("./pending-orders")) {
@@ -67,17 +108,110 @@ async function main() {
 
   const chainId = Number(data.chainId);
   const transport = chainId === 8453 ? getRpc("base") : getRpc("optimism");
-  const client = createPublicClient({ chain: undefined as any, transport });
+  const client = createPublicClient({ chain: chainId === 8453 ? (base as any) : (optimism as any), transport });
+  const walletTransport = transport;
 
   const protocol: Address = (chainId === 8453
     ? "0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06"
     : "0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7") as Address;
+  const addrs = getContractAddresses(chainId);
+  const token: Address = addrs.tokens.BMN as Address;
+  const factory: Address = addrs.escrowFactory as Address;
 
   const { r, vs } = splitSig(data.signature);
   const takerTraits = computeTakerTraits(data.order, data.extensionData);
 
   // Pre-flight & diagnostics
   const argsLen = BigInt(toHexBytes(data.extensionData));
+  // Local signature sanity check: recover maker from typed digest
+  try {
+    const digest = hashTypedData({
+      domain: {
+        name: "Bridge-Me-Not Orders",
+        version: "1",
+        chainId,
+        verifyingContract: protocol,
+      },
+      primaryType: "Order",
+      types: {
+        Order: [
+          { name: "salt", type: "uint256" },
+          { name: "maker", type: "address" },
+          { name: "receiver", type: "address" },
+          { name: "makerAsset", type: "address" },
+          { name: "takerAsset", type: "address" },
+          { name: "makingAmount", type: "uint256" },
+          { name: "takingAmount", type: "uint256" },
+          { name: "makerTraits", type: "uint256" },
+        ],
+      },
+      message: {
+        salt: BigInt(data.order.salt),
+        maker: data.order.maker as Address,
+        receiver: data.order.receiver as Address,
+        makerAsset: data.order.makerAsset as Address,
+        takerAsset: data.order.takerAsset as Address,
+        makingAmount: BigInt(data.order.makingAmount),
+        takingAmount: BigInt(data.order.takingAmount),
+        makerTraits: BigInt(data.order.makerTraits),
+      },
+    });
+    const recovered = await recoverAddress({ hash: digest as Hex, signature: data.signature as Hex });
+    const ok = recovered.toLowerCase() === (data.order.maker as string).toLowerCase();
+    console.log("signature:", ok ? "valid" : "INVALID", recovered, "expected", data.order.maker);
+  } catch (e) {
+    console.log("signature: local check failed", (e as any)?.message || String(e));
+  }
+
+  // Ensure allowances for maker and taker on the fork using env private keys
+  try {
+    const makerPk = Deno.env.get("ALICE_PRIVATE_KEY");
+    const takerPk = Deno.env.get("RESOLVER_PRIVATE_KEY") || Deno.env.get("BOB_PRIVATE_KEY");
+    if (makerPk) {
+      const makerAccount = privateKeyToAccount(makerPk as `0x${string}`);
+      const makerWallet = createWalletClient({
+        account: makerAccount,
+        chain: (chainId === 8453 ? base : optimism) as any,
+        transport: walletTransport,
+      });
+      await ensureAllowance(
+        client,
+        makerWallet,
+        token,
+        makerAccount.address,
+        protocol,
+        BigInt(data.order.makingAmount),
+      );
+    }
+    if (takerPk) {
+      const takerAccount = privateKeyToAccount(takerPk as `0x${string}`);
+      const takerWallet = createWalletClient({
+        account: takerAccount,
+        chain: (chainId === 8453 ? base : optimism) as any,
+        transport: walletTransport,
+      });
+      await ensureAllowance(
+        client,
+        takerWallet,
+        token,
+        takerAccount.address,
+        protocol,
+        BigInt(data.order.takingAmount),
+      );
+      // Factory needs to pull funds in postInteraction
+      await ensureAllowance(
+        client,
+        takerWallet,
+        token,
+        takerAccount.address,
+        factory,
+        BigInt(data.order.makingAmount),
+      );
+    }
+  } catch (e) {
+    console.log("allowance setup skipped/failed:", (e as any)?.message || String(e));
+  }
+
   const argsLenFromTraits = (takerTraits >> 224n) & ((1n << 24n) - 1n);
   const makerAmountFlagOn = (takerTraits & (1n << 255n)) !== 0n;
   const offsetsWord = (data.extensionData as string).slice(0, 66);

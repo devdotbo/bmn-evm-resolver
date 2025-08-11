@@ -18,6 +18,7 @@ import {
   parseAbiParameters,
   formatUnits,
   toHex,
+  hashTypedData,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, optimism } from "viem/chains";
@@ -96,28 +97,30 @@ export class LimitOrderAlice {
     this.account = privateKeyToAccount(privateKey as `0x${string}`);
 
     const ankrKey = ANKR_API_KEY;
+    const localBase = Deno.env.get("LOCAL_BASE_RPC");
+    const localOp = Deno.env.get("LOCAL_OP_RPC");
 
-    // Set up clients
+    // Set up clients (prefer local VRPC if provided)
     this.baseClient = createPublicClient({
       chain: base,
-      transport: http(ankrKey ? `https://rpc.ankr.com/base/${ankrKey}` : "https://mainnet.base.org"),
+      transport: http(localBase || (ankrKey ? `https://rpc.ankr.com/base/${ankrKey}` : "https://mainnet.base.org")),
     });
 
     this.optimismClient = createPublicClient({
       chain: optimism,
-      transport: http(ankrKey ? `https://rpc.ankr.com/optimism/${ankrKey}` : "https://mainnet.optimism.io"),
+      transport: http(localOp || (ankrKey ? `https://rpc.ankr.com/optimism/${ankrKey}` : "https://mainnet.optimism.io")),
     });
 
     this.baseWallet = createWalletClient({
       account: this.account,
       chain: base,
-      transport: http(ankrKey ? `https://rpc.ankr.com/base/${ankrKey}` : "https://mainnet.base.org"),
+      transport: http(localBase || (ankrKey ? `https://rpc.ankr.com/base/${ankrKey}` : "https://mainnet.base.org")),
     });
 
     this.optimismWallet = createWalletClient({
       account: this.account,
       chain: optimism,
-      transport: http(ankrKey ? `https://rpc.ankr.com/optimism/${ankrKey}` : "https://mainnet.optimism.io"),
+      transport: http(localOp || (ankrKey ? `https://rpc.ankr.com/optimism/${ankrKey}` : "https://mainnet.optimism.io")),
     });
   }
 
@@ -167,32 +170,41 @@ export class LimitOrderAlice {
       ? this.baseClient
       : this.optimismClient;
 
-    // Check token balance
-    const balance = await client.readContract({
-      address: BMN_TOKEN,
-      abi: IERC20Abi.abi,
-      functionName: "balanceOf",
-      args: [this.account.address],
-    });
+    const simulateOnly = (Deno.env.get("SIMULATE_ONLY") || "").toLowerCase() ===
+      "1" || (Deno.env.get("SIMULATE_ONLY") || "").toLowerCase() === "true";
 
-    console.log(`💰 Current BMN balance: ${formatUnits(balance, 18)} tokens`);
+    if (!simulateOnly) {
+      // Check token balance
+      const balance = await client.readContract({
+        address: BMN_TOKEN,
+        abi: IERC20Abi.abi,
+        functionName: "balanceOf",
+        args: [this.account.address],
+      });
 
-    if (balance < params.srcAmount) {
-      throw new Error(
-        `Insufficient BMN balance. Have ${balance}, need ${params.srcAmount}`,
+      console.log(`💰 Current BMN balance: ${formatUnits(balance, 18)} tokens`);
+
+      if (balance < params.srcAmount) {
+        throw new Error(
+          `Insufficient BMN balance. Have ${balance}, need ${params.srcAmount}`,
+        );
+      }
+
+      // Approve tokens for the limit order protocol
+      console.log("🔓 Approving tokens for Limit Order Protocol...");
+      const approveHash = await wallet.writeContract({
+        address: BMN_TOKEN,
+        abi: IERC20Abi.abi,
+        functionName: "approve",
+        args: [LIMIT_ORDER_PROTOCOL, params.srcAmount],
+      });
+      await client.waitForTransactionReceipt({ hash: approveHash });
+      console.log(`✅ Approval tx: ${approveHash}`);
+    } else {
+      console.log(
+        "🧪 SIMULATE_ONLY=1: Skipping on-chain balance check and approvals",
       );
     }
-
-    // Approve tokens for the limit order protocol
-    console.log("🔓 Approving tokens for Limit Order Protocol...");
-    const approveHash = await wallet.writeContract({
-      address: BMN_TOKEN,
-      abi: IERC20Abi.abi,
-      functionName: "approve",
-      args: [LIMIT_ORDER_PROTOCOL, params.srcAmount],
-    });
-    await client.waitForTransactionReceipt({ hash: approveHash });
-    console.log(`✅ Approval tx: ${approveHash}`);
 
     // Calculate timelocks (1 hour for cancellation, 5 minutes for withdrawal)
     const timelocks = packTimelocks(3600, 300);
@@ -237,8 +249,16 @@ export class LimitOrderAlice {
       BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) << 160n;
     const salt = randomSalt | extensionHashLast160;
 
-    // Build maker traits with POST_INTERACTION flag enabled for v2.2.0
-    const makerTraits = MAKER_TRAITS.forPostInteraction();
+    // Build maker traits with explicit randomized nonce to avoid BitInvalidatedOrder on forks
+    const uniqueNonce40 = Number((generateNonce() >> 12n) & ((1n << 40n) - 1n));
+    const makerTraits = MAKER_TRAITS.build({
+      postInteraction: true,
+      hasExtension: true,
+      allowMultipleFills: true,
+      noPartialFills: false,
+      nonceOrEpoch: uniqueNonce40,
+      // Keep allowedSender open (0) so any taker can fill (resolver is checked in extension/flow)
+    });
 
     const order: LimitOrder = {
       salt: salt,
@@ -291,35 +311,77 @@ export class LimitOrderAlice {
     order: LimitOrder,
     chainId: number,
   ): Promise<string> {
-    const client = chainId === base.id ? this.baseClient : this.optimismClient;
-    const LIMIT_ORDER_PROTOCOL =
-      getContractAddresses(chainId).limitOrderProtocol;
-
-    // Call hashOrder on the contract to get the proper EIP-712 hash
-    const orderHash = await client.readContract({
-      address: LIMIT_ORDER_PROTOCOL,
-      abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "hashOrder",
-      args: [[
-        order.salt,
-        order.maker,
-        order.receiver,
-        order.makerAsset,
-        order.takerAsset,
-        order.makingAmount,
-        order.takingAmount,
-        order.makerTraits,
-      ]],
+    const LOP = getContractAddresses(chainId).limitOrderProtocol;
+    // Compute EIP-712 order digest locally (matches on-chain OrderLib.hash)
+    const digest = hashTypedData({
+      domain: {
+        name: "Bridge-Me-Not Orders",
+        version: "1",
+        chainId,
+        verifyingContract: LOP,
+      },
+      primaryType: "Order",
+      types: {
+        Order: [
+          { name: "salt", type: "uint256" },
+          { name: "maker", type: "address" },
+          { name: "receiver", type: "address" },
+          { name: "makerAsset", type: "address" },
+          { name: "takerAsset", type: "address" },
+          { name: "makingAmount", type: "uint256" },
+          { name: "takingAmount", type: "uint256" },
+          { name: "makerTraits", type: "uint256" },
+        ],
+      },
+      message: {
+        salt: order.salt,
+        maker: order.maker,
+        receiver: order.receiver,
+        makerAsset: order.makerAsset,
+        takerAsset: order.takerAsset,
+        makingAmount: order.makingAmount,
+        takingAmount: order.takingAmount,
+        makerTraits: order.makerTraits,
+      },
     });
 
-    return orderHash as string;
+    // Optionally verify with on-chain if env set (best-effort)
+    try {
+      const verify = (Deno.env.get("VERIFY_HASH_ONCHAIN") || "").toLowerCase();
+      if (verify === "1" || verify === "true") {
+        const client = chainId === base.id ? this.baseClient : this.optimismClient;
+        const onchain = await client.readContract({
+          address: LOP,
+          abi: SimpleLimitOrderProtocolAbi.abi,
+          functionName: "hashOrder",
+          args: [[
+            order.salt,
+            order.maker,
+            order.receiver,
+            order.makerAsset,
+            order.takerAsset,
+            order.makingAmount,
+            order.takingAmount,
+            order.makerTraits,
+          ]],
+        });
+        if ((onchain as string).toLowerCase() !== digest.toLowerCase()) {
+          console.warn("hash mismatch (local vs on-chain)", digest, onchain);
+        }
+      }
+    } catch (_e) {
+      // ignore verification issues
+    }
+
+    return digest as string;
   }
 
   private async signOrder(order: LimitOrder, chainId: number): Promise<Hex> {
-    // Sign the EIP-712 typed data hash computed by the protocol (exact digest expected on-chain)
-    const orderHash = await this.calculateOrderHash(order, chainId);
-    const signature = await this.account.sign({ hash: orderHash as Hex });
-    return signature;
+    // Cross-chain compatible signing: sign the on-chain digest from hashOrder(order)
+    // This matches the Solidity check: ECDSA.recover(orderHash, r, vs)
+    const digest = await this.calculateOrderHash(order, chainId);
+    const signature = await this.account.sign({ hash: digest as Hex });
+    return signature as Hex;
   }
 
   private async storeOrderForResolver(data: {

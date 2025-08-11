@@ -173,6 +173,73 @@ export const MAKER_TRAITS = {
   forPostInteraction(): bigint {
     return this.HAS_EXTENSION | this.POST_INTERACTION;
   },
+
+  // Advanced builder: set fields and flags per MakerTraitsLib layout
+  // Layout (low 200 bits):
+  //   [0..79]  allowedSender (last 10 bytes of address)
+  //   [80..119] expiration (uint40)
+  //   [120..159] nonceOrEpoch (uint40)
+  //   [160..199] series (uint40)
+  // Flags:
+  //   255 NO_PARTIAL_FILLS, 254 ALLOW_MULTIPLE_FILLS, 253 unused,
+  //   252 PRE_INTERACTION, 251 POST_INTERACTION, 250 NEED_CHECK_EPOCH_MANAGER,
+  //   249 HAS_EXTENSION, 248 USE_PERMIT2, 247 UNWRAP_WETH
+  build(options?: {
+    hasExtension?: boolean;
+    postInteraction?: boolean;
+    allowMultipleFills?: boolean;
+    noPartialFills?: boolean;
+    preInteraction?: boolean;
+    needCheckEpochManager?: boolean;
+    usePermit2?: boolean;
+    unwrapWeth?: boolean;
+    allowedSender?: Address;
+    expiration?: bigint | number;
+    nonceOrEpoch?: bigint | number;
+    series?: bigint | number;
+  }): bigint {
+    const NO_PARTIAL_FILLS = 1n << 255n;
+    const ALLOW_MULTIPLE_FILLS = 1n << 254n;
+    const PRE_INTERACTION = 1n << 252n;
+    const POST_INTERACTION = 1n << 251n;
+    const NEED_CHECK_EPOCH_MANAGER = 1n << 250n;
+    const HAS_EXTENSION = 1n << 249n;
+    const USE_PERMIT2 = 1n << 248n;
+    const UNWRAP_WETH = 1n << 247n;
+
+    let traits = 0n;
+    const opts = options || {};
+    if (opts.hasExtension ?? true) traits |= HAS_EXTENSION;
+    if (opts.postInteraction ?? true) traits |= POST_INTERACTION;
+    if (opts.allowMultipleFills) traits |= ALLOW_MULTIPLE_FILLS;
+    if (opts.noPartialFills) traits |= NO_PARTIAL_FILLS;
+    if (opts.preInteraction) traits |= PRE_INTERACTION;
+    if (opts.needCheckEpochManager) traits |= NEED_CHECK_EPOCH_MANAGER;
+    if (opts.usePermit2) traits |= USE_PERMIT2;
+    if (opts.unwrapWeth) traits |= UNWRAP_WETH;
+
+    const mask40 = (1n << 40n) - 1n;
+    const mask80 = (1n << 80n) - 1n;
+    if (opts.allowedSender) {
+      // Keep only low 80 bits of address
+      const low80 = BigInt(opts.allowedSender) & mask80;
+      traits |= low80;
+    }
+    if (opts.expiration !== undefined) {
+      const exp = BigInt(opts.expiration) & mask40;
+      traits |= exp << 80n;
+    }
+    if (opts.nonceOrEpoch !== undefined) {
+      const nonce = BigInt(opts.nonceOrEpoch) & mask40;
+      traits |= nonce << 120n;
+    }
+    if (opts.series !== undefined) {
+      const series = BigInt(opts.series) & mask40;
+      traits |= series << 160n;
+    }
+
+    return traits;
+  },
 };
 
 /**
