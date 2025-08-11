@@ -94,12 +94,12 @@ console.log(`   First 32 bytes (offsets): ${extension.slice(0, 66)}`);
 
 // Parse offsets
 const offsetsHex = extension.slice(2, 66);
-const offsets = Buffer.from(offsetsHex, "hex");
-const postInteractionOffset = (offsets[28] << 24) | (offsets[29] << 16) |
-  (offsets[30] << 8) | offsets[31];
-console.log(
-  `   PostInteraction offset (bytes 28-31): ${postInteractionOffset}`,
+const offsets = new Uint8Array(
+  offsetsHex.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)),
 );
+const postInteractionOffset = (offsets[0] << 24) | (offsets[1] << 16) |
+  (offsets[2] << 8) | offsets[3];
+console.log(`   PostInteraction offset (bytes 0-3): ${postInteractionOffset}`);
 console.log(`   Expected offset: ${(postInteractionData.length - 2) / 2}`);
 console.log(
   `   Offset correct: ${

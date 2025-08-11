@@ -1030,16 +1030,19 @@ Deno.test("PostInteraction v2.2.0 1inch Extension Format", async (t) => {
       const offsetBytes = extension.slice(2, 66); // Remove 0x, take first 64 hex chars (32 bytes)
 
       // Convert to bytes for inspection
-      const offsetBuffer = Buffer.from(offsetBytes, "hex");
+      const offsetBuffer = new Uint8Array(
+        offsetBytes.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)),
+      );
 
-      // First 28 bytes should be zeros (padding)
-      for (let i = 0; i < 28; i++) {
+      // Bytes 4-31 should be zeros (padding)
+      for (let i = 4; i < 32; i++) {
         assertEquals(offsetBuffer[i], 0, `Byte ${i} should be 0 for padding`);
       }
 
-      // Bytes 28-31 (last 4 bytes) should contain the PostInteraction data length
-      const lengthBytes = offsetBuffer.slice(28, 32);
-      const dataLength = lengthBytes.readUInt32BE(0);
+      // Bytes 0-3 (highest 4 bytes) should contain the PostInteraction data length
+      const lengthBytes = offsetBuffer.slice(0, 4);
+      const dataLength = (lengthBytes[0] << 24) | (lengthBytes[1] << 16) |
+        (lengthBytes[2] << 8) | lengthBytes[3];
 
       // PostInteraction data starts after the offset (32 bytes)
       const actualDataLength = (extension.length - 2 - 64) / 2; // Hex chars to bytes
@@ -1149,24 +1152,25 @@ Deno.test("PostInteraction v2.2.0 1inch Extension Format", async (t) => {
       );
 
       // Decode to verify (using the same encoding schema)
-      const types = [
-        "address", // srcImplementation
-        "address", // dstImplementation
-        "uint256", // timelocks
-        "bytes32", // hashlock
-        "address", // srcMaker
-        "address", // srcTaker
-        "address", // srcToken
-        "uint256", // srcAmount
-        "uint256", // srcSafetyDeposit
-        "address", // dstReceiver
-        "address", // dstToken
-        "uint256", // dstAmount
-        "uint256", // dstSafetyDeposit
-        "uint256", // nonce
-      ];
-
-      const decoded = decodeAbiParameters(types, encodedParams as Hex);
+      const decoded = decodeAbiParameters(
+        [
+          { type: "address" },
+          { type: "address" },
+          { type: "uint256" },
+          { type: "bytes32" },
+          { type: "address" },
+          { type: "address" },
+          { type: "address" },
+          { type: "uint256" },
+          { type: "uint256" },
+          { type: "address" },
+          { type: "address" },
+          { type: "uint256" },
+          { type: "uint256" },
+          { type: "uint256" },
+        ],
+        encodedParams as Hex,
+      );
 
       // Verify decoded values match input
       assertEquals(decoded[0], params.srcImplementation);
@@ -1238,9 +1242,12 @@ Deno.test("PostInteraction v2.2.0 1inch Extension Format", async (t) => {
     );
 
     // Validate extension can be parsed back
-    const offsetHex = extension.slice(2, 66);
-    const offsetBuffer = Buffer.from(offsetHex, "hex");
-    const dataLength = offsetBuffer.readUInt32BE(28);
+      const offsetHex = extension.slice(2, 66);
+      const offsetBuffer = new Uint8Array(
+        offsetHex.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)),
+      );
+    const dataLength = (offsetBuffer[0] << 24) | (offsetBuffer[1] << 16) |
+      (offsetBuffer[2] << 8) | offsetBuffer[3];
     const extractedPostInteraction = "0x" +
       extension.slice(66, 66 + dataLength * 2);
 
@@ -1269,8 +1276,11 @@ Deno.test("PostInteraction v2.2.0 1inch Extension Format", async (t) => {
 
     // Verify offset structure even with minimum data
     const minOffset = minExtension.slice(2, 66);
-    const minOffsetBuffer = Buffer.from(minOffset, "hex");
-    const minDataLength = minOffsetBuffer.readUInt32BE(28);
+    const minOffsetBuffer = new Uint8Array(
+      minOffset.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)),
+    );
+    const minDataLength = (minOffsetBuffer[0] << 24) |
+      (minOffsetBuffer[1] << 16) | (minOffsetBuffer[2] << 8) | minOffsetBuffer[3];
 
     assert(minDataLength > 0, "Should have non-zero data length");
     assertEquals(
@@ -1302,8 +1312,11 @@ Deno.test("PostInteraction v2.2.0 1inch Extension Format", async (t) => {
 
     // Verify offset is still valid
     const maxOffset = maxExtension.slice(2, 66);
-    const maxOffsetBuffer = Buffer.from(maxOffset, "hex");
-    const maxDataLength = maxOffsetBuffer.readUInt32BE(28);
+    const maxOffsetBuffer = new Uint8Array(
+      maxOffset.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)),
+    );
+    const maxDataLength = (maxOffsetBuffer[0] << 24) |
+      (maxOffsetBuffer[1] << 16) | (maxOffsetBuffer[2] << 8) | maxOffsetBuffer[3];
 
     assertEquals(
       maxDataLength,

@@ -6,6 +6,7 @@ import {
   type Hex,
   keccak256,
   parseAbiParameters,
+  toHex,
 } from "viem";
 
 /**
@@ -116,14 +117,15 @@ export function encode1inchExtension(postInteractionData: Hex): Hex {
 
   const postInteractionLength = (postInteractionData.length - 2) / 2; // Remove 0x and divide by 2 for bytes
 
-  // Set offset for PostInteractionData (field 7) at bytes [28..31]
-  offsets[28] = (postInteractionLength >> 24) & 0xff;
-  offsets[29] = (postInteractionLength >> 16) & 0xff;
-  offsets[30] = (postInteractionLength >> 8) & 0xff;
-  offsets[31] = postInteractionLength & 0xff;
+  // Set offset for PostInteractionData (field 7) in the highest 4 bytes [0..3]
+  // 1inch OffsetsLib expects end_7 at bits [224..255] (big-endian)
+  offsets[0] = (postInteractionLength >> 24) & 0xff;
+  offsets[1] = (postInteractionLength >> 16) & 0xff;
+  offsets[2] = (postInteractionLength >> 8) & 0xff;
+  offsets[3] = postInteractionLength & 0xff;
 
   // Combine offsets + postInteractionData
-  const offsetsHex = `0x${Buffer.from(offsets).toString("hex")}` as Hex;
+  const offsetsHex = toHex(offsets) as Hex;
   return concat([offsetsHex, postInteractionData]);
 }
 
