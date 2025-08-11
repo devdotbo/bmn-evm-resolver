@@ -39,6 +39,7 @@ import { EscrowWithdrawManager } from "./src/utils/escrow-withdraw.ts";
 import {
   ensureLimitOrderApprovals,
   fillLimitOrder,
+  decodeProtocolError,
   type FillOrderParams,
   type LimitOrderData,
 } from "./src/utils/limit-order.ts";
@@ -94,24 +95,40 @@ class BobResolverService {
 
     this.baseClient = createPublicClient({
       chain: base,
-      transport: http(rpcUrl("base")),
+      transport: http(
+        config.ankrApiKey
+          ? rpcUrl("base")
+          : "https://mainnet.base.org",
+      ),
     });
 
     this.optimismClient = createPublicClient({
       chain: optimism,
-      transport: http(rpcUrl("optimism")),
+      transport: http(
+        config.ankrApiKey
+          ? rpcUrl("optimism")
+          : "https://mainnet.optimism.io",
+      ),
     });
 
     this.baseWallet = createWalletClient({
       account: this.account,
       chain: base,
-      transport: http(rpcUrl("base")),
+      transport: http(
+        config.ankrApiKey
+          ? rpcUrl("base")
+          : "https://mainnet.base.org",
+      ),
     });
 
     this.optimismWallet = createWalletClient({
       account: this.account,
       chain: optimism,
-      transport: http(rpcUrl("optimism")),
+      transport: http(
+        config.ankrApiKey
+          ? rpcUrl("optimism")
+          : "https://mainnet.optimism.io",
+      ),
     });
   }
 
@@ -288,9 +305,13 @@ class BobResolverService {
    * Check if an order is profitable
    */
   private async isProfitable(order: any): Promise<boolean> {
-    // Calculate expected profit
-    const inputValue = BigInt(order.makerAmount || 0);
-    const outputValue = BigInt(order.takerAmount || 0);
+    // Calculate expected profit (fallback to nested order fields)
+    const inputValue = BigInt(
+      (order?.makerAmount ?? order?.order?.makingAmount ?? 0),
+    );
+    const outputValue = BigInt(
+      (order?.takerAmount ?? order?.order?.takingAmount ?? 0),
+    );
 
     if (inputValue === 0n) return false;
 
@@ -301,10 +322,13 @@ class BobResolverService {
   /**
    * Fill a limit order (Resolver functionality)
    */
-  private async fillOrder(orderData: LimitOrderData): Promise<boolean> {
+  private async fillOrder(
+    orderData: LimitOrderData,
+    suppressErrors: boolean = true,
+  ): Promise<boolean> {
     try {
       // Determine which chain and wallet to use
-      const chainId = orderData.chainId || 8453; // Default to Base
+      const chainId = (orderData as any).chainId || 8453; // Default to Base
       const wallet = chainId === 10 ? this.optimismWallet : this.baseWallet;
       const client = chainId === 10 ? this.optimismClient : this.baseClient;
 
@@ -318,19 +342,34 @@ class BobResolverService {
       await ensureLimitOrderApprovals(
         client,
         wallet,
-        orderData.takerAsset as Address,
+        (orderData as any).takerAsset || (orderData as any).order?.takerAsset,
         protocolAddress,
         factoryAddress,
-        BigInt(orderData.takerAmount),
+        BigInt(
+          (orderData as any).takerAmount ?? (orderData as any).order?.takingAmount,
+        ),
       );
+
+      // Rebuild order struct with proper bigint types
+      const rawOrder = (orderData as any).order || (orderData as any);
+      const order: LimitOrderData = {
+        salt: BigInt(rawOrder.salt),
+        maker: rawOrder.maker as Address,
+        receiver: rawOrder.receiver as Address,
+        makerAsset: rawOrder.makerAsset as Address,
+        takerAsset: rawOrder.takerAsset as Address,
+        makingAmount: BigInt(rawOrder.makingAmount),
+        takingAmount: BigInt(rawOrder.takingAmount),
+        makerTraits: BigInt(rawOrder.makerTraits),
+      };
 
       // Fill the order using protocol; include extensionData
       const params: FillOrderParams = {
-        order: orderData.order,
-        signature: orderData.signature,
-        extensionData: orderData.extensionData,
-        fillAmount: BigInt(orderData.takerAmount),
-        takerTraits: orderData.takerTraits || 0n,
+        order,
+        signature: (orderData as any).signature,
+        extensionData: (orderData as any).extensionData,
+        // Fill full making amount to align with protocol expectations
+        fillAmount: order.makingAmount,
       };
 
       const result = await fillLimitOrder(
@@ -345,6 +384,7 @@ class BobResolverService {
       return true;
     } catch (error) {
       console.error("Error filling order:", error);
+      if (!suppressErrors) throw error;
       return false;
     }
   }
@@ -371,7 +411,8 @@ class BobResolverService {
    */
   async processOrder(orderData: any): Promise<any> {
     console.log("Processing direct order request");
-    return await this.fillOrder(orderData);
+    // Surface concrete revert details to the API caller
+    return await this.fillOrder(orderData, false);
   }
 
   /**
@@ -453,14 +494,18 @@ async function main() {
             return new Response(JSON.stringify({ success: true, result }), {
               headers: { "Content-Type": "application/json" },
             });
-          } catch (error) {
-            return new Response(
-              JSON.stringify({ success: false, error: error.message }),
-              {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-              },
-            );
+          } catch (error: any) {
+            // Include decoded protocol error details when available
+            const decoded = (error && (error as any).decoded) || undefined;
+            const payload = {
+              success: false,
+              error: error?.message || String(error),
+              ...(decoded ? { decoded } : {}),
+            };
+            return new Response(JSON.stringify(payload), {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            });
           }
         }
         break;

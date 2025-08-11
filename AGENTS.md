@@ -71,3 +71,61 @@
   running anything.
 - CI/dev scripts and docs must include `--env-file=.env` for any local Deno
   invocation.
+
+---
+
+## Agent Update — 2025-08-11
+
+### What I changed today
+
+- Centralized takerTraits handling in `src/utils/limit-order.ts`:
+  - Set maker-amount mode (bit 255), threshold (low 185 bits), and argsExtensionLength (bits 224..247).
+  - Keeps custom takerTraits if provided; otherwise computes from `extensionData` and `order`.
+- Stopped per-call overrides so centralized logic is used during fills.
+  - `bob-resolver-service.ts` now defers takerTraits to the utility.
+- RPC fallbacks when `ANKR_API_KEY` is not set:
+  - Base: `https://mainnet.base.org`; Optimism: `https://mainnet.optimism.io` in `bob-resolver-service.ts`, `src/alice/limit-order-alice.ts`, and `scripts/read-bmn-balance.ts`.
+- Signature correctness:
+  - `src/alice/limit-order-alice.ts` now signs the on-chain order hash returned by `hashOrder` (protocol EIP-712 digest), avoiding BadSignature issues.
+- Added `scripts/simulate-fill.ts`:
+  - Reproduces `fillOrderArgs` call with computed takerTraits and displays revert details.
+- Gas handling during fill:
+  - Added explicit gas on simulation and a manual-gas fallback path for direct `writeContract` when providers reject simulation.
+
+### What I verified
+
+- Resolver BMN balance on Base: confirmed large balance via `scripts/read-bmn-balance.ts`.
+- Resolver ETH on Base: confirmed non-zero via `eth_getBalance`.
+- Created new orders with the new signature path; resolver attempted fill through `/fill-order`.
+- Logs show properly formed args; still no successful tx (provider reports “Transaction creation failed”). No PostInteraction/escrow events yet.
+
+### Current result
+
+- Services healthy (`docker-compose up -d`).
+- Orders are created and signed; resolver attempts fills with correct takerTraits and extension length.
+- Fills are blocked at provider/creation level (no revert decoded from protocol), so no escrows yet.
+
+### Next steps (planned)
+
+- Improve error surfacing:
+  - Decode and log 1inch errors in fill path; return explicit reason from `/fill-order`.
+- Fee and gas controls:
+  - Send EIP-1559 params and set conservative gas limit to avoid provider eth_call quirks; retry.
+- Minimal extension check:
+  - Attempt a minimal PostInteraction payload (same-chain, tiny amounts) to isolate extension parsing vs signature issues.
+- Local reproduction:
+  - Run a local fork/anvil test of `fillOrderArgs` with our extension to get exact revert reason and gas profile.
+- Validate offsets and salt correlation (already passing) and re-check amount direction against `TakerTraits` mode.
+
+### Repro commands
+
+1) Start services
+   - `docker-compose up -d`
+2) Create order (uses funded keys)
+   - `RESOLVER=0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5 deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env scripts/create-order.ts`
+3) Trigger fill
+   - `FILE=$(ls -t pending-orders/*.json | head -n 1)`
+   - `jq '{order, signature, extensionData, chainId, takerAmount: .order.makingAmount, takerAsset: .order.takerAsset}' "$FILE" | curl -sS -X POST http://localhost:8002/fill-order -H 'Content-Type: application/json' -d @-`
+4) Optional simulation
+   - `deno run --allow-net --allow-env --allow-read --env-file=.env scripts/simulate-fill.ts`
+

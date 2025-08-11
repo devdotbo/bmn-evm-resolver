@@ -2,6 +2,7 @@ import {
   type Address,
   decodeFunctionResult,
   encodeFunctionData,
+  decodeErrorResult,
   type Hex,
   parseAbi,
   type PublicClient,
@@ -48,6 +49,48 @@ export interface FillOrderResult {
 }
 
 /**
+ * Decode a revert from SimpleLimitOrderProtocol and extract error name/args
+ */
+export function decodeProtocolError(error: any): {
+  errorName?: string;
+  errorArgs?: any[];
+  data?: Hex;
+  message: string;
+} {
+  const message = (error?.shortMessage || error?.message || String(error)) as string;
+
+  // Try to find revert data across common shapes
+  const candidates: unknown[] = [
+    error?.data,
+    error?.cause?.data,
+    error?.cause?.data?.data,
+    error?.cause?.cause?.data,
+  ];
+
+  // Also attempt to extract a 0x... hex sequence from the message
+  const hexInMessage = (message.match(/0x[0-9a-fA-F]{8,}/)?.[0]) as string | undefined;
+  if (hexInMessage) candidates.push(hexInMessage);
+
+  for (const c of candidates) {
+    const data = typeof c === "string" && c.startsWith("0x") ? (c as Hex) : undefined;
+    if (!data) continue;
+    try {
+      const decoded = decodeErrorResult({ abi: SimpleLimitOrderProtocolAbi.abi, data });
+      return {
+        errorName: (decoded as any)?.errorName,
+        errorArgs: (decoded as any)?.args,
+        data,
+        message,
+      };
+    } catch (_e) {
+      // ignore and try next candidate
+    }
+  }
+
+  return { message };
+}
+
+/**
  * Fills a limit order through SimpleLimitOrderProtocol
  * The protocol will automatically trigger the factory's postInteraction if configured
  *
@@ -65,6 +108,28 @@ export async function fillLimitOrder(
   params: FillOrderParams,
   factoryAddress: Address,
 ): Promise<FillOrderResult> {
+  // Prepare conservative EIP-1559 fee params (fallback to gasPrice if needed)
+  let feeParams: { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint; gasPrice?: bigint } = {};
+  try {
+    // @ts-ignore: estimateFeesPerGas available on supported chains
+    const fees = await (client as any).estimateFeesPerGas?.();
+    if (fees?.maxFeePerGas && fees?.maxPriorityFeePerGas) {
+      // Add 10% headroom
+      const add10 = (x: bigint) => (x * 110n) / 100n;
+      feeParams = {
+        maxFeePerGas: add10(fees.maxFeePerGas),
+        maxPriorityFeePerGas: add10(fees.maxPriorityFeePerGas),
+      };
+    } else {
+      const gasPrice = await client.getGasPrice();
+      feeParams = { gasPrice };
+    }
+  } catch (_e) {
+    try {
+      const gasPrice = await client.getGasPrice();
+      feeParams = { gasPrice };
+    } catch { /* leave empty, wallet may fill */ }
+  }
   // Extract signature components (r, vs) from the signature
   const signature = params.signature;
   const r = signature.slice(0, 66) as Hex; // 0x + 64 hex chars = 32 bytes
@@ -87,32 +152,107 @@ export async function fillLimitOrder(
   }
   const vs = `0x${sWithV}` as Hex;
 
-  // Build takerTraits: if not provided or zero, encode argsExtensionLength so LOP parses `args` as extension
-  // TakerTraitsLib encodes extension length in bits [224..247] (24 bits). We pass only extension in `args`.
+  // Build takerTraits: if not provided or zero, set maker-amount mode, threshold, and encode argsExtensionLength.
+  // - Bit 255 (maker-amount flag): interpret `amount` as makingAmount
+  // - Bits [224..247]: argsExtensionLength so LOP parses `args` as extension
+  // - Bits [0..184]: threshold (max allowed taking amount)
   const computedArgsExtLenBytes = BigInt((params.extensionData.length - 2) / 2);
-  const defaultTakerTraits = computedArgsExtLenBytes << 224n;
-  const takerTraits = params.takerTraits && params.takerTraits !== 0n
-    ? params.takerTraits
-    : defaultTakerTraits;
+  const makerAmountFlag = 1n << 255n;
+  const threshold = params.order.takingAmount & ((1n << 185n) - 1n);
+  const defaultTakerTraits =
+    makerAmountFlag | (computedArgsExtLenBytes << 224n) | threshold;
+  const takerTraits =
+    params.takerTraits && params.takerTraits !== 0n
+      ? params.takerTraits
+      : defaultTakerTraits;
 
-  // Simulate transaction first to catch errors early
-  const { request } = await client.simulateContract({
-    address: protocolAddress,
-    abi: SimpleLimitOrderProtocolAbi.abi,
-    functionName: "fillOrderArgs",
-    args: [
-      params.order,
-      r,
-      vs,
-      params.fillAmount,
-      takerTraits,
-      params.extensionData,
-    ],
-    account: wallet.account,
-  });
-
-  // Execute the transaction
-  const hash = await wallet.writeContract(request);
+  // Try simulate first; if provider rejects due to gas quirks, fall back to direct send with manual gas.
+  let hash: Hex;
+  try {
+    const { request } = await client.simulateContract({
+      address: protocolAddress,
+      abi: SimpleLimitOrderProtocolAbi.abi,
+      functionName: "fillOrderArgs",
+      args: [
+        params.order,
+        r,
+        vs,
+        params.fillAmount,
+        takerTraits,
+        params.extensionData,
+      ],
+      account: wallet.account,
+      gas: 2_500_000n,
+      ...(feeParams.maxFeePerGas
+        ? { maxFeePerGas: feeParams.maxFeePerGas, maxPriorityFeePerGas: feeParams.maxPriorityFeePerGas }
+        : feeParams.gasPrice
+        ? { gasPrice: feeParams.gasPrice }
+        : {}),
+    });
+    hash = await wallet.writeContract(request);
+  } catch (simulateError: any) {
+    const msg = (simulateError?.message || simulateError?.shortMessage || "").toLowerCase();
+    const knownGasIssue =
+      msg.includes("gas uint64 overflow") ||
+      msg.includes("invalid operand") ||
+      msg.includes("transaction creation failed");
+    if (!knownGasIssue) {
+      const decoded = decodeProtocolError(simulateError);
+      if (decoded.errorName) {
+        console.error(`fillOrderArgs simulation reverted with ${decoded.errorName}`);
+        if (decoded.errorArgs && decoded.errorArgs.length > 0) {
+          console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
+        }
+      } else {
+        console.error(`fillOrderArgs simulation error: ${decoded.message}`);
+      }
+      const enriched: any = new Error(
+        decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,
+      );
+      enriched.decoded = decoded;
+      enriched.code = "SIMULATION_ERROR";
+      throw enriched;
+    }
+    // Fallback: direct write with manual gas
+    try {
+      hash = await wallet.writeContract({
+        address: protocolAddress,
+        abi: SimpleLimitOrderProtocolAbi.abi,
+        functionName: "fillOrderArgs",
+        args: [
+          params.order,
+          r,
+          vs,
+          params.fillAmount,
+          takerTraits,
+          params.extensionData,
+        ],
+        gas: 2_500_000n,
+        account: wallet.account,
+        ...(feeParams.maxFeePerGas
+          ? { maxFeePerGas: feeParams.maxFeePerGas, maxPriorityFeePerGas: feeParams.maxPriorityFeePerGas }
+          : feeParams.gasPrice
+          ? { gasPrice: feeParams.gasPrice }
+          : {}),
+      });
+    } catch (writeError: any) {
+      const decoded = decodeProtocolError(writeError);
+      if (decoded.errorName) {
+        console.error(`fillOrderArgs send reverted with ${decoded.errorName}`);
+        if (decoded.errorArgs && decoded.errorArgs.length > 0) {
+          console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
+        }
+      } else {
+        console.error(`fillOrderArgs send error: ${decoded.message}`);
+      }
+      const enriched: any = new Error(
+        decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,
+      );
+      enriched.decoded = decoded;
+      enriched.code = "SEND_ERROR";
+      throw enriched;
+    }
+  }
   console.log(`📝 Fill order transaction sent: ${hash}`);
 
   // Wait for confirmation

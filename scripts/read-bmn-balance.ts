@@ -13,9 +13,12 @@ async function main() {
     Deno.exit(1);
   }
   const ankrKey = Deno.env.get("ANKR_API_KEY") || "";
+  const rpcUrl = ankrKey
+    ? `https://rpc.ankr.com/base/${ankrKey}`
+    : "https://mainnet.base.org";
   const client = createPublicClient({
     chain: base,
-    transport: http(`https://rpc.ankr.com/base/${ankrKey}`),
+    transport: http(rpcUrl),
   });
   const BMN = CREATE3_ADDRESSES.BMN_TOKEN as `0x${string}`;
   const balance = await client.readContract({

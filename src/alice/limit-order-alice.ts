@@ -96,24 +96,24 @@ export class LimitOrderAlice {
     // Set up clients
     this.baseClient = createPublicClient({
       chain: base,
-      transport: http(`https://rpc.ankr.com/base/${ankrKey}`),
+      transport: http(ankrKey ? `https://rpc.ankr.com/base/${ankrKey}` : "https://mainnet.base.org"),
     });
 
     this.optimismClient = createPublicClient({
       chain: optimism,
-      transport: http(`https://rpc.ankr.com/optimism/${ankrKey}`),
+      transport: http(ankrKey ? `https://rpc.ankr.com/optimism/${ankrKey}` : "https://mainnet.optimism.io"),
     });
 
     this.baseWallet = createWalletClient({
       account: this.account,
       chain: base,
-      transport: http(`https://rpc.ankr.com/base/${ankrKey}`),
+      transport: http(ankrKey ? `https://rpc.ankr.com/base/${ankrKey}` : "https://mainnet.base.org"),
     });
 
     this.optimismWallet = createWalletClient({
       account: this.account,
       chain: optimism,
-      transport: http(`https://rpc.ankr.com/optimism/${ankrKey}`),
+      transport: http(ankrKey ? `https://rpc.ankr.com/optimism/${ankrKey}` : "https://mainnet.optimism.io"),
     });
   }
 
@@ -311,48 +311,9 @@ export class LimitOrderAlice {
   }
 
   private async signOrder(order: LimitOrder, chainId: number): Promise<Hex> {
-    const LIMIT_ORDER_PROTOCOL =
-      getContractAddresses(chainId).limitOrderProtocol;
-
-    // EIP-712 domain
-    const domain = {
-      name: "Bridge-Me-Not Orders",
-      version: "1",
-      chainId: chainId,
-      verifyingContract: LIMIT_ORDER_PROTOCOL as Address,
-    };
-
-    // EIP-712 types
-    const types = {
-      Order: [
-        { name: "salt", type: "uint256" },
-        { name: "maker", type: "address" },
-        { name: "receiver", type: "address" },
-        { name: "makerAsset", type: "address" },
-        { name: "takerAsset", type: "address" },
-        { name: "makingAmount", type: "uint256" },
-        { name: "takingAmount", type: "uint256" },
-        { name: "makerTraits", type: "uint256" },
-      ],
-    };
-
-    // Sign the order
-    const signature = await this.account.signTypedData({
-      domain,
-      types,
-      primaryType: "Order",
-      message: {
-        salt: order.salt,
-        maker: order.maker,
-        receiver: order.receiver,
-        makerAsset: order.makerAsset,
-        takerAsset: order.takerAsset,
-        makingAmount: order.makingAmount,
-        takingAmount: order.takingAmount,
-        makerTraits: order.makerTraits,
-      },
-    });
-
+    // Sign the EIP-712 typed data hash computed by the protocol (exact digest expected on-chain)
+    const orderHash = await this.calculateOrderHash(order, chainId);
+    const signature = await this.account.sign({ hash: orderHash as Hex });
     return signature;
   }
 
