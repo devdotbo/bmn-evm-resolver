@@ -12,7 +12,7 @@ import {
   parseUnits,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { optimism } from "viem/chains";
+import { base } from "viem/chains";
 
 const privateKey = Deno.env.get("ALICE_PRIVATE_KEY");
 if (!privateKey || !privateKey.startsWith("0x")) {
@@ -20,16 +20,16 @@ if (!privateKey || !privateKey.startsWith("0x")) {
 }
 const account = privateKeyToAccount(privateKey as `0x${string}`);
 const client = createPublicClient({
-  chain: optimism,
-  transport: http("https://erpc.up.railway.app/main/evm/10"),
+  chain: base,
+  transport: http("https://erpc.up.railway.app/main/evm/8453"),
 });
 const wallet = createWalletClient({
   account,
-  chain: optimism,
-  transport: http("https://erpc.up.railway.app/main/evm/10"),
+  chain: base,
+  transport: http("https://erpc.up.railway.app/main/evm/8453"),
 });
 
-const protocol = "0xe767105dcfB3034a346578afd2aFD8e583171489" as Address; // Optimism protocol
+const protocol = "0xe767105dcfB3034a346578afd2aFD8e583171489" as Address; // Same on both chains
 const factory = "0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68" as Address;
 const token = "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address;
 const resolver = "0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5" as Address;
@@ -46,10 +46,10 @@ crypto.getRandomValues(hashlockBytes);
 const hashlock = "0x" + Array.from(hashlockBytes).map(b => b.toString(16).padStart(2, "0")).join("") as Hex;
 
 // Create extension data for PostInteraction
-// Destination chain is Base (8453)
+// Destination chain is Optimism (10)
 const extraData = encodeAbiParameters(
   parseAbiParameters("bytes32,uint256,address,uint256,uint256"),
-  [hashlock, 8453n, token, 0n, timelocks]
+  [hashlock, 10n, token, 0n, timelocks]
 );
 
 // Add factory address (20 bytes) before extraData
@@ -74,9 +74,9 @@ const order = {
 // Sign order
 const signature = await wallet.signTypedData({
   domain: {
-    name: "Bridge-Me-Not Orders",
-    version: "1",
-    chainId: 10, // Optimism
+    name: "1inch Limit Order Protocol",
+    version: "4",
+    chainId: 8453, // Base
     verifyingContract: protocol,
   },
   primaryType: "Order",
@@ -106,7 +106,7 @@ const orderData = {
   },
   signature,
   extensionData,
-  chainId: 10, // Optimism
+  chainId: 8453, // Base
   hashlock,
   timestamp: Date.now(),
 };
