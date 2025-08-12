@@ -74,8 +74,8 @@ const order = {
 // Sign order
 const signature = await wallet.signTypedData({
   domain: {
-    name: "BMN-Escrow",
-    version: "2.3",
+    name: "Bridge-Me-Not Orders",
+    version: "1",
     chainId: 8453, // Base
     verifyingContract: protocol,
   },

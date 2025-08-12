@@ -112,8 +112,8 @@ async function main() {
   try {
     const digest = hashTypedData({
       domain: {
-        name: "BMN-Escrow",
-        version: "2.3",
+        name: "Bridge-Me-Not Orders",
+        version: "1",
         chainId,
         verifyingContract: protocol,
       },

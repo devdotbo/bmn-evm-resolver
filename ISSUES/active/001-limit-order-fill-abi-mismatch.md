@@ -1,10 +1,10 @@
 # ISSUE-001: Limit Order Fill ABI Mismatch
 
-**Status**: Active
+**Status**: Active  
 **Priority**: CRITICAL  
 **Created**: 2025-01-12
-**Updated**: 2025-01-12
-**Blocked By**: Token balances (Alice and Bob have 0 BMN tokens)
+**Updated**: 2025-01-13
+**Blocked By**: Unknown EIP-712 domain configuration in deployed protocol
 
 ## Problem
 
