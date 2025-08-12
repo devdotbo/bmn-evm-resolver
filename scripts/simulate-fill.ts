@@ -257,7 +257,14 @@ async function main() {
           makerTraits: BigInt(data.order.makerTraits),
         },
         ('0x' + (data.signature as Hex).slice(2, 66)) as Hex, // r (32 bytes)
-        ('0x' + (data.signature as Hex).slice(66, 130)) as Hex, // vs (32 bytes)
+        // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
+        (() => {
+          const sig = data.signature as Hex;
+          const v = parseInt(sig.slice(130, 132), 16);
+          const s = BigInt('0x' + sig.slice(66, 130));
+          const vs = ((BigInt(v - 27) << 255n) | s);
+          return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
+        })(), // vs (32 bytes in compact format)
         BigInt(data.order.makingAmount),
         takerTraits,
         data.extensionData as Hex,
@@ -297,7 +304,14 @@ async function main() {
           makerTraits: BigInt(data.order.makerTraits),
         },
         ('0x' + (data.signature as Hex).slice(2, 66)) as Hex, // r (32 bytes)
-        ('0x' + (data.signature as Hex).slice(66, 130)) as Hex, // vs (32 bytes)
+        // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
+        (() => {
+          const sig = data.signature as Hex;
+          const v = parseInt(sig.slice(130, 132), 16);
+          const s = BigInt('0x' + sig.slice(66, 130));
+          const vs = ((BigInt(v - 27) << 255n) | s);
+          return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
+        })(), // vs (32 bytes in compact format)
         BigInt(data.order.makingAmount),
         takerTraits,
         data.extensionData as Hex,

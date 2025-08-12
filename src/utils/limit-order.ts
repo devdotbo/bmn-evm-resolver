@@ -206,7 +206,13 @@ export async function fillLimitOrder(
       args: [
         params.order,
         ('0x' + params.signature.slice(2, 66)) as Hex, // r (32 bytes)
-        ('0x' + params.signature.slice(66, 130)) as Hex, // vs (32 bytes)
+        // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
+        (() => {
+          const v = parseInt(params.signature.slice(130, 132), 16);
+          const s = BigInt('0x' + params.signature.slice(66, 130));
+          const vs = ((BigInt(v - 27) << 255n) | s);
+          return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
+        })(), // vs (32 bytes in compact format)
         params.fillAmount,
         takerTraits,
         params.extensionData,
@@ -251,8 +257,14 @@ export async function fillLimitOrder(
         functionName: "fillOrderArgs",
         args: [
           params.order,
-          params.signature.slice(0, 66) as Hex, // r (32 bytes)
-          params.signature.slice(66) as Hex, // vs (32 bytes)
+          ('0x' + params.signature.slice(2, 66)) as Hex, // r (32 bytes)
+          // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
+          (() => {
+            const v = parseInt(params.signature.slice(130, 132), 16);
+            const s = BigInt('0x' + params.signature.slice(66, 130));
+            const vs = ((BigInt(v - 27) << 255n) | s);
+            return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
+          })(), // vs (32 bytes in compact format)
           params.fillAmount,
           takerTraits,
           params.extensionData,
