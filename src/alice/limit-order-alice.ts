@@ -39,7 +39,7 @@ import {
 import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with {
   type: "json",
 };
-import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with {
+import SimplifiedEscrowFactoryV2_3Abi from "../../abis/SimplifiedEscrowFactoryV2_3.json" with {
   type: "json",
 };
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
@@ -312,74 +312,28 @@ export class LimitOrderAlice {
     chainId: number,
   ): Promise<string> {
     const LOP = getContractAddresses(chainId).limitOrderProtocol;
-    // Compute EIP-712 order digest locally (matches on-chain OrderLib.hash)
-    const digest = hashTypedData({
-      domain: {
-        name: "Bridge-Me-Not Orders",
-        version: "1",
-        chainId,
-        verifyingContract: LOP,
-      },
-      primaryType: "Order",
-      types: {
-        Order: [
-          { name: "salt", type: "uint256" },
-          { name: "maker", type: "address" },
-          { name: "receiver", type: "address" },
-          { name: "makerAsset", type: "address" },
-          { name: "takerAsset", type: "address" },
-          { name: "makingAmount", type: "uint256" },
-          { name: "takingAmount", type: "uint256" },
-          { name: "makerTraits", type: "uint256" },
-        ],
-      },
-      message: {
-        salt: order.salt,
-        maker: order.maker,
-        receiver: order.receiver,
-        makerAsset: order.makerAsset,
-        takerAsset: order.takerAsset,
-        makingAmount: order.makingAmount,
-        takingAmount: order.takingAmount,
-        makerTraits: order.makerTraits,
-      },
+    const client = chainId === base.id ? this.baseClient : this.optimismClient;
+    const onchain = await client.readContract({
+      address: LOP,
+      abi: SimpleLimitOrderProtocolAbi.abi,
+      functionName: "hashOrder",
+      args: [[
+        order.salt,
+        order.maker,
+        order.receiver,
+        order.makerAsset,
+        order.takerAsset,
+        order.makingAmount,
+        order.takingAmount,
+        order.makerTraits,
+      ]],
     });
-
-    // Optionally verify with on-chain if env set (best-effort)
-    try {
-      const verify = (Deno.env.get("VERIFY_HASH_ONCHAIN") || "").toLowerCase();
-      if (verify === "1" || verify === "true") {
-        const client = chainId === base.id ? this.baseClient : this.optimismClient;
-        const onchain = await client.readContract({
-          address: LOP,
-          abi: SimpleLimitOrderProtocolAbi.abi,
-          functionName: "hashOrder",
-          args: [[
-            order.salt,
-            order.maker,
-            order.receiver,
-            order.makerAsset,
-            order.takerAsset,
-            order.makingAmount,
-            order.takingAmount,
-            order.makerTraits,
-          ]],
-        });
-        if ((onchain as string).toLowerCase() !== digest.toLowerCase()) {
-          console.warn("hash mismatch (local vs on-chain)", digest, onchain);
-        }
-      }
-    } catch (_e) {
-      // ignore verification issues
-    }
-
-    return digest as string;
+    return onchain as string;
   }
 
   private async signOrder(order: LimitOrder, chainId: number): Promise<Hex> {
-    // Cross-chain compatible signing: sign the on-chain digest from hashOrder(order)
-    // This matches the Solidity check: ECDSA.recover(orderHash, r, vs)
     const digest = await this.calculateOrderHash(order, chainId);
+    // Sign the exact hash returned from the protocol's hashOrder
     const signature = await this.account.sign({ hash: digest as Hex });
     return signature as Hex;
   }

@@ -43,7 +43,7 @@ import {
   type FillOrderParams,
   type LimitOrderData,
 } from "./src/utils/limit-order.ts";
-import { CREATE3_ADDRESSES } from "./src/config/contracts.ts";
+import { CREATE3_ADDRESSES, getContractAddresses } from "./src/config/contracts.ts";
 
 // Service configuration
 interface UnifiedServiceConfig {

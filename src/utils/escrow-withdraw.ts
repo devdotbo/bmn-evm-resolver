@@ -14,6 +14,8 @@ import {
 import { base, optimism } from "viem/chains";
 import EscrowSrcV2Abi from "../../abis/EscrowSrcV2.json" with { type: "json" };
 import EscrowDstV2Abi from "../../abis/EscrowDstV2.json" with { type: "json" };
+import SimplifiedEscrowFactoryV2_3Abi from "../../abis/SimplifiedEscrowFactoryV2_3.json" with { type: "json" };
+import { hashTypedData, signTypedData, type Address as ViemAddress } from "viem";
 import { SecretManager } from "../state/SecretManager.ts";
 import { PonderClient } from "../indexer/ponder-client.ts";
 
@@ -95,18 +97,48 @@ export class EscrowWithdrawManager {
         timelocks: BigInt(swap.timelocks),
       };
 
-      // Simulate the withdrawal first
+      // Prefer EIP-712 signed public withdrawal on v2.3
+      // Domain: name BMN-Escrow, version 2.3, verifyingContract = escrow clone
+      const domain = {
+        name: "BMN-Escrow",
+        version: "2.3",
+        chainId: Number(swap.dstChainId),
+        verifyingContract: swap.dstEscrowAddress as ViemAddress,
+      } as const;
+      const types = {
+        PublicAction: [
+          { name: "orderHash", type: "bytes32" },
+          { name: "caller", type: "address" },
+          { name: "action", type: "string" },
+        ],
+      } as const;
+      const message = {
+        orderHash: orderHash as `0x${string}`,
+        caller: account.address as `0x${string}`,
+        action: "DST_PUBLIC_WITHDRAW",
+      } as const;
+
+      // Sign typed data with resolver key
+      const signature = await wallet.signTypedData({
+        account,
+        domain,
+        types,
+        primaryType: "PublicAction",
+        message,
+      } as any);
+
+      // Simulate signed call first
       const { request } = await client.simulateContract({
         account,
         address: swap.dstEscrowAddress as Address,
         abi: EscrowDstV2Abi.abi,
-        functionName: "withdraw",
-        args: [secret, immutables],
+        functionName: "publicWithdrawSigned",
+        args: [secret, immutables, signature as `0x${string}`],
       });
 
       // Execute the withdrawal
       const hash = await wallet.writeContract(request);
-      console.log(`📝 Withdrawal transaction sent: ${hash}`);
+      console.log(`📝 Withdrawal (signed) transaction sent: ${hash}`);
 
       // Wait for confirmation
       const receipt = await client.waitForTransactionReceipt({

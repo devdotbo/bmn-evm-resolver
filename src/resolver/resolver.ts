@@ -25,7 +25,8 @@ import {
 } from "../utils/limit-order.ts";
 
 // Import ABIs
-import CrossChainEscrowFactoryV2Abi from "../../abis/CrossChainEscrowFactoryV2.json" with {
+// v2.3 factory ABI (unified Base/OP)
+import SimplifiedEscrowFactoryV2_3Abi from "../../abis/SimplifiedEscrowFactoryV2_3.json" with {
   type: "json",
 };
 import SimpleLimitOrderProtocolAbi from "../../abis/SimpleLimitOrderProtocol.json" with {
@@ -112,7 +113,7 @@ export class UnifiedResolver {
     });
 
     console.log(`🚀 Unified Resolver initialized`);
-    console.log(`📍 Factory V2: ${FACTORY_V2_ADDRESS}`);
+    console.log(`📍 Factory V2.3: ${FACTORY_V2_ADDRESS}`);
     console.log(`📍 Base Limit Order Protocol: ${LIMIT_ORDER_PROTOCOL_BASE}`);
     console.log(
       `📍 Optimism Limit Order Protocol: ${LIMIT_ORDER_PROTOCOL_OPTIMISM}`,

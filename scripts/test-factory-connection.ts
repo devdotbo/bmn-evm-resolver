@@ -302,7 +302,7 @@ async function main() {
   const resolverAddress = account.address;
 
   console.log(`\nResolver Address: ${resolverAddress}`);
-  console.log(`Factory V2: ${CREATE3_ADDRESSES.ESCROW_FACTORY_V2}`);
+  console.log(`Factory V2.3: ${CREATE3_ADDRESSES.ESCROW_FACTORY_V2}`);
   console.log(`Timestamp: ${new Date().toISOString()}`);
 
   const tester = new FactoryConnectionTester(resolverAddress);

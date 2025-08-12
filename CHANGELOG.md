@@ -9,6 +9,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed - 2025-08-12
+
+- Contracts v2.3 integration:
+  - Synced real ABIs from contracts/out via new task `abis:sync` (copies EscrowSrc, EscrowDst, SimplifiedEscrowFactoryV2_3).
+  - Switched resolver imports to `SimplifiedEscrowFactoryV2_3.json` and updated whitelist check to `isWhitelistedResolver`.
+  - Implemented EIP-712 resolver-signed public withdraw for destination escrows (uses domain name "BMN-Escrow", version "2.3").
+- Ponder schema source of truth:
+  - Added `ponder:sync` task to copy the canonical schema from `../bmn-evm-contracts-indexer/ponder.schema.ts` into this repo root as `ponder.schema.ts`.
+  - Can override source via `INDEXER_PONDER_SCHEMA` env var.
+
 ### Added - 2025-08-10
 
 - NEXT_AGENT.md: concise handover doc for next agent including current runtime

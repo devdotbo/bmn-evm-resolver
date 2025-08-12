@@ -44,19 +44,7 @@ function computeTakerTraits(order: any, extensionData: string): bigint {
   return makerAmountFlag | (argsExtLen << 224n) | threshold;
 }
 
-function splitSig(sig: string): { r: Hex; vs: Hex } {
-  const r = sig.slice(0, 66) as Hex;
-  const s = sig.slice(66, 130);
-  const v = sig.slice(130, 132);
-  const vNum = parseInt(v, 16);
-  let sWithV = s;
-  if (vNum === 28 || vNum === 1) {
-    const sBig = BigInt("0x" + s);
-    const vMask = 1n << 255n;
-    sWithV = (sBig | vMask).toString(16).padStart(64, "0");
-  }
-  return { r, vs: ("0x" + sWithV) as Hex };
-}
+// no split; we will pass bytes signature directly
 
 async function ensureAllowance(
   client: any,
@@ -111,14 +99,11 @@ async function main() {
   const client = createPublicClient({ chain: chainId === 8453 ? (base as any) : (optimism as any), transport });
   const walletTransport = transport;
 
-  const protocol: Address = (chainId === 8453
-    ? "0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06"
-    : "0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7") as Address;
   const addrs = getContractAddresses(chainId);
+  const protocol: Address = addrs.limitOrderProtocol as Address;
   const token: Address = addrs.tokens.BMN as Address;
   const factory: Address = addrs.escrowFactory as Address;
 
-  const { r, vs } = splitSig(data.signature);
   const takerTraits = computeTakerTraits(data.order, data.extensionData);
 
   // Pre-flight & diagnostics
@@ -259,7 +244,7 @@ async function main() {
     // Print raw calldata for debug_traceCall
     const calldata = encodeFunctionData({
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillOrderArgs",
+      functionName: "fillContractOrderArgs",
       args: [
         {
           salt: BigInt(data.order.salt),
@@ -271,18 +256,34 @@ async function main() {
           takingAmount: BigInt(data.order.takingAmount),
           makerTraits: BigInt(data.order.makerTraits),
         },
-        r,
-        vs,
+        data.signature as Hex,
         BigInt(data.order.makingAmount),
         takerTraits,
         data.extensionData as Hex,
       ],
     });
     console.log("calldata:", calldata);
+    // Also emit and persist a JSON payload ready for simulators (Tenderly/Anvil)
+    const payload = {
+      function: "fillContractOrderArgs",
+      to: protocol,
+      from: account,
+      data: calldata,
+      value: "0x0",
+      chainId,
+    } as const;
+    console.log(JSON.stringify(payload, null, 2));
+    try {
+      const outDir = "./calldata";
+      await Deno.mkdir(outDir, { recursive: true });
+      const outFile = `${outDir}/${(data.hashlock || "order").toString()}.json`;
+      await Deno.writeTextFile(outFile, JSON.stringify(payload));
+      console.log(`saved: ${outFile}`);
+    } catch (_e) {}
     await client.simulateContract({
       address: protocol,
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillOrderArgs",
+      functionName: "fillContractOrderArgs",
       args: [
         {
           salt: BigInt(data.order.salt),
@@ -294,8 +295,7 @@ async function main() {
           takingAmount: BigInt(data.order.takingAmount),
           makerTraits: BigInt(data.order.makerTraits),
         },
-        r,
-        vs,
+        data.signature as Hex,
         BigInt(data.order.makingAmount),
         takerTraits,
         data.extensionData as Hex,

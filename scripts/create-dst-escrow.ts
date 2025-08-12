@@ -15,7 +15,7 @@ import {
 } from "viem";
 import { base, optimism } from "viem/chains";
 import { CREATE3_ADDRESSES } from "../src/config/contracts.ts";
-import FactoryAbi from "../abis/CrossChainEscrowFactoryV2.json" with { type: "json" };
+import FactoryAbi from "../abis/SimplifiedEscrowFactory.json" with { type: "json" };
 import { TokenApprovalManager } from "../src/utils/token-approvals.ts";
 
 function parseArgs(): Record<string, string> {
@@ -141,7 +141,7 @@ async function main() {
   const calldata = encodeFunctionData({
     abi: FactoryAbi.abi as any,
     functionName: "createDstEscrow",
-    args: [dstImmutables as any, srcCancelTs],
+    args: [dstImmutables as any],
   });
 
   console.log("📦 Creating destination escrow on", viemChain.id);

@@ -132,27 +132,7 @@ export async function fillLimitOrder(
       feeParams = { gasPrice };
     } catch { /* leave empty, wallet may fill */ }
   }
-  // Extract signature components (r, vs) from the signature
-  const signature = params.signature;
-  const r = signature.slice(0, 66) as Hex; // 0x + 64 hex chars = 32 bytes
-
-  // Extract s and v
-  const s = signature.slice(66, 130); // 64 hex chars = 32 bytes
-  const v = signature.slice(130, 132); // 2 hex chars = 1 byte
-
-  // Pack v into the highest bit of s to create vs
-  const vNum = parseInt(v, 16);
-  let sWithV = s;
-  if (vNum === 28 || vNum === 1) {
-    // Set the highest bit by ORing with 0x80...
-    const sBigInt = BigInt(`0x${s}`);
-    const vMask = BigInt(
-      "0x8000000000000000000000000000000000000000000000000000000000000000",
-    );
-    const packedBigInt = sBigInt | vMask;
-    sWithV = packedBigInt.toString(16).padStart(64, "0");
-  }
-  const vs = `0x${sWithV}` as Hex;
+  // Using bytes signature directly with fillContractOrderArgs
 
   // Build takerTraits: if not provided or zero, set maker-amount mode, threshold, and encode argsExtensionLength.
   // - Bit 255 (maker-amount flag): interpret `amount` as makingAmount
@@ -222,11 +202,10 @@ export async function fillLimitOrder(
     const { request } = await client.simulateContract({
       address: protocolAddress,
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillOrderArgs",
+      functionName: "fillContractOrderArgs",
       args: [
         params.order,
-        r,
-        vs,
+        params.signature,
         params.fillAmount,
         takerTraits,
         params.extensionData,
@@ -249,12 +228,12 @@ export async function fillLimitOrder(
     if (!knownGasIssue) {
       const decoded = decodeProtocolError(simulateError);
       if (decoded.errorName) {
-        console.error(`fillOrderArgs simulation reverted with ${decoded.errorName}`);
+        console.error(`fillContractOrderArgs simulation reverted with ${decoded.errorName}`);
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
       } else {
-        console.error(`fillOrderArgs simulation error: ${decoded.message}`);
+        console.error(`fillContractOrderArgs simulation error: ${decoded.message}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,
@@ -268,11 +247,10 @@ export async function fillLimitOrder(
       hash = await wallet.writeContract({
         address: protocolAddress,
         abi: SimpleLimitOrderProtocolAbi.abi,
-        functionName: "fillOrderArgs",
+        functionName: "fillContractOrderArgs",
         args: [
           params.order,
-          r,
-          vs,
+          params.signature,
           params.fillAmount,
           takerTraits,
           params.extensionData,
@@ -288,12 +266,12 @@ export async function fillLimitOrder(
     } catch (writeError: any) {
       const decoded = decodeProtocolError(writeError);
       if (decoded.errorName) {
-        console.error(`fillOrderArgs send reverted with ${decoded.errorName}`);
+        console.error(`fillContractOrderArgs send reverted with ${decoded.errorName}`);
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
       } else {
-        console.error(`fillOrderArgs send error: ${decoded.message}`);
+        console.error(`fillContractOrderArgs send error: ${decoded.message}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,

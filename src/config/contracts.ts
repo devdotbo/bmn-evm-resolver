@@ -9,9 +9,9 @@ export const PLACEHOLDER_ADDRESS: Address =
 
 // CREATE3-deployed contract addresses (deterministic across all chains)
 export const CREATE3_ADDRESSES = {
-  // UPDATED: Factory v2.2.0 addresses (PostInteraction support)
+  // UPDATED: Factory v2.3.0 address (EIP-712 resolver-signed actions)
   ESCROW_FACTORY_V2: (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") ||
-    "0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68") as Address, // SimplifiedEscrowFactory v2.2.0 (PostInteraction)
+    "0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A") as Address, // SimplifiedEscrowFactory v2.3.0
 
   // Legacy factory addresses (INSECURE - TO BE DEPRECATED)
   ESCROW_FACTORY_V1_BASE:
@@ -26,7 +26,8 @@ export const CREATE3_ADDRESSES = {
 
   // Limit Order Protocol addresses (from bmn-evm-contracts-limit-order)
   LIMIT_ORDER_PROTOCOL_OPTIMISM:
-    "0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7" as Address,
+    (Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL") ||
+      "0xe767105dcfB3034a346578afd2aFD8e583171489") as Address,
   LIMIT_ORDER_PROTOCOL_BASE:
     "0x1c1A74b677A28ff92f4AbF874b3Aa6dE864D3f06" as Address,
 
@@ -52,7 +53,7 @@ export const BMN_TOKEN_CONFIG = {
 
 // Export for convenience
 export const CONTRACT_ADDRESSES_EXPORTS = {
-  ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY_V2, // Updated to v2.2.0
+  ESCROW_FACTORY: CREATE3_ADDRESSES.ESCROW_FACTORY_V2, // v2.3.0
   BMN_TOKEN: CREATE3_ADDRESSES.BMN_TOKEN,
   RESOLVER_FACTORY: CREATE3_ADDRESSES.RESOLVER_FACTORY,
   // Limit Order Protocol addresses
@@ -88,7 +89,7 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   // Base Mainnet
   8453: {
     escrowFactory: (Deno.env.get("BASE_ESCROW_FACTORY") ||
-      CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // SimplifiedEscrowFactory v2.2.0 (PostInteraction)
+      CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // SimplifiedEscrowFactory v2.3.0
     limitOrderProtocol: (Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL") ||
       CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE) as Address, // SimpleLimitOrderProtocol (deployed)
     tokens: {
@@ -101,7 +102,7 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   // Optimism Mainnet
   10: {
     escrowFactory: (Deno.env.get("OPTIMISM_ESCROW_FACTORY") ||
-      CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // SimplifiedEscrowFactory v2.2.0 (PostInteraction)
+      CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // SimplifiedEscrowFactory v2.3.0
     limitOrderProtocol: (Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL") ||
       CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM) as Address, // SimpleLimitOrderProtocol (deployed)
     tokens: {
