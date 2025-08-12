@@ -74,8 +74,8 @@ const order = {
 // Sign order
 const signature = await wallet.signTypedData({
   domain: {
-    name: "1inch Limit Order Protocol",
-    version: "4",
+    name: "BMN-Escrow",
+    version: "2.3",
     chainId: 8453, // Base
     verifyingContract: protocol,
   },
