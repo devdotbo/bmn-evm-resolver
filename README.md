@@ -1,7 +1,10 @@
-# Bridge-Me-Not Resolver (Simplified)
+# Bridge-Me-Not Resolver (v2.3)
 
-Minimal cross-chain atomic swap resolver for Base <-> Optimism using the
-Bridge-Me-Not protocol.
+Cross-chain atomic swap resolver for BMN token exchanges between Base and Optimism using 1inch Limit Orders with PostInteraction.
+
+## 📊 Status
+
+**⚠️ BLOCKED** - See [CURRENT_STATUS.md](CURRENT_STATUS.md) and [Active Issues](ISSUES/active/)
 
 ## Setup
 
@@ -11,12 +14,11 @@ Bridge-Me-Not protocol.
 cp .env.example .env
 ```
 
-2. Ensure the indexer is running:
-
-```bash
-cd ../bmn-evm-contracts-indexer
-npm run dev
-```
+2. Configure environment variables in `.env`:
+   - `ALICE_PRIVATE_KEY` - Alice wallet private key
+   - `BOB_PRIVATE_KEY` - Bob/Resolver wallet private key  
+   - `ANKR_API_KEY` - Ankr API key for RPC access
+   - `INDEXER_URL` - Ponder indexer URL (default: Railway hosted)
 
 ## Usage
 
