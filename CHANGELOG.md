@@ -9,6 +9,25 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added - 2025-01-13
+
+- `ATOMIC_SWAP_STATUS.md` - Comprehensive status document for atomic swap implementation progress
+- `scripts/create-simple-order.ts` - Script to create properly formatted limit orders with correct salt encoding
+
+### Fixed - 2025-01-13
+
+- Signature format conversion from standard (v,r,s) to compact (r,vs) format for `fillOrderArgs`
+- Use `fillOrderArgs` for EOA accounts instead of `fillContractOrderArgs` (fixes BadSignature error)
+- Salt must include extension hash in lower 160 bits when using extensions (fixes InvalidExtensionHash)
+- Docker volume mounting to share pending-orders directory directly between host and containers
+- MakerTraits flags properly set for PostInteraction extensions (bits 249, 251, 254)
+
+### Changed - 2025-01-13
+
+- `docker-compose.yml` - Mount pending-orders directly instead of through data directory
+- `scripts/simulate-fill.ts` - Fixed function name in calldata output from fillContractOrderArgs to fillOrderArgs
+- `src/utils/limit-order.ts` - Proper signature format conversion for EOA accounts
+
 ### Changed - 2025-08-12
 
 - Contracts v2.3 integration:
