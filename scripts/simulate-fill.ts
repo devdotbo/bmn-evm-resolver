@@ -273,7 +273,7 @@ async function main() {
     console.log("calldata:", calldata);
     // Also emit and persist a JSON payload ready for simulators (Tenderly/Anvil)
     const payload = {
-      function: "fillContractOrderArgs",
+      function: "fillOrderArgs",
       to: protocol,
       from: account,
       data: calldata,
