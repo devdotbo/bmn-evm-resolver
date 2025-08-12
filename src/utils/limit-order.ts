@@ -202,10 +202,11 @@ export async function fillLimitOrder(
     const { request } = await client.simulateContract({
       address: protocolAddress,
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillContractOrderArgs",
+      functionName: "fillOrderArgs",
       args: [
         params.order,
-        params.signature,
+        ('0x' + params.signature.slice(2, 66)) as Hex, // r (32 bytes)
+        ('0x' + params.signature.slice(66, 130)) as Hex, // vs (32 bytes)
         params.fillAmount,
         takerTraits,
         params.extensionData,
@@ -228,12 +229,12 @@ export async function fillLimitOrder(
     if (!knownGasIssue) {
       const decoded = decodeProtocolError(simulateError);
       if (decoded.errorName) {
-        console.error(`fillContractOrderArgs simulation reverted with ${decoded.errorName}`);
+        console.error(`fillOrderArgs simulation reverted with ${decoded.errorName}`);
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
       } else {
-        console.error(`fillContractOrderArgs simulation error: ${decoded.message}`);
+        console.error(`fillOrderArgs simulation error: ${decoded.message}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,
@@ -247,10 +248,11 @@ export async function fillLimitOrder(
       hash = await wallet.writeContract({
         address: protocolAddress,
         abi: SimpleLimitOrderProtocolAbi.abi,
-        functionName: "fillContractOrderArgs",
+        functionName: "fillOrderArgs",
         args: [
           params.order,
-          params.signature,
+          params.signature.slice(0, 66) as Hex, // r (32 bytes)
+          params.signature.slice(66) as Hex, // vs (32 bytes)
           params.fillAmount,
           takerTraits,
           params.extensionData,
@@ -266,12 +268,12 @@ export async function fillLimitOrder(
     } catch (writeError: any) {
       const decoded = decodeProtocolError(writeError);
       if (decoded.errorName) {
-        console.error(`fillContractOrderArgs send reverted with ${decoded.errorName}`);
+        console.error(`fillOrderArgs send reverted with ${decoded.errorName}`);
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
       } else {
-        console.error(`fillContractOrderArgs send error: ${decoded.message}`);
+        console.error(`fillOrderArgs send error: ${decoded.message}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,

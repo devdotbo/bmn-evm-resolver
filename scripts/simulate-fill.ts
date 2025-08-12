@@ -244,7 +244,7 @@ async function main() {
     // Print raw calldata for debug_traceCall
     const calldata = encodeFunctionData({
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillContractOrderArgs",
+      functionName: "fillOrderArgs",
       args: [
         {
           salt: BigInt(data.order.salt),
@@ -256,7 +256,8 @@ async function main() {
           takingAmount: BigInt(data.order.takingAmount),
           makerTraits: BigInt(data.order.makerTraits),
         },
-        data.signature as Hex,
+        ('0x' + (data.signature as Hex).slice(2, 66)) as Hex, // r (32 bytes)
+        ('0x' + (data.signature as Hex).slice(66, 130)) as Hex, // vs (32 bytes)
         BigInt(data.order.makingAmount),
         takerTraits,
         data.extensionData as Hex,
@@ -283,7 +284,7 @@ async function main() {
     await client.simulateContract({
       address: protocol,
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillContractOrderArgs",
+      functionName: "fillOrderArgs",
       args: [
         {
           salt: BigInt(data.order.salt),
@@ -295,7 +296,8 @@ async function main() {
           takingAmount: BigInt(data.order.takingAmount),
           makerTraits: BigInt(data.order.makerTraits),
         },
-        data.signature as Hex,
+        ('0x' + (data.signature as Hex).slice(2, 66)) as Hex, // r (32 bytes)
+        ('0x' + (data.signature as Hex).slice(66, 130)) as Hex, // vs (32 bytes)
         BigInt(data.order.makingAmount),
         takerTraits,
         data.extensionData as Hex,
