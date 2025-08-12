@@ -13,6 +13,10 @@ and this project adheres to
 
 - `ATOMIC_SWAP_STATUS.md` - Comprehensive status document for atomic swap implementation progress
 - `scripts/create-simple-order.ts` - Script to create properly formatted limit orders with correct salt encoding
+- `src/utils/escrow-creation.ts` - Utility for creating destination escrows with proper immutables structure
+- `src/utils/secret-reveal.ts` - Secret management and reveal functionality for atomic swaps
+- `scripts/monitor-escrow-creation.ts` - Monitor script for detecting source escrows and creating destination escrows
+- `alice-service-v2.ts` - Enhanced Alice service with automatic secret reveal capability
 
 ### Fixed - 2025-01-13
 
@@ -21,6 +25,8 @@ and this project adheres to
 - Salt must include extension hash in lower 160 bits when using extensions (fixes InvalidExtensionHash)
 - Docker volume mounting to share pending-orders directory directly between host and containers
 - MakerTraits flags properly set for PostInteraction extensions (bits 249, 251, 254)
+- Bob's destination escrow creation - now properly creates matching escrow on opposite chain
+- Alice's secret reveal - monitors destination escrows and reveals secrets to claim tokens
 
 ### Changed - 2025-01-13
 

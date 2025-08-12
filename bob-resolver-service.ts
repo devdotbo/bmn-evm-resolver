@@ -393,12 +393,55 @@ class BobResolverService {
    */
   private async createDestinationEscrow(swap: any): Promise<boolean> {
     try {
-      // For v2.2.0 PostInteraction, destination escrows are created during fill.
-      // We do not manually create dst escrows here. Leave as no-op.
-      console.log(
-        `Skipping manual dst escrow creation for swap ${swap.id} (PostInteraction handles it)`,
+      // Import the escrow creation utility
+      const { createDestinationEscrow, extractImmutables } = await import(
+        "./src/utils/escrow-creation.ts"
       );
-      return false;
+      
+      // Check if we have the necessary order data
+      const pendingOrderPath = `./pending-orders/${swap.hashlock || swap.id}.json`;
+      let orderData;
+      
+      try {
+        orderData = JSON.parse(await Deno.readTextFile(pendingOrderPath));
+      } catch {
+        // Try completed orders
+        const completedOrderPath = `./completed-orders/${swap.hashlock || swap.id}.json`;
+        try {
+          orderData = JSON.parse(await Deno.readTextFile(completedOrderPath));
+        } catch {
+          console.log(`⚠️ Order data not found for swap ${swap.id}`);
+          return false;
+        }
+      }
+      
+      // Extract immutables from the order
+      const immutables = extractImmutables(
+        orderData.order,
+        orderData.extensionData as `0x${string}`,
+        swap.escrowSrc as `0x${string}`
+      );
+      
+      // Create destination escrow on the target chain
+      console.log(`🔨 Creating destination escrow for swap ${swap.id}`);
+      console.log(`   Source escrow: ${swap.escrowSrc}`);
+      console.log(`   Target chain: ${immutables.dstChainId}`);
+      
+      const result = await createDestinationEscrow(
+        immutables,
+        this.privateKey,
+        // Use configured RPC or default
+        immutables.dstChainId === 10n
+          ? "https://erpc.up.railway.app/main/evm/10"
+          : "https://erpc.up.railway.app/main/evm/8453"
+      );
+      
+      console.log(`✅ Destination escrow created at ${result.escrow}`);
+      console.log(`   Transaction: ${result.hash}`);
+      
+      // TODO: Update indexer or local state with destination escrow address
+      
+      return true;
     } catch (error) {
       console.error("Error creating destination escrow:", error);
       return false;
