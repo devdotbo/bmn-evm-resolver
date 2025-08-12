@@ -332,11 +332,10 @@ class BobResolverService {
       const wallet = chainId === 10 ? this.optimismWallet : this.baseWallet;
       const client = chainId === 10 ? this.optimismClient : this.baseClient;
 
-      // Determine protocol and factory addresses for the chain
-      const protocolAddress = chainId === 10
-        ? CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_OPTIMISM
-        : CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE;
-      const factoryAddress = CREATE3_ADDRESSES.ESCROW_FACTORY_V2;
+      // Determine protocol and factory addresses for the chain (env/deployment aware)
+      const chainAddrs = getContractAddresses(chainId);
+      const protocolAddress = chainAddrs.limitOrderProtocol;
+      const factoryAddress = chainAddrs.escrowFactory;
 
       // Ensure approvals (protocol + factory)
       await ensureLimitOrderApprovals(
