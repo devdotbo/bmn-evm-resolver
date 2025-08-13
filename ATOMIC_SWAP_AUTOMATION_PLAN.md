@@ -29,22 +29,47 @@ sequenceDiagram
     participant Optimism
     
     Alice->>Base: 1. Create Order with Secret
-    Note over Alice: Monitors for completion
+    Note over Alice: Monitors for escrow creation
     
-    Bob->>Base: 2. Fill Order (Auto)
-    Base-->>Bob: Source Escrow Created
+    Bob->>Base: 2. Fill Order → Creates Source Escrow
+    Base-->>Alice: Source Escrow Created Event
     
-    Bob->>Optimism: 3. Create Dest Escrow (Auto)
-    Optimism-->>Alice: Escrow Ready Event
+    Alice->>Base: 3. Send Tokens to Source Escrow (Auto)
+    Base-->>Bob: Tokens Deposited Event
     
-    Alice->>Optimism: 4. Reveal Secret (Auto)
+    Bob->>Optimism: 4. Create Dest Escrow + Deposit (Auto)
+    Optimism-->>Alice: Dest Escrow Ready Event
+    
+    Alice->>Optimism: 5. Reveal Secret (Auto)
     Optimism-->>Bob: Secret Revealed Event
     
-    Bob->>Base: 5. Withdraw with Secret (Auto)
-    Alice->>Optimism: 6. Withdraw Funds (Auto)
+    Bob->>Base: 6. Withdraw with Secret (Auto)
+    Alice->>Optimism: 7. Withdraw Funds (Auto)
     
     Note over Alice,Bob: Swap Complete!
 ```
+
+### Critical Flow Correction
+
+The atomic swap requires proper fund locking on BOTH chains:
+
+1. **Bob creates source escrow** (when filling order)
+2. **Alice deposits her tokens** into Bob's source escrow
+3. **Bob creates destination escrow AND deposits his tokens** 
+4. **Only then Alice reveals the secret**
+
+This ensures neither party can walk away with both sides of the trade.
+
+### Trust Model
+
+The corrected flow ensures atomicity:
+- **Bob takes initial risk** by creating source escrow first
+- **Alice locks funds** only after seeing Bob's escrow
+- **Bob locks his funds** on destination only after Alice deposits
+- **Alice reveals secret** only after both sides are locked
+- **Timelock protection** ensures funds can be recovered if either party abandons
+
+This creates a balanced incentive structure where both parties must complete their steps or lose their deposits.
 
 ## Implementation Plan
 
@@ -85,20 +110,48 @@ export class EventMonitorService {
 // bob-resolver-service.ts modifications
 class BobResolverService {
   private eventMonitor: EventMonitorService;
+  private escrowTracker: Map<string, EscrowState>;
   
   async start() {
     await this.eventMonitor.startMonitoring();
     
-    // Subscribe to relevant events
-    this.eventMonitor.on('OrderFilled', async (event) => {
-      // Automatically create destination escrow
-      await this.createDestinationEscrow(event.orderHash);
+    // Step 1: Fill order and create source escrow
+    this.eventMonitor.on('NewOrder', async (event) => {
+      const sourceEscrow = await this.fillOrderAndCreateSourceEscrow(event.order);
+      this.escrowTracker.set(event.orderHash, {
+        sourceEscrow,
+        status: 'AWAITING_ALICE_DEPOSIT'
+      });
+      console.log(`✅ Bob created source escrow ${sourceEscrow}`);
     });
     
-    this.eventMonitor.on('SecretRevealed', async (event) => {
-      // Automatically withdraw from source escrow
-      await this.withdrawFromSourceEscrow(event.secret, event.escrowAddress);
+    // Step 2: Wait for Alice's deposit, then create destination escrow
+    this.eventMonitor.on('TokensDeposited', async (event) => {
+      const state = this.escrowTracker.get(event.orderHash);
+      if (state && event.escrow === state.sourceEscrow) {
+        // Alice has deposited, now Bob creates destination escrow
+        const destEscrow = await this.createAndFundDestinationEscrow(event.orderHash);
+        state.destEscrow = destEscrow;
+        state.status = 'AWAITING_SECRET';
+        console.log(`✅ Bob created and funded destination escrow ${destEscrow}`);
+      }
     });
+    
+    // Step 3: Withdraw using revealed secret
+    this.eventMonitor.on('SecretRevealed', async (event) => {
+      const state = this.escrowTracker.get(event.orderHash);
+      if (state && state.sourceEscrow) {
+        await this.withdrawFromSourceEscrow(event.secret, state.sourceEscrow);
+        console.log(`✅ Bob withdrew from source using secret`);
+      }
+    });
+  }
+  
+  private async createAndFundDestinationEscrow(orderHash: string): Promise<Address> {
+    const escrow = await this.createDestinationEscrow(orderHash);
+    // Bob deposits his tokens to destination escrow
+    await this.depositToDestinationEscrow(escrow, this.getOrderAmount(orderHash));
+    return escrow;
   }
 }
 ```
@@ -111,23 +164,51 @@ class BobResolverService {
 class AliceServiceV3 {
   private eventMonitor: EventMonitorService;
   private secretManager: SecretManager;
+  private swapTracker: SwapStateManager;
   
   async start() {
     await this.eventMonitor.startMonitoring();
     
-    // Monitor for destination escrows
+    // Step 1: Monitor for source escrow creation by Bob
+    this.eventMonitor.on('SourceEscrowCreated', async (event) => {
+      if (event.orderHash in this.myOrders) {
+        // Alice deposits her tokens to Bob's source escrow
+        await this.depositToSourceEscrow(event.escrowAddress, event.amount);
+        console.log(`✅ Deposited ${event.amount} to source escrow ${event.escrowAddress}`);
+      }
+    });
+    
+    // Step 2: Monitor for destination escrow creation
     this.eventMonitor.on('DestEscrowCreated', async (event) => {
       if (event.receiver === this.address) {
+        // Wait for Bob's deposit confirmation
+        await this.waitForDestinationDeposit(event.escrowAddress);
+        // Then reveal secret
         await this.autoRevealSecret(event.escrowAddress, event.hashlock);
       }
     });
     
-    // Monitor for completed swaps
+    // Step 3: Monitor for secret reveal to withdraw
     this.eventMonitor.on('SecretRevealed', async (event) => {
       if (event.revealer === this.address) {
         await this.withdrawFromDestination(event.escrowAddress);
       }
     });
+  }
+  
+  private async depositToSourceEscrow(escrowAddress: Address, amount: bigint) {
+    // Approve and transfer tokens to source escrow
+    await this.tokenContract.approve(escrowAddress, amount);
+    await this.escrowContract.deposit(escrowAddress, amount);
+    console.log(`💰 Alice deposited ${amount} to source escrow`);
+  }
+  
+  private async waitForDestinationDeposit(escrowAddress: Address) {
+    // Ensure Bob has deposited before revealing secret
+    const balance = await this.getEscrowBalance(escrowAddress);
+    if (balance === 0n) {
+      throw new Error("Destination escrow not funded by Bob");
+    }
   }
   
   private async autoRevealSecret(escrowAddress: Address, hashlock: Hex) {
@@ -294,10 +375,13 @@ export const AUTOMATION_CONFIG = {
 ## Success Criteria
 
 ### Functional Requirements
-- [ ] Alice creates order → Bob fills automatically
-- [ ] Bob creates destination escrow automatically after source fill
-- [ ] Alice reveals secret automatically when destination escrow is ready
-- [ ] Bob withdraws automatically after secret reveal
+- [ ] Alice creates order with secret → Bob detects and fills automatically
+- [ ] Bob creates source escrow when filling order
+- [ ] Alice deposits tokens to source escrow automatically
+- [ ] Bob creates and funds destination escrow after Alice's deposit
+- [ ] Alice reveals secret automatically when destination escrow is funded
+- [ ] Bob withdraws from source automatically after secret reveal
+- [ ] Alice withdraws from destination automatically
 - [ ] Both parties receive their funds without manual intervention
 
 ### Non-Functional Requirements
