@@ -1,6 +1,7 @@
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
-import { parseAbi, decodeErrorResult } from "viem";
+import { decodeErrorResult } from "viem";
 import { simpleLimitOrderProtocolAbi } from "./abis.ts";
+import { ierc20Abi as generatedErc20Abi } from "../src/generated/contracts.ts";
 
 export interface LimitOrderData {
   salt: bigint;
@@ -41,7 +42,9 @@ export function decodeRevert(error: any): { message: string; selector?: string; 
     try {
       decodeErrorResult({ abi: simpleLimitOrderProtocolAbi as any, data });
       return { message: msg, selector: (data.length >= 10 ? data.slice(0, 10) : undefined) as any, data };
-    } catch {}
+    } catch {
+      // ignore non-decodable candidates
+    }
   }
   if (firstHex) return { message: msg, selector: (firstHex.length >= 10 ? firstHex.slice(0, 10) : undefined) as any, data: firstHex };
   return { message: msg };
@@ -57,17 +60,14 @@ export async function ensureApprovals(
 ): Promise<void> {
   const account = wallet.account?.address as Address;
   if (!account) throw new Error("No account");
-  const erc20 = parseAbi([
-    "function allowance(address owner, address spender) view returns (uint256)",
-    "function approve(address spender, uint256 amount) returns (bool)",
-  ]);
-  const allowance = await client.readContract({ address: tokenAddress, abi: erc20, functionName: "allowance", args: [account, protocolAddress] });
+  const erc20 = generatedErc20Abi as any;
+  const allowance = await client.readContract({ address: tokenAddress, abi: erc20, functionName: "allowance", args: [account, protocolAddress] }) as unknown as bigint;
   if (allowance < amount) {
     const tx = await wallet.writeContract({ address: tokenAddress, chain: null, account: wallet.account!, abi: erc20, functionName: "approve", args: [protocolAddress, amount * 10n] });
     await client.waitForTransactionReceipt({ hash: tx });
   }
   // Factory allowance (if needed)
-  const facAllowance = await client.readContract({ address: tokenAddress, abi: erc20, functionName: "allowance", args: [account, factoryAddress] });
+  const facAllowance = await client.readContract({ address: tokenAddress, abi: erc20, functionName: "allowance", args: [account, factoryAddress] }) as unknown as bigint;
   if (facAllowance < amount) {
     const tx = await wallet.writeContract({ address: tokenAddress, chain: null, account: wallet.account!, abi: erc20, functionName: "approve", args: [factoryAddress, amount * 10n] });
     await client.waitForTransactionReceipt({ hash: tx });

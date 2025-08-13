@@ -9,12 +9,13 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Changed - 2025-08-13 (CLI decoupled from src)
+### Changed - 2025-08-13 (CLI uses wagmi-generated code)
 
-- CLIs no longer import from `src/` or use Wagmi bindings; they use `viem` + ABIs from `abis/` directly
-- Improved error handling in all CLIs: always throw on failure and log full errors plus
-  `revert_selector` and `revert_data` (hex) for `cast decode-error`
-- Environment-driven addresses now resolved in CLI via new `cli/cli-config.ts` (reads the example `.env` keys: `MAINNET_ESCROW_FACTORY_V2`, `BASE_ESCROW_FACTORY`, `OPTIMISM_ESCROW_FACTORY`, `MAINNET_BMN_TOKEN`, `BASE_TOKEN_BMN`, `OPTIMISM_TOKEN_BMN`, `BASE_LIMIT_ORDER_PROTOCOL`, `OPTIMISM_LIMIT_ORDER_PROTOCOL`)
+- CLIs now import ABIs, addresses, and actions from `src/generated/contracts.ts` (generated via wagmi CLI)
+- `cli/abis.ts` re-exports generated ABIs to keep CLI code minimal and consistent
+- Address resolution: `cli/cli-config.ts` uses env overrides with fallbacks to generated addresses
+- RPC selection: via `ANKR_API_KEY` in `cli/cli-config.ts`
+- Unified error logging for CLIs: `cli/logging.ts` logs full error chain and `revert_selector`/`revert_data`
 
 ### Added - 2025-08-13 (CLI modules)
 

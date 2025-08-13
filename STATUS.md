@@ -7,7 +7,7 @@ How to keep this file up-to-date (10 min checklist):
   - Entrypoints: `ls alice-service-orpc.ts bob-resolver-service-v2.ts`
 - Confirm addresses and ABIs
   - Protocol/factory: `rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" src/config/contracts.ts wagmi.config.ts`
-  - ABI function presence: `rg -n "fillContractOrderArgs|fillOrderArgs" abis/SimpleLimitOrderProtocol.json`
+  - Generated actions present: `rg -n "writeSimpleLimitOrderProtocolFillOrderArgs|readSimplifiedEscrowFactoryV2_3AddressOfEscrow" src/generated/contracts.ts`
 - Scan for deprecated docs
   - `rg -n "UnifiedResolver|resolver-service.ts|bob-service.ts" -- docs archive`
 - Update this file's Status, Services, and Focus Areas accordingly
@@ -38,9 +38,10 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
   - `deno task withdraw:src`
   - `deno task status`
   - Notes:
-    - CLIs are now self-contained under `cli/` and do not import from `src/`
-    - Addresses and RPCs come from env via `cli/cli-config.ts`
-    - ABIs are loaded from `abis/` via `cli/abis.ts` (no Wagmi dependency for CLIs)
+    - CLIs are now self-contained under `cli/` and use wagmi-generated actions from `src/generated/contracts.ts`
+    - Addresses resolved via env (overrides) with fallbacks to generated addresses; RPC via `cli/cli-config.ts`
+    - ABIs re-exported from generated sources in `cli/abis.ts`
+    - Unified error logging: `cli/logging.ts` logs full error chain and revert selector/data
 - Indexer: Railway hosted (INDEXER_URL)
 
 ### Contracts (v2.3.0)
@@ -49,11 +50,11 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
 - **BMN Token (OP + BASE)**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 
 ### Test Results / Smoke Tests
+- Type-check: `deno check cli/*` → OK
 - CLI smoke tests:
   - order:create → writes order, secret JSON, and status under `data/`
-  - swap:execute → compiles and runs; currently reverts with `BadSignature()` on fill in simulation
-    - revert_selector and revert_data are printed when present for `cast decode-error`
-  - withdraw:dst / withdraw:src unchanged
+  - swap:execute → uses wagmi actions; on failure logs revert selector/data and full chain
+  - withdraw:dst / withdraw:src → use generated actions, with full-trace error logging
 - Formal tests removed in latest cleanup (2025-08-13)
 
 ## 📁 Repository Structure
@@ -87,7 +88,7 @@ bmn-evm-resolver/
 cp .env.example .env
 # Add: ALICE_PRIVATE_KEY, BOB_PRIVATE_KEY, ANKR_API_KEY
 
-# 2) Generate wagmi types
+# 2) Generate wagmi types (required by CLIs)
 deno task wagmi:generate
 
 # 3) Create order (Base→OP example)

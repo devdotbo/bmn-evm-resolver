@@ -4,10 +4,13 @@
 
 import { atomicWriteJson, readJson, nowMs } from "./_fs.ts";
 import { base } from "viem/chains";
-import { createPublicClient, createWalletClient, http, type Address, type Hex } from "viem";
+import { type Address, type Hex } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
-import { escrowSrcV2Abi } from "./abis.ts";
-import { getPrivateKey, getRpcUrl } from "./cli-config.ts";
+import { getPrivateKey } from "./cli-config.ts";
+import { createWagmiConfig } from "./wagmi-config.ts";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import { simulateEscrowSrcV2Withdraw, writeEscrowSrcV2Withdraw } from "../src/generated/contracts.ts";
+import { logErrorWithRevert } from "./logging.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/withdraw-src.ts --hashlock 0x...");
@@ -38,22 +41,21 @@ async function main() {
     Deno.exit(1);
   }
   const account = privateKeyToAccount(BOB_PK, { nonceManager });
-  const ANKR = Deno.env.get("ANKR_API_KEY") || "";
-  // Source chain is Base for PoC; adjust by reading a src record if needed
-  const chain = base;
-  const rpc = getRpcUrl(8453);
-  const client = createPublicClient({ chain, transport: http(rpc) });
-  const wallet = createWalletClient({ chain, transport: http(rpc), account });
+  const wagmiConfig = createWagmiConfig();
 
-  const { request } = await client.simulateContract({
-    account,
+  await simulateEscrowSrcV2Withdraw(wagmiConfig as any, {
+    chainId: base.id,
+    account: account.address,
     address: srcEscrow,
-    abi: escrowSrcV2Abi,
-    functionName: "withdraw",
     args: [secretJson.secret],
   } as any);
-  const tx = await wallet.writeContract(request as any);
-  const receipt = await client.waitForTransactionReceipt({ hash: tx });
+  const tx = await writeEscrowSrcV2Withdraw(wagmiConfig as any, {
+    chainId: base.id,
+    account: account.address,
+    address: srcEscrow,
+    args: [secretJson.secret],
+  } as any);
+  const receipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: base.id, hash: tx as Hex });
 
   await atomicWriteJson(`./data/escrows/src/${hashlock}.withdraw.json`, {
     hashlock,
@@ -77,16 +79,11 @@ async function main() {
 }
 
 main().catch(async (e) => {
-  console.error("unhandled_error:", e);
-  try {
-    const { decodeRevert } = await import("./limit-order.ts");
-    const dec: any = (decodeRevert as any)(e);
-    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
-    if (dec?.data) console.error(`revert_data: ${dec.data}`);
-  } catch (decErr) {
-    console.error("decode_error_failed:", decErr);
-  }
-  throw e;
+  await logErrorWithRevert(e, "withdraw-src", {
+    args: Deno.args,
+    hashlock,
+  });
+  Deno.exit(1);
 });
 
 

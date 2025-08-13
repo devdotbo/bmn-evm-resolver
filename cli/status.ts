@@ -15,7 +15,8 @@ async function statusFor(hashlock: string) {
     const s = await readJson<any>(`./data/swaps/${hashlock}/status.json`);
     console.log(JSON.stringify(s, null, 2));
   } catch (e) {
-    console.error(`No status for ${hashlock}:`, e.message || e);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`No status for ${hashlock}:`, msg);
   }
 }
 

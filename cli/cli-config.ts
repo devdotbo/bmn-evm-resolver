@@ -1,11 +1,15 @@
 import type { Address } from "viem";
+import {
+  simpleLimitOrderProtocolAddress as generatedLopAddress,
+  simplifiedEscrowFactoryV2_3Address as generatedFactoryAddress,
+} from "../src/generated/contracts.ts";
 
 export type SupportedChainId = 10 | 8453;
 
 const FALLBACKS = {
-  ESCROW_FACTORY: "0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A" as Address,
+  ESCROW_FACTORY: generatedFactoryAddress[10] as Address,
   BMN_TOKEN: "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address,
-  LIMIT_ORDER_PROTOCOL: "0xe767105dcfB3034a346578afd2aFD8e583171489" as Address,
+  LIMIT_ORDER_PROTOCOL: generatedLopAddress[10] as Address,
 };
 
 export function getRpcUrl(chainId: SupportedChainId): string {
@@ -22,10 +26,12 @@ export function getPrivateKey(name: "ALICE_PRIVATE_KEY" | "BOB_PRIVATE_KEY" | "R
 }
 
 export function getFactoryAddress(chainId: SupportedChainId): Address {
-  if (chainId === 8453) {
-    return (Deno.env.get("BASE_ESCROW_FACTORY") as Address) || (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") as Address) || FALLBACKS.ESCROW_FACTORY;
-  }
-  return (Deno.env.get("OPTIMISM_ESCROW_FACTORY") as Address) || (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") as Address) || FALLBACKS.ESCROW_FACTORY;
+  const envOverride =
+    (chainId === 8453
+      ? (Deno.env.get("BASE_ESCROW_FACTORY") as Address)
+      : (Deno.env.get("OPTIMISM_ESCROW_FACTORY") as Address)) ||
+    (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") as Address);
+  return envOverride || (generatedFactoryAddress[chainId] as Address) || FALLBACKS.ESCROW_FACTORY;
 }
 
 export function getBMNToken(chainId: SupportedChainId): Address {
@@ -36,10 +42,11 @@ export function getBMNToken(chainId: SupportedChainId): Address {
 }
 
 export function getLimitOrderProtocol(chainId: SupportedChainId): Address {
-  if (chainId === 8453) {
-    return (Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL") as Address) || FALLBACKS.LIMIT_ORDER_PROTOCOL;
-  }
-  return (Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL") as Address) || FALLBACKS.LIMIT_ORDER_PROTOCOL;
+  const envOverride =
+    (chainId === 8453
+      ? (Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL") as Address)
+      : (Deno.env.get("OPTIMISM_LIMIT_ORDER_PROTOCOL") as Address)) || undefined;
+  return envOverride || (generatedLopAddress[chainId] as Address) || FALLBACKS.LIMIT_ORDER_PROTOCOL;
 }
 
 export function getCliAddresses(chainId: SupportedChainId): {

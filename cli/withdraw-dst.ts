@@ -4,10 +4,13 @@
 
 import { atomicWriteJson, readJson, nowMs } from "./_fs.ts";
 import { base, optimism } from "viem/chains";
-import { createPublicClient, createWalletClient, http, type Address, type Hex } from "viem";
+import { type Address, type Hex } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
-import { getPrivateKey, getRpcUrl, type SupportedChainId } from "./cli-config.ts";
-import { escrowDstV2Abi } from "./abis.ts";
+import { getPrivateKey, type SupportedChainId } from "./cli-config.ts";
+import { createWagmiConfig } from "./wagmi-config.ts";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import { simulateEscrowDstV2Withdraw, writeEscrowDstV2Withdraw } from "../src/generated/contracts.ts";
+import { logErrorWithRevert } from "./logging.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/withdraw-dst.ts --hashlock 0x...");
@@ -28,6 +31,7 @@ async function main() {
   const dstFile = `./data/escrows/dst/${hashlock}.json`;
   const secretJson = await readJson<{ secret: Hex }>(secretFile);
   const dstJson = await readJson<{ dstChainId: number; escrowAddress: Address }>(dstFile);
+  const statusJson = await readJson<{ orderHash: Hex }>(`./data/swaps/${hashlock}/status.json`);
 
   const ALICE_PK = (getPrivateKey("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
   if (!ALICE_PK) {
@@ -37,35 +41,36 @@ async function main() {
 
   const account = privateKeyToAccount(ALICE_PK, { nonceManager });
   const dstChainId = dstJson.dstChainId as SupportedChainId;
-  const ANKR = Deno.env.get("ANKR_API_KEY") || "";
-  const chain = dstChainId === base.id ? base : optimism;
-  const rpc = getRpcUrl(dstChainId);
-  const client = createPublicClient({ chain, transport: http(rpc) });
-  const wallet = createWalletClient({ chain, transport: http(rpc), account });
+  const _chain = dstChainId === base.id ? base : optimism;
+  const wagmiConfig = createWagmiConfig();
 
-  // Attempt publicWithdraw first (no signature), fall back to withdraw
-  let tx: Hex | null = null;
-  try {
-    const { request } = await client.simulateContract({
-      account,
-      address: dstJson.escrowAddress,
-      abi: escrowDstV2Abi,
-      functionName: "publicWithdraw",
-      args: [secretJson.secret],
-    } as any);
-    tx = await wallet.writeContract(request as any);
-  } catch (_e) {
-    const { request } = await client.simulateContract({
-      account,
-      address: dstJson.escrowAddress,
-      abi: escrowDstV2Abi,
-      functionName: "withdraw",
-      args: [secretJson.secret],
-    } as any);
-    tx = await wallet.writeContract(request as any);
-  }
+  // Build minimal immutables tuple; values other than orderHash/hashlock are not used onchain for validation in this path
+  const immutables = [
+    statusJson.orderHash as Hex,
+    hashlock as Hex,
+    0n,
+    0n,
+    0n,
+    0n,
+    0n,
+    0n,
+  ] as any;
 
-  const receipt = await client.waitForTransactionReceipt({ hash: tx! });
+  // Use withdraw(secret, immutables)
+  await simulateEscrowDstV2Withdraw(wagmiConfig as any, {
+    chainId: dstChainId,
+    account: account.address,
+    address: dstJson.escrowAddress,
+    args: [secretJson.secret, immutables],
+  } as any);
+  const txHash = await writeEscrowDstV2Withdraw(wagmiConfig as any, {
+    chainId: dstChainId,
+    account: account.address,
+    address: dstJson.escrowAddress,
+    args: [secretJson.secret, immutables],
+  } as any);
+
+  const receipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: dstChainId, hash: txHash! });
   await atomicWriteJson(`./data/escrows/dst/${hashlock}.withdraw.json`, {
     hashlock,
     dstChainId,
@@ -89,16 +94,11 @@ async function main() {
 }
 
 main().catch(async (e) => {
-  console.error("unhandled_error:", e);
-  try {
-    const { decodeRevert } = await import("./limit-order.ts");
-    const dec: any = (decodeRevert as any)(e);
-    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
-    if (dec?.data) console.error(`revert_data: ${dec.data}`);
-  } catch (decErr) {
-    console.error("decode_error_failed:", decErr);
-  }
-  throw e;
+  await logErrorWithRevert(e, "withdraw-dst", {
+    args: Deno.args,
+    hashlock,
+  });
+  Deno.exit(1);
 });
 
 

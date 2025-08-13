@@ -36,7 +36,7 @@ cp .env.example .env
 # Install dependencies
 deno install
 
-# Generate contract types
+# Generate contract types (required by CLI tools)
 deno task wagmi:generate
 
 # Or watch mode for development
@@ -71,7 +71,8 @@ deno task status -- --hashlock 0xHASHLOCK
 
 Notes:
 - For PoC, secrets are also written to `data/secrets/{hashlock}.json`.
-- On-chain simulation in `swap:execute` may revert without funded keys/allowances; wiring is in place using wagmi actions.
+- CLIs use wagmi-generated actions from `src/generated/contracts.ts` and RPCs derived from `ANKR_API_KEY` via `cli/cli-config.ts`.
+- On errors, CLIs log full error chains and revert selector/data via `cli/logging.ts`.
 
 Services:
 - Alice API: http://localhost:8001/health and http://localhost:8001/docs
@@ -114,17 +115,17 @@ import {
   readSimpleLimitOrderProtocolHashOrder,
 } from "./src/generated/contracts.ts";
 
-// Option 1: Use generated action functions (NEW!)
+// Example: use generated action
 const orderHash = await readSimpleLimitOrderProtocolHashOrder(config, {
-  address: simpleLimitOrderProtocolAddress[8453], // Base
-  args: [order], // Type-checked!
+  chainId: 8453,
+  args: [order],
 });
 
-// Option 2: Traditional approach with ABIs
-const orderHash = await client.readContract({
+// Traditional approach (viem)
+const orderHash2 = await client.readContract({
   address: simpleLimitOrderProtocolAddress[8453],
   abi: simpleLimitOrderProtocolAbi,
-  functionName: "hashOrder", // Auto-completed!
+  functionName: "hashOrder",
   args: [order],
 });
 ```

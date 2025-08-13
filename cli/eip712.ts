@@ -63,6 +63,7 @@ export async function signOrder(
   const s = orderToStruct(order);
   const domain = { name: "Bridge-Me-Not Orders", version: "1", chainId, verifyingContract };
   const signature = await walletClient.signTypedData({
+    account: walletClient.account!,
     domain,
     types: ORDER_TYPE_DEF,
     primaryType: "Order",

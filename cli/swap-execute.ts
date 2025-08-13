@@ -3,13 +3,21 @@
 // Bob executes: approvals -> fill order -> create dst escrow. Writes data/fills and data/escrows/dst
 
 import { base, optimism } from "viem/chains";
-import { createPublicClient, createWalletClient, http, type Address, type Hex } from "viem";
+import { type Address, type Hex } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { atomicWriteJson, ensureDir, readJson, nowMs } from "./_fs.ts";
 import { orderToStruct } from "./eip712.ts";
-import { ensureApprovals as ensureLimitOrderApprovals, fillLimitOrder, type FillOrderParams, decodeRevert } from "./limit-order.ts";
-import { simplifiedEscrowFactoryAbi } from "./abis.ts";
-import { getCliAddresses, getPrivateKey, getRpcUrl, type SupportedChainId } from "./cli-config.ts";
+import { getCliAddresses, getPrivateKey, type SupportedChainId } from "./cli-config.ts";
+import { createWagmiConfig } from "./wagmi-config.ts";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import {
+  readIerc20Allowance,
+  writeIerc20Approve,
+  writeSimpleLimitOrderProtocolFillOrderArgs,
+  writeSimplifiedEscrowFactoryV2_3CreateDstEscrow,
+  readSimplifiedEscrowFactoryV2_3AddressOfEscrow,
+} from "../src/generated/contracts.ts";
+import { logErrorWithRevert } from "./logging.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/swap-execute.ts --file ./data/orders/pending/{hashlock}.json");
@@ -51,29 +59,47 @@ async function main() {
   const order: OrderFile = await readJson<OrderFile>(fileArg!);
 
   const SRC = order.srcChainId as SupportedChainId;
-  const ANKR = Deno.env.get("ANKR_API_KEY") || "";
   const BOB_PK = (getPrivateKey("BOB_PRIVATE_KEY") || getPrivateKey("RESOLVER_PRIVATE_KEY") || "") as `0x${string}`;
   if (!BOB_PK) {
     console.error("BOB_PRIVATE_KEY or RESOLVER_PRIVATE_KEY missing");
     Deno.exit(1);
   }
   const account = privateKeyToAccount(BOB_PK, { nonceManager });
-  const chain = SRC === base.id ? base : optimism;
-  const rpc = getRpcUrl(SRC);
-  const client = createPublicClient({ chain, transport: http(rpc) });
-  const wallet = createWalletClient({ chain, transport: http(rpc), account });
+  const _chain = SRC === base.id ? base : optimism;
+  const wagmiConfig = createWagmiConfig();
 
   const addrs = getCliAddresses(SRC);
 
-  // Ensure approvals (Bob for protocol + factory)
-  await ensureLimitOrderApprovals(
-    client as any,
-    wallet as any,
-    order.order.takerAsset as Address,
-    addrs.limitOrderProtocol,
-    addrs.escrowFactory,
-    BigInt(order.order.takingAmount),
-  );
+  // Ensure approvals (Bob for protocol + factory) using wagmi actions
+  const needed = BigInt(order.order.takingAmount);
+  const currentAllowance = await readIerc20Allowance(wagmiConfig, {
+    chainId: SRC,
+    address: order.order.takerAsset as Address,
+    args: [account.address, addrs.limitOrderProtocol],
+  });
+  if (currentAllowance < needed) {
+    const approveHash = await writeIerc20Approve(wagmiConfig, {
+      chainId: SRC,
+      account: account.address,
+      address: order.order.takerAsset as Address,
+      args: [addrs.limitOrderProtocol, needed * 10n],
+    });
+    await waitForTransactionReceipt(wagmiConfig, { chainId: SRC, hash: approveHash });
+  }
+  const facAllowance = await readIerc20Allowance(wagmiConfig, {
+    chainId: SRC,
+    address: order.order.takerAsset as Address,
+    args: [account.address, addrs.escrowFactory],
+  });
+  if (facAllowance < needed) {
+    const approveHash = await writeIerc20Approve(wagmiConfig, {
+      chainId: SRC,
+      account: account.address,
+      address: order.order.takerAsset as Address,
+      args: [addrs.escrowFactory, needed * 10n],
+    });
+    await waitForTransactionReceipt(wagmiConfig, { chainId: SRC, hash: approveHash });
+  }
 
   const orderStruct = orderToStruct({
     salt: BigInt(order.order.salt),
@@ -86,37 +112,29 @@ async function main() {
     makerTraits: BigInt(order.order.makerTraits),
   });
 
-  // Reconstruct standard 65-byte signature from (r,vs)
-  const rHex = order.signature.r as Hex;
-  const vsBig = BigInt(order.signature.vs);
-  const v = Number((vsBig >> 255n) + 27n);
-  const sBig = vsBig & ((1n << 255n) - 1n);
-  const sHex = `0x${sBig.toString(16).padStart(64, "0")}` as Hex;
-  const sigFull = (rHex + sHex.slice(2) + v.toString(16).padStart(2, "0")) as Hex;
+  // Compute takerTraits based on extension length and threshold
+  const computedArgsExtLenBytes = BigInt((order.extensionData.length - 2) / 2);
+  const makerAmountFlag = 1n << 255n;
+  const threshold = orderStruct.takingAmount & ((1n << 185n) - 1n);
+  const takerTraits = makerAmountFlag | (computedArgsExtLenBytes << 224n) | threshold;
 
-  const fillParams: FillOrderParams = {
-    order: {
-      salt: orderStruct.salt,
-      maker: orderStruct.maker as any,
-      receiver: orderStruct.receiver as any,
-      makerAsset: orderStruct.makerAsset as any,
-      takerAsset: orderStruct.takerAsset as any,
-      makingAmount: orderStruct.makingAmount,
-      takingAmount: orderStruct.takingAmount,
-      makerTraits: orderStruct.makerTraits,
-    },
-    signature: sigFull,
-    extensionData: order.extensionData,
-    fillAmount: orderStruct.makingAmount,
-  };
-
-  const fillRes = await fillLimitOrder(
-    client as any,
-    wallet as any,
-    addrs.limitOrderProtocol,
-    fillParams,
-  );
-  const fillReceipt = await client.waitForTransactionReceipt({ hash: fillRes.hash });
+  // Fill using wagmi action with r/vs directly
+  const orderTuple = [
+    orderStruct.salt,
+    orderStruct.maker,
+    orderStruct.receiver,
+    orderStruct.makerAsset,
+    orderStruct.takerAsset,
+    orderStruct.makingAmount,
+    orderStruct.takingAmount,
+    orderStruct.makerTraits,
+  ] as const;
+  const fillHash = await writeSimpleLimitOrderProtocolFillOrderArgs(wagmiConfig as any, {
+    chainId: SRC,
+    account: account.address,
+    args: [orderTuple as any, order.signature.r, order.signature.vs, orderStruct.makingAmount, takerTraits, order.extensionData] as any,
+  } as any);
+  const fillReceipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: SRC, hash: fillHash as Hex });
 
   const fillsDir = `./data/fills`;
   await ensureDir(fillsDir);
@@ -137,57 +155,28 @@ async function main() {
   // Create destination escrow (idempotent): call factory.createDstEscrow with immutables
   // Use readSimplifiedEscrowFactoryV2_3AddressOfEscrow for address if tx doesn't emit
   const dstChainId = order.dstChainId as SupportedChainId;
-  const dstChain = dstChainId === base.id ? base : optimism;
-  const dstRpc = getRpcUrl(dstChainId);
-  const _dstClient = createPublicClient({ chain: dstChain, transport: http(dstRpc) });
-  const _dstWallet = createWalletClient({ chain: dstChain, transport: http(dstRpc), account });
-
-  // immutables are computed onchain from order + extension in v2.3; call createDstEscrow with tuple from events is not possible directly.
-  // For this PoC CLI, rely on factory helper to compute address after create call.
-  const factoryAddr = getCliAddresses(dstChainId).escrowFactory;
-  let tx: Hex;
-  try {
-    tx = await _dstWallet.writeContract({
-      address: factoryAddr,
-      abi: simplifiedEscrowFactoryAbi as any,
-      functionName: "createDstEscrow",
-      args: [{
-        orderHash: order.orderHash as Hex,
-        hashlock: order.hashlock as Hex,
-        maker: 0n,
-        taker: 0n,
-        token: 0n,
-        amount: 0n,
-        safetyDeposit: 0n,
-        timelocks: 0n,
-      } as any],
-      account,
-      chain: null,
-    } as any);
-  } catch (e: any) {
-    const dec = decodeRevert(e);
-    if (dec?.selector) console.error(`factory.revert_selector: ${dec.selector}`);
-    if (dec?.data) console.error(`factory.revert_data: ${dec.data}`);
-    throw e;
-  }
-  const receipt = await _dstClient.waitForTransactionReceipt({ hash: tx });
+  const immutablesTuple = [
+    order.orderHash as Hex,
+    order.hashlock as Hex,
+    0n,
+    0n,
+    0n,
+    0n,
+    0n,
+    0n,
+  ] as any;
+  const dstHash = await writeSimplifiedEscrowFactoryV2_3CreateDstEscrow(wagmiConfig as any, {
+    chainId: dstChainId,
+    account: account.address,
+    args: [immutablesTuple],
+  } as any);
+  const receipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: dstChainId, hash: dstHash as Hex });
 
   let escrowAddress: Address | null = null;
   try {
-    const res = await _dstClient.readContract({
-      address: factoryAddr,
-      abi: simplifiedEscrowFactoryAbi as any,
-      functionName: "addressOfEscrow",
-      args: [{
-        orderHash: order.orderHash as Hex,
-        hashlock: order.hashlock as Hex,
-        maker: 0n,
-        taker: 0n,
-        token: 0n,
-        amount: 0n,
-        safetyDeposit: 0n,
-        timelocks: 0n,
-      } as any, false],
+    const res = await readSimplifiedEscrowFactoryV2_3AddressOfEscrow(wagmiConfig as any, {
+      chainId: dstChainId,
+      args: [immutablesTuple, false],
     } as any);
     escrowAddress = res as Address;
   } catch (_e) {
@@ -223,16 +212,11 @@ async function main() {
 }
 
 main().catch(async (e) => {
-  // Always show the full error object
-  console.error("unhandled_error:", e);
-  try {
-    const dec: any = decodeRevert(e);
-    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
-    if (dec?.data) console.error(`revert_data: ${dec.data}`);
-  } catch (decErr) {
-    console.error("decode_error_failed:", decErr);
-  }
-  throw e;
+  await logErrorWithRevert(e, "swap-execute", {
+    args: Deno.args,
+    file: fileArg,
+  });
+  Deno.exit(1);
 });
 
 

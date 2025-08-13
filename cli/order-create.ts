@@ -3,12 +3,15 @@
 // Alice creates an order, writes ./data/orders/pending/{hashlock}.json and ./data/swaps/{hashlock}/status.json
 
 import { base, optimism } from "viem/chains";
-import { createWalletClient, http, type Address, type Hex, keccak256 } from "viem";
+import { type Address, type Hex, keccak256 } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { ensureDir, atomicWriteJson, nowMs } from "./_fs.ts";
 import { encode1inchExtension, encodePostInteractionData, MAKER_TRAITS, packTimelocks, generateNonce } from "./postinteraction.ts";
 import { type OrderInput, signOrder } from "./eip712.ts";
 import { getCliAddresses, getPrivateKey, getRpcUrl, type SupportedChainId } from "./cli-config.ts";
+import { createWagmiConfig } from "./wagmi-config.ts";
+import { readSimpleLimitOrderProtocolHashOrder } from "../src/generated/contracts.ts";
+import { logErrorWithRevert } from "./logging.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/order-create.ts --src 8453|10 --dst 10|8453 --srcAmount <wei> --dstAmount <wei> --resolver 0x...");
@@ -35,7 +38,7 @@ const SRC_AMOUNT = BigInt(srcAmountArg);
 const DST_AMOUNT = BigInt(dstAmountArg);
 const RESOLVER = resolverArg as Address;
 
-const ANKR_API_KEY = Deno.env.get("ANKR_API_KEY") || "";
+const _ANKR_API_KEY = Deno.env.get("ANKR_API_KEY") || "";
 const ALICE_PK = (getPrivateKey("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
 if (!ALICE_PK) {
   console.error("ALICE_PRIVATE_KEY missing");
@@ -46,7 +49,7 @@ const account = privateKeyToAccount(ALICE_PK, { nonceManager });
 const srcChain = SRC === base.id ? base : optimism;
 const srcRpc = getRpcUrl(SRC);
 
-const wallet = createWalletClient({ chain: srcChain, transport: http(srcRpc), account });
+const wagmiConfig = createWagmiConfig();
 
 const addressesSrc = getCliAddresses(SRC);
 const addressesDst = getCliAddresses(DST);
@@ -110,22 +113,26 @@ async function main() {
     makerTraits,
   };
 
-  // Get order hash from chain using generated action (requires config + params object)
-  // Compute offchain hash (for tracking); onchain hash will be used by protocol
-  const { computeOrderHash } = await import("./eip712.ts");
-  const orderHash = computeOrderHash({
-    salt: order.salt,
-    maker: BigInt(order.maker),
-    receiver: BigInt(order.receiver),
-    makerAsset: BigInt(order.makerAsset),
-    takerAsset: BigInt(order.takerAsset),
-    makingAmount: order.makingAmount,
-    takingAmount: order.takingAmount,
-    makerTraits: order.makerTraits,
-  } as any);
+// Compute on-chain order hash using wagmi-generated action
+const orderHash = await readSimpleLimitOrderProtocolHashOrder(wagmiConfig as any, {
+  chainId: SRC,
+  args: [[
+    order.salt,
+    BigInt(order.maker),
+    BigInt(order.receiver),
+    BigInt(order.makerAsset),
+    BigInt(order.takerAsset),
+    order.makingAmount,
+    order.takingAmount,
+    order.makerTraits,
+  ] as any],
+} as any);
 
-  // Sign EIP-712
-  const sig = await signOrder(wallet as any, order, SRC, LOP);
+// Sign EIP-712
+// Create a temporary viem wallet client only for signing
+const { createWalletClient, http } = await import("viem");
+const wallet = createWalletClient({ chain: srcChain, transport: http(srcRpc), account });
+const sig = await signOrder(wallet as any, order, SRC, LOP);
 
   // Prepare artifacts
   const baseDir = `./data`;
@@ -181,16 +188,11 @@ async function main() {
 }
 
 main().catch(async (e) => {
-  console.error("unhandled_error:", e);
-  try {
-    const { decodeRevert } = await import("./limit-order.ts");
-    const dec: any = (decodeRevert as any)(e);
-    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
-    if (dec?.data) console.error(`revert_data: ${dec.data}`);
-  } catch (decErr) {
-    console.error("decode_error_failed:", decErr);
-  }
-  throw e;
+  await logErrorWithRevert(e, "order-create", {
+    args: Deno.args,
+  });
+  // Do not rethrow to keep process reporting clean; still exit non-zero
+  Deno.exit(1);
 });
 
 
