@@ -1,4 +1,5 @@
 import { defineConfig } from "@wagmi/cli";
+import { actions } from "@wagmi/cli/plugins";
 
 /**
  * Wagmi CLI configuration for contract type generation
@@ -57,5 +58,10 @@ export default defineConfig({
       abi: loadAbi("./abis/IERC20.json"),
     },
   ],
-  plugins: [],
+  plugins: [
+    actions({
+      // Use @wagmi/core since we're not using React
+      overridePackageName: "@wagmi/core",
+    }),
+  ],
 });

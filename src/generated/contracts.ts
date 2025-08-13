@@ -1,3 +1,10 @@
+import {
+  createReadContract,
+  createWriteContract,
+  createSimulateContract,
+  createWatchContractEvent,
+} from '@wagmi/core/codegen'
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // EscrowDst
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2243,3 +2250,2320 @@ export const simplifiedEscrowFactoryV2_3Config = {
   address: simplifiedEscrowFactoryV2_3Address,
   abi: simplifiedEscrowFactoryV2_3Abi,
 } as const
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Action
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstAbi}__
+ */
+export const readEscrowDst = /*#__PURE__*/ createReadContract({
+  abi: escrowDstAbi,
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"FACTORY"`
+ */
+export const readEscrowDstFactory = /*#__PURE__*/ createReadContract({
+  abi: escrowDstAbi,
+  functionName: 'FACTORY',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"PROXY_BYTECODE_HASH"`
+ */
+export const readEscrowDstProxyBytecodeHash = /*#__PURE__*/ createReadContract({
+  abi: escrowDstAbi,
+  functionName: 'PROXY_BYTECODE_HASH',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"RESCUE_DELAY"`
+ */
+export const readEscrowDstRescueDelay = /*#__PURE__*/ createReadContract({
+  abi: escrowDstAbi,
+  functionName: 'RESCUE_DELAY',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstAbi}__
+ */
+export const writeEscrowDst = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstAbi,
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"cancel"`
+ */
+export const writeEscrowDstCancel = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstAbi,
+  functionName: 'cancel',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"publicWithdraw"`
+ */
+export const writeEscrowDstPublicWithdraw = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstAbi,
+  functionName: 'publicWithdraw',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"rescueFunds"`
+ */
+export const writeEscrowDstRescueFunds = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstAbi,
+  functionName: 'rescueFunds',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"withdraw"`
+ */
+export const writeEscrowDstWithdraw = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstAbi,
+  functionName: 'withdraw',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstAbi}__
+ */
+export const simulateEscrowDst = /*#__PURE__*/ createSimulateContract({
+  abi: escrowDstAbi,
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"cancel"`
+ */
+export const simulateEscrowDstCancel = /*#__PURE__*/ createSimulateContract({
+  abi: escrowDstAbi,
+  functionName: 'cancel',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"publicWithdraw"`
+ */
+export const simulateEscrowDstPublicWithdraw =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowDstAbi,
+    functionName: 'publicWithdraw',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"rescueFunds"`
+ */
+export const simulateEscrowDstRescueFunds =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowDstAbi,
+    functionName: 'rescueFunds',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstAbi}__ and `functionName` set to `"withdraw"`
+ */
+export const simulateEscrowDstWithdraw = /*#__PURE__*/ createSimulateContract({
+  abi: escrowDstAbi,
+  functionName: 'withdraw',
+})
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstAbi}__
+ */
+export const watchEscrowDstEvent = /*#__PURE__*/ createWatchContractEvent({
+  abi: escrowDstAbi,
+})
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstAbi}__ and `eventName` set to `"EscrowCancelled"`
+ */
+export const watchEscrowDstEscrowCancelledEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowDstAbi,
+    eventName: 'EscrowCancelled',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstAbi}__ and `eventName` set to `"EscrowWithdrawal"`
+ */
+export const watchEscrowDstEscrowWithdrawalEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowDstAbi,
+    eventName: 'EscrowWithdrawal',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstAbi}__ and `eventName` set to `"FundsRescued"`
+ */
+export const watchEscrowDstFundsRescuedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowDstAbi,
+    eventName: 'FundsRescued',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstV2Abi}__
+ */
+export const readEscrowDstV2 = /*#__PURE__*/ createReadContract({
+  abi: escrowDstV2Abi,
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"FACTORY"`
+ */
+export const readEscrowDstV2Factory = /*#__PURE__*/ createReadContract({
+  abi: escrowDstV2Abi,
+  functionName: 'FACTORY',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"PROXY_BYTECODE_HASH"`
+ */
+export const readEscrowDstV2ProxyBytecodeHash =
+  /*#__PURE__*/ createReadContract({
+    abi: escrowDstV2Abi,
+    functionName: 'PROXY_BYTECODE_HASH',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"RESCUE_DELAY"`
+ */
+export const readEscrowDstV2RescueDelay = /*#__PURE__*/ createReadContract({
+  abi: escrowDstV2Abi,
+  functionName: 'RESCUE_DELAY',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"_hashPublicAction"`
+ */
+export const readEscrowDstV2HashPublicAction = /*#__PURE__*/ createReadContract(
+  { abi: escrowDstV2Abi, functionName: '_hashPublicAction' },
+)
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"_recover"`
+ */
+export const readEscrowDstV2Recover = /*#__PURE__*/ createReadContract({
+  abi: escrowDstV2Abi,
+  functionName: '_recover',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstV2Abi}__
+ */
+export const writeEscrowDstV2 = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstV2Abi,
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"cancel"`
+ */
+export const writeEscrowDstV2Cancel = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstV2Abi,
+  functionName: 'cancel',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"publicCancelSigned"`
+ */
+export const writeEscrowDstV2PublicCancelSigned =
+  /*#__PURE__*/ createWriteContract({
+    abi: escrowDstV2Abi,
+    functionName: 'publicCancelSigned',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"publicWithdraw"`
+ */
+export const writeEscrowDstV2PublicWithdraw = /*#__PURE__*/ createWriteContract(
+  { abi: escrowDstV2Abi, functionName: 'publicWithdraw' },
+)
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"publicWithdrawSigned"`
+ */
+export const writeEscrowDstV2PublicWithdrawSigned =
+  /*#__PURE__*/ createWriteContract({
+    abi: escrowDstV2Abi,
+    functionName: 'publicWithdrawSigned',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"rescueFunds"`
+ */
+export const writeEscrowDstV2RescueFunds = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstV2Abi,
+  functionName: 'rescueFunds',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"withdraw"`
+ */
+export const writeEscrowDstV2Withdraw = /*#__PURE__*/ createWriteContract({
+  abi: escrowDstV2Abi,
+  functionName: 'withdraw',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstV2Abi}__
+ */
+export const simulateEscrowDstV2 = /*#__PURE__*/ createSimulateContract({
+  abi: escrowDstV2Abi,
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"cancel"`
+ */
+export const simulateEscrowDstV2Cancel = /*#__PURE__*/ createSimulateContract({
+  abi: escrowDstV2Abi,
+  functionName: 'cancel',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"publicCancelSigned"`
+ */
+export const simulateEscrowDstV2PublicCancelSigned =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowDstV2Abi,
+    functionName: 'publicCancelSigned',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"publicWithdraw"`
+ */
+export const simulateEscrowDstV2PublicWithdraw =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowDstV2Abi,
+    functionName: 'publicWithdraw',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"publicWithdrawSigned"`
+ */
+export const simulateEscrowDstV2PublicWithdrawSigned =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowDstV2Abi,
+    functionName: 'publicWithdrawSigned',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"rescueFunds"`
+ */
+export const simulateEscrowDstV2RescueFunds =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowDstV2Abi,
+    functionName: 'rescueFunds',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowDstV2Abi}__ and `functionName` set to `"withdraw"`
+ */
+export const simulateEscrowDstV2Withdraw = /*#__PURE__*/ createSimulateContract(
+  { abi: escrowDstV2Abi, functionName: 'withdraw' },
+)
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstV2Abi}__
+ */
+export const watchEscrowDstV2Event = /*#__PURE__*/ createWatchContractEvent({
+  abi: escrowDstV2Abi,
+})
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstV2Abi}__ and `eventName` set to `"EscrowCancelled"`
+ */
+export const watchEscrowDstV2EscrowCancelledEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowDstV2Abi,
+    eventName: 'EscrowCancelled',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstV2Abi}__ and `eventName` set to `"EscrowWithdrawal"`
+ */
+export const watchEscrowDstV2EscrowWithdrawalEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowDstV2Abi,
+    eventName: 'EscrowWithdrawal',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowDstV2Abi}__ and `eventName` set to `"FundsRescued"`
+ */
+export const watchEscrowDstV2FundsRescuedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowDstV2Abi,
+    eventName: 'FundsRescued',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowSrcV2Abi}__
+ */
+export const readEscrowSrcV2 = /*#__PURE__*/ createReadContract({
+  abi: escrowSrcV2Abi,
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"FACTORY"`
+ */
+export const readEscrowSrcV2Factory = /*#__PURE__*/ createReadContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'FACTORY',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"PROXY_BYTECODE_HASH"`
+ */
+export const readEscrowSrcV2ProxyBytecodeHash =
+  /*#__PURE__*/ createReadContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'PROXY_BYTECODE_HASH',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"RESCUE_DELAY"`
+ */
+export const readEscrowSrcV2RescueDelay = /*#__PURE__*/ createReadContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'RESCUE_DELAY',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"_hashPublicAction"`
+ */
+export const readEscrowSrcV2HashPublicAction = /*#__PURE__*/ createReadContract(
+  { abi: escrowSrcV2Abi, functionName: '_hashPublicAction' },
+)
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"_recover"`
+ */
+export const readEscrowSrcV2Recover = /*#__PURE__*/ createReadContract({
+  abi: escrowSrcV2Abi,
+  functionName: '_recover',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__
+ */
+export const writeEscrowSrcV2 = /*#__PURE__*/ createWriteContract({
+  abi: escrowSrcV2Abi,
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"cancel"`
+ */
+export const writeEscrowSrcV2Cancel = /*#__PURE__*/ createWriteContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'cancel',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicCancel"`
+ */
+export const writeEscrowSrcV2PublicCancel = /*#__PURE__*/ createWriteContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'publicCancel',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicCancelSigned"`
+ */
+export const writeEscrowSrcV2PublicCancelSigned =
+  /*#__PURE__*/ createWriteContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'publicCancelSigned',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicWithdraw"`
+ */
+export const writeEscrowSrcV2PublicWithdraw = /*#__PURE__*/ createWriteContract(
+  { abi: escrowSrcV2Abi, functionName: 'publicWithdraw' },
+)
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicWithdrawSigned"`
+ */
+export const writeEscrowSrcV2PublicWithdrawSigned =
+  /*#__PURE__*/ createWriteContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'publicWithdrawSigned',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"rescueFunds"`
+ */
+export const writeEscrowSrcV2RescueFunds = /*#__PURE__*/ createWriteContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'rescueFunds',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"withdraw"`
+ */
+export const writeEscrowSrcV2Withdraw = /*#__PURE__*/ createWriteContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'withdraw',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"withdrawTo"`
+ */
+export const writeEscrowSrcV2WithdrawTo = /*#__PURE__*/ createWriteContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'withdrawTo',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__
+ */
+export const simulateEscrowSrcV2 = /*#__PURE__*/ createSimulateContract({
+  abi: escrowSrcV2Abi,
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"cancel"`
+ */
+export const simulateEscrowSrcV2Cancel = /*#__PURE__*/ createSimulateContract({
+  abi: escrowSrcV2Abi,
+  functionName: 'cancel',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicCancel"`
+ */
+export const simulateEscrowSrcV2PublicCancel =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'publicCancel',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicCancelSigned"`
+ */
+export const simulateEscrowSrcV2PublicCancelSigned =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'publicCancelSigned',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicWithdraw"`
+ */
+export const simulateEscrowSrcV2PublicWithdraw =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'publicWithdraw',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"publicWithdrawSigned"`
+ */
+export const simulateEscrowSrcV2PublicWithdrawSigned =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'publicWithdrawSigned',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"rescueFunds"`
+ */
+export const simulateEscrowSrcV2RescueFunds =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'rescueFunds',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"withdraw"`
+ */
+export const simulateEscrowSrcV2Withdraw = /*#__PURE__*/ createSimulateContract(
+  { abi: escrowSrcV2Abi, functionName: 'withdraw' },
+)
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `functionName` set to `"withdrawTo"`
+ */
+export const simulateEscrowSrcV2WithdrawTo =
+  /*#__PURE__*/ createSimulateContract({
+    abi: escrowSrcV2Abi,
+    functionName: 'withdrawTo',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowSrcV2Abi}__
+ */
+export const watchEscrowSrcV2Event = /*#__PURE__*/ createWatchContractEvent({
+  abi: escrowSrcV2Abi,
+})
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `eventName` set to `"EscrowCancelled"`
+ */
+export const watchEscrowSrcV2EscrowCancelledEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowSrcV2Abi,
+    eventName: 'EscrowCancelled',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `eventName` set to `"EscrowWithdrawal"`
+ */
+export const watchEscrowSrcV2EscrowWithdrawalEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowSrcV2Abi,
+    eventName: 'EscrowWithdrawal',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link escrowSrcV2Abi}__ and `eventName` set to `"FundsRescued"`
+ */
+export const watchEscrowSrcV2FundsRescuedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: escrowSrcV2Abi,
+    eventName: 'FundsRescued',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link ierc20Abi}__
+ */
+export const readIerc20 = /*#__PURE__*/ createReadContract({ abi: ierc20Abi })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"allowance"`
+ */
+export const readIerc20Allowance = /*#__PURE__*/ createReadContract({
+  abi: ierc20Abi,
+  functionName: 'allowance',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"balanceOf"`
+ */
+export const readIerc20BalanceOf = /*#__PURE__*/ createReadContract({
+  abi: ierc20Abi,
+  functionName: 'balanceOf',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"totalSupply"`
+ */
+export const readIerc20TotalSupply = /*#__PURE__*/ createReadContract({
+  abi: ierc20Abi,
+  functionName: 'totalSupply',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link ierc20Abi}__
+ */
+export const writeIerc20 = /*#__PURE__*/ createWriteContract({ abi: ierc20Abi })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"approve"`
+ */
+export const writeIerc20Approve = /*#__PURE__*/ createWriteContract({
+  abi: ierc20Abi,
+  functionName: 'approve',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"transfer"`
+ */
+export const writeIerc20Transfer = /*#__PURE__*/ createWriteContract({
+  abi: ierc20Abi,
+  functionName: 'transfer',
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"transferFrom"`
+ */
+export const writeIerc20TransferFrom = /*#__PURE__*/ createWriteContract({
+  abi: ierc20Abi,
+  functionName: 'transferFrom',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link ierc20Abi}__
+ */
+export const simulateIerc20 = /*#__PURE__*/ createSimulateContract({
+  abi: ierc20Abi,
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"approve"`
+ */
+export const simulateIerc20Approve = /*#__PURE__*/ createSimulateContract({
+  abi: ierc20Abi,
+  functionName: 'approve',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"transfer"`
+ */
+export const simulateIerc20Transfer = /*#__PURE__*/ createSimulateContract({
+  abi: ierc20Abi,
+  functionName: 'transfer',
+})
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link ierc20Abi}__ and `functionName` set to `"transferFrom"`
+ */
+export const simulateIerc20TransferFrom = /*#__PURE__*/ createSimulateContract({
+  abi: ierc20Abi,
+  functionName: 'transferFrom',
+})
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link ierc20Abi}__
+ */
+export const watchIerc20Event = /*#__PURE__*/ createWatchContractEvent({
+  abi: ierc20Abi,
+})
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link ierc20Abi}__ and `eventName` set to `"Approval"`
+ */
+export const watchIerc20ApprovalEvent = /*#__PURE__*/ createWatchContractEvent({
+  abi: ierc20Abi,
+  eventName: 'Approval',
+})
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link ierc20Abi}__ and `eventName` set to `"Transfer"`
+ */
+export const watchIerc20TransferEvent = /*#__PURE__*/ createWatchContractEvent({
+  abi: ierc20Abi,
+  eventName: 'Transfer',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocol = /*#__PURE__*/ createReadContract({
+  abi: simpleLimitOrderProtocolAbi,
+  address: simpleLimitOrderProtocolAddress,
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolDomainSeparator =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'DOMAIN_SEPARATOR',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"and"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolAnd = /*#__PURE__*/ createReadContract(
+  {
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'and',
+  },
+)
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"arbitraryStaticCall"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolArbitraryStaticCall =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'arbitraryStaticCall',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"bitInvalidatorForOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolBitInvalidatorForOrder =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'bitInvalidatorForOrder',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"checkPredicate"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolCheckPredicate =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'checkPredicate',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"eip712Domain"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolEip712Domain =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'eip712Domain',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"epoch"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolEpoch =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'epoch',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"epochEquals"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolEpochEquals =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'epochEquals',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"eq"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolEq = /*#__PURE__*/ createReadContract({
+  abi: simpleLimitOrderProtocolAbi,
+  address: simpleLimitOrderProtocolAddress,
+  functionName: 'eq',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"gt"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolGt = /*#__PURE__*/ createReadContract({
+  abi: simpleLimitOrderProtocolAbi,
+  address: simpleLimitOrderProtocolAddress,
+  functionName: 'gt',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"hashOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolHashOrder =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'hashOrder',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"lt"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolLt = /*#__PURE__*/ createReadContract({
+  abi: simpleLimitOrderProtocolAbi,
+  address: simpleLimitOrderProtocolAddress,
+  functionName: 'lt',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"not"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolNot = /*#__PURE__*/ createReadContract(
+  {
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'not',
+  },
+)
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"or"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolOr = /*#__PURE__*/ createReadContract({
+  abi: simpleLimitOrderProtocolAbi,
+  address: simpleLimitOrderProtocolAddress,
+  functionName: 'or',
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"paused"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolPaused =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'paused',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"rawRemainingInvalidatorForOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolRawRemainingInvalidatorForOrder =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'rawRemainingInvalidatorForOrder',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"remainingInvalidatorForOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const readSimpleLimitOrderProtocolRemainingInvalidatorForOrder =
+  /*#__PURE__*/ createReadContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'remainingInvalidatorForOrder',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocol = /*#__PURE__*/ createWriteContract({
+  abi: simpleLimitOrderProtocolAbi,
+  address: simpleLimitOrderProtocolAddress,
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"advanceEpoch"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolAdvanceEpoch =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'advanceEpoch',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"bitsInvalidateForOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolBitsInvalidateForOrder =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'bitsInvalidateForOrder',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"cancelOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolCancelOrder =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'cancelOrder',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"cancelOrders"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolCancelOrders =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'cancelOrders',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillContractOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolFillContractOrder =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillContractOrder',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillContractOrderArgs"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolFillContractOrderArgs =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillContractOrderArgs',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolFillOrder =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillOrder',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillOrderArgs"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolFillOrderArgs =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillOrderArgs',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"increaseEpoch"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolIncreaseEpoch =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'increaseEpoch',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"permitAndCall"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolPermitAndCall =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'permitAndCall',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"simulate"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const writeSimpleLimitOrderProtocolSimulate =
+  /*#__PURE__*/ createWriteContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'simulate',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocol =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"advanceEpoch"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolAdvanceEpoch =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'advanceEpoch',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"bitsInvalidateForOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolBitsInvalidateForOrder =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'bitsInvalidateForOrder',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"cancelOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolCancelOrder =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'cancelOrder',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"cancelOrders"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolCancelOrders =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'cancelOrders',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillContractOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolFillContractOrder =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillContractOrder',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillContractOrderArgs"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolFillContractOrderArgs =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillContractOrderArgs',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillOrder"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolFillOrder =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillOrder',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"fillOrderArgs"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolFillOrderArgs =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'fillOrderArgs',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"increaseEpoch"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolIncreaseEpoch =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'increaseEpoch',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"permitAndCall"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolPermitAndCall =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'permitAndCall',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `functionName` set to `"simulate"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const simulateSimpleLimitOrderProtocolSimulate =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    functionName: 'simulate',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `eventName` set to `"BitInvalidatorUpdated"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolBitInvalidatorUpdatedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    eventName: 'BitInvalidatorUpdated',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `eventName` set to `"EIP712DomainChanged"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolEip712DomainChangedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    eventName: 'EIP712DomainChanged',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `eventName` set to `"EpochIncreased"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolEpochIncreasedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    eventName: 'EpochIncreased',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `eventName` set to `"OrderCancelled"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolOrderCancelledEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    eventName: 'OrderCancelled',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `eventName` set to `"OrderFilled"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolOrderFilledEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    eventName: 'OrderFilled',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `eventName` set to `"Paused"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolPausedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    eventName: 'Paused',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simpleLimitOrderProtocolAbi}__ and `eventName` set to `"Unpaused"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xe767105dcfB3034a346578afd2aFD8e583171489)
+ */
+export const watchSimpleLimitOrderProtocolUnpausedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simpleLimitOrderProtocolAbi,
+    address: simpleLimitOrderProtocolAddress,
+    eventName: 'Unpaused',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__
+ */
+export const readSimplifiedEscrowFactory = /*#__PURE__*/ createReadContract({
+  abi: simplifiedEscrowFactoryAbi,
+})
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"ESCROW_DST_IMPLEMENTATION"`
+ */
+export const readSimplifiedEscrowFactoryEscrowDstImplementation =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'ESCROW_DST_IMPLEMENTATION',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"ESCROW_SRC_IMPLEMENTATION"`
+ */
+export const readSimplifiedEscrowFactoryEscrowSrcImplementation =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'ESCROW_SRC_IMPLEMENTATION',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"addressOfEscrow"`
+ */
+export const readSimplifiedEscrowFactoryAddressOfEscrow =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'addressOfEscrow',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"emergencyPaused"`
+ */
+export const readSimplifiedEscrowFactoryEmergencyPaused =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'emergencyPaused',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"escrows"`
+ */
+export const readSimplifiedEscrowFactoryEscrows =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'escrows',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"makerWhitelistEnabled"`
+ */
+export const readSimplifiedEscrowFactoryMakerWhitelistEnabled =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'makerWhitelistEnabled',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"owner"`
+ */
+export const readSimplifiedEscrowFactoryOwner =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'owner',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"resolverCount"`
+ */
+export const readSimplifiedEscrowFactoryResolverCount =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'resolverCount',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"whitelistedMakers"`
+ */
+export const readSimplifiedEscrowFactoryWhitelistedMakers =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'whitelistedMakers',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"whitelistedResolvers"`
+ */
+export const readSimplifiedEscrowFactoryWhitelistedResolvers =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'whitelistedResolvers',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__
+ */
+export const writeSimplifiedEscrowFactory = /*#__PURE__*/ createWriteContract({
+  abi: simplifiedEscrowFactoryAbi,
+})
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"addMaker"`
+ */
+export const writeSimplifiedEscrowFactoryAddMaker =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'addMaker',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"addResolver"`
+ */
+export const writeSimplifiedEscrowFactoryAddResolver =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'addResolver',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"createDstEscrow"`
+ */
+export const writeSimplifiedEscrowFactoryCreateDstEscrow =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'createDstEscrow',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"createSrcEscrow"`
+ */
+export const writeSimplifiedEscrowFactoryCreateSrcEscrow =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'createSrcEscrow',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"pause"`
+ */
+export const writeSimplifiedEscrowFactoryPause =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'pause',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"postInteraction"`
+ */
+export const writeSimplifiedEscrowFactoryPostInteraction =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'postInteraction',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"removeMaker"`
+ */
+export const writeSimplifiedEscrowFactoryRemoveMaker =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'removeMaker',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"removeResolver"`
+ */
+export const writeSimplifiedEscrowFactoryRemoveResolver =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'removeResolver',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"setMakerWhitelistEnabled"`
+ */
+export const writeSimplifiedEscrowFactorySetMakerWhitelistEnabled =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'setMakerWhitelistEnabled',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"transferOwnership"`
+ */
+export const writeSimplifiedEscrowFactoryTransferOwnership =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'transferOwnership',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"unpause"`
+ */
+export const writeSimplifiedEscrowFactoryUnpause =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'unpause',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__
+ */
+export const simulateSimplifiedEscrowFactory =
+  /*#__PURE__*/ createSimulateContract({ abi: simplifiedEscrowFactoryAbi })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"addMaker"`
+ */
+export const simulateSimplifiedEscrowFactoryAddMaker =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'addMaker',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"addResolver"`
+ */
+export const simulateSimplifiedEscrowFactoryAddResolver =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'addResolver',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"createDstEscrow"`
+ */
+export const simulateSimplifiedEscrowFactoryCreateDstEscrow =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'createDstEscrow',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"createSrcEscrow"`
+ */
+export const simulateSimplifiedEscrowFactoryCreateSrcEscrow =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'createSrcEscrow',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"pause"`
+ */
+export const simulateSimplifiedEscrowFactoryPause =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'pause',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"postInteraction"`
+ */
+export const simulateSimplifiedEscrowFactoryPostInteraction =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'postInteraction',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"removeMaker"`
+ */
+export const simulateSimplifiedEscrowFactoryRemoveMaker =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'removeMaker',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"removeResolver"`
+ */
+export const simulateSimplifiedEscrowFactoryRemoveResolver =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'removeResolver',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"setMakerWhitelistEnabled"`
+ */
+export const simulateSimplifiedEscrowFactorySetMakerWhitelistEnabled =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'setMakerWhitelistEnabled',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"transferOwnership"`
+ */
+export const simulateSimplifiedEscrowFactoryTransferOwnership =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'transferOwnership',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `functionName` set to `"unpause"`
+ */
+export const simulateSimplifiedEscrowFactoryUnpause =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryAbi,
+    functionName: 'unpause',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__
+ */
+export const watchSimplifiedEscrowFactoryEvent =
+  /*#__PURE__*/ createWatchContractEvent({ abi: simplifiedEscrowFactoryAbi })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"DstEscrowCreated"`
+ */
+export const watchSimplifiedEscrowFactoryDstEscrowCreatedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'DstEscrowCreated',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"EmergencyPause"`
+ */
+export const watchSimplifiedEscrowFactoryEmergencyPauseEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'EmergencyPause',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"MakerRemoved"`
+ */
+export const watchSimplifiedEscrowFactoryMakerRemovedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'MakerRemoved',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"MakerWhitelisted"`
+ */
+export const watchSimplifiedEscrowFactoryMakerWhitelistedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'MakerWhitelisted',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"OwnershipTransferred"`
+ */
+export const watchSimplifiedEscrowFactoryOwnershipTransferredEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'OwnershipTransferred',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"PostInteractionEscrowCreated"`
+ */
+export const watchSimplifiedEscrowFactoryPostInteractionEscrowCreatedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'PostInteractionEscrowCreated',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"ResolverRemoved"`
+ */
+export const watchSimplifiedEscrowFactoryResolverRemovedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'ResolverRemoved',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"ResolverWhitelisted"`
+ */
+export const watchSimplifiedEscrowFactoryResolverWhitelistedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'ResolverWhitelisted',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryAbi}__ and `eventName` set to `"SrcEscrowCreated"`
+ */
+export const watchSimplifiedEscrowFactorySrcEscrowCreatedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryAbi,
+    eventName: 'SrcEscrowCreated',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3 = /*#__PURE__*/ createReadContract(
+  {
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+  },
+)
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"ESCROW_DST_IMPLEMENTATION"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3EscrowDstImplementation =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'ESCROW_DST_IMPLEMENTATION',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"ESCROW_SRC_IMPLEMENTATION"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3EscrowSrcImplementation =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'ESCROW_SRC_IMPLEMENTATION',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"addressOfEscrow"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3AddressOfEscrow =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'addressOfEscrow',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"emergencyPaused"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3EmergencyPaused =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'emergencyPaused',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"escrows"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3Escrows =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'escrows',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"isWhitelistedResolver"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3IsWhitelistedResolver =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'isWhitelistedResolver',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"makerWhitelistEnabled"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3MakerWhitelistEnabled =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'makerWhitelistEnabled',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"owner"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3Owner =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'owner',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"resolverCount"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3ResolverCount =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'resolverCount',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"whitelistedMakers"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3WhitelistedMakers =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'whitelistedMakers',
+  })
+
+/**
+ * Wraps __{@link readContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"whitelistedResolvers"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const readSimplifiedEscrowFactoryV2_3WhitelistedResolvers =
+  /*#__PURE__*/ createReadContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'whitelistedResolvers',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3 =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"addMaker"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3AddMaker =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'addMaker',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"addResolver"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3AddResolver =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'addResolver',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"createDstEscrow"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3CreateDstEscrow =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'createDstEscrow',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"createSrcEscrow"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3CreateSrcEscrow =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'createSrcEscrow',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"pause"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3Pause =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'pause',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"postInteraction"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3PostInteraction =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'postInteraction',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"removeMaker"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3RemoveMaker =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'removeMaker',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"removeResolver"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3RemoveResolver =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'removeResolver',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"setMakerWhitelistEnabled"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3SetMakerWhitelistEnabled =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'setMakerWhitelistEnabled',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"transferOwnership"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3TransferOwnership =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'transferOwnership',
+  })
+
+/**
+ * Wraps __{@link writeContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"unpause"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const writeSimplifiedEscrowFactoryV2_3Unpause =
+  /*#__PURE__*/ createWriteContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'unpause',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3 =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"addMaker"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3AddMaker =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'addMaker',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"addResolver"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3AddResolver =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'addResolver',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"createDstEscrow"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3CreateDstEscrow =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'createDstEscrow',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"createSrcEscrow"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3CreateSrcEscrow =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'createSrcEscrow',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"pause"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3Pause =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'pause',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"postInteraction"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3PostInteraction =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'postInteraction',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"removeMaker"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3RemoveMaker =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'removeMaker',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"removeResolver"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3RemoveResolver =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'removeResolver',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"setMakerWhitelistEnabled"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3SetMakerWhitelistEnabled =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'setMakerWhitelistEnabled',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"transferOwnership"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3TransferOwnership =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'transferOwnership',
+  })
+
+/**
+ * Wraps __{@link simulateContract}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `functionName` set to `"unpause"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const simulateSimplifiedEscrowFactoryV2_3Unpause =
+  /*#__PURE__*/ createSimulateContract({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    functionName: 'unpause',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3Event =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"DstEscrowCreated"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3DstEscrowCreatedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'DstEscrowCreated',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"EmergencyPause"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3EmergencyPauseEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'EmergencyPause',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"MakerRemoved"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3MakerRemovedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'MakerRemoved',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"MakerWhitelisted"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3MakerWhitelistedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'MakerWhitelisted',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"OwnershipTransferred"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3OwnershipTransferredEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'OwnershipTransferred',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"PostInteractionEscrowCreated"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3PostInteractionEscrowCreatedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'PostInteractionEscrowCreated',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"ResolverRemoved"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3ResolverRemovedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'ResolverRemoved',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"ResolverWhitelisted"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3ResolverWhitelistedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'ResolverWhitelisted',
+  })
+
+/**
+ * Wraps __{@link watchContractEvent}__ with `abi` set to __{@link simplifiedEscrowFactoryV2_3Abi}__ and `eventName` set to `"SrcEscrowCreated"`
+ *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31)
+ */
+export const watchSimplifiedEscrowFactoryV2_3SrcEscrowCreatedEvent =
+  /*#__PURE__*/ createWatchContractEvent({
+    abi: simplifiedEscrowFactoryV2_3Abi,
+    address: simplifiedEscrowFactoryV2_3Address,
+    eventName: 'SrcEscrowCreated',
+  })

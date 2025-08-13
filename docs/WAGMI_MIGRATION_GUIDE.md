@@ -9,6 +9,7 @@ We've integrated `@wagmi/cli` to automatically generate TypeScript bindings for 
 - ✅ Compile-time error checking
 - ✅ Automatic ABI synchronization
 - ✅ Support for multiple chains
+- ✅ **NEW: Pre-built action functions** for cleaner code
 
 ## Setup
 
@@ -69,6 +70,36 @@ const result = await client.readContract({
   args: [order], // Type-checked arguments!
 });
 ```
+
+## Using Generated Actions (NEW!)
+
+The actions plugin generates pre-built functions for every contract method:
+
+```typescript
+import { 
+  readSimpleLimitOrderProtocolHashOrder,
+  writeSimpleLimitOrderProtocolFillOrderArgs 
+} from "../generated/contracts.ts";
+
+// Reading contracts - cleaner syntax
+const orderHash = await readSimpleLimitOrderProtocolHashOrder(config, {
+  address: simpleLimitOrderProtocolAddress[8453],
+  args: [order],
+});
+
+// Writing contracts - same type safety
+const txHash = await writeSimpleLimitOrderProtocolFillOrderArgs(config, {
+  address: simpleLimitOrderProtocolAddress[8453],
+  account,
+  args: [order, r, vs, amount, takerTraits, extensionData],
+});
+```
+
+Benefits over manual approach:
+- No need to specify `functionName` or `abi`
+- Shorter, more readable code
+- Same type safety and auto-completion
+- Consistent naming pattern
 
 ## Using @wagmi/core
 
@@ -132,9 +163,9 @@ const hash = await writeContract(config, {
 });
 ```
 
-## Available Generated Contracts
+## Available Generated Exports
 
-The following contracts are available in `src/generated/contracts.ts`:
+The following are available in `src/generated/contracts.ts`:
 
 ### Core Contracts
 
@@ -151,6 +182,19 @@ The following contracts are available in `src/generated/contracts.ts`:
 ### Token Interfaces
 
 - `ierc20Abi`
+
+### Generated Action Functions (NEW!)
+
+For each contract function, wagmi generates:
+- **Read actions**: `readContractNameFunctionName()` 
+- **Write actions**: `writeContractNameFunctionName()`
+- **Simulate actions**: `simulateContractNameFunctionName()`
+
+Example actions:
+- `readSimpleLimitOrderProtocolHashOrder()`
+- `readSimpleLimitOrderProtocolRemaining()`
+- `writeSimpleLimitOrderProtocolFillOrderArgs()`
+- `writeSimpleLimitOrderProtocolCancelOrder()`
 
 ## Benefits of Using Generated Types
 
@@ -195,6 +239,8 @@ const optimismAddress = simpleLimitOrderProtocolAddress[10];
 The wagmi configuration is in `wagmi.config.ts`:
 
 ```typescript
+import { actions } from "@wagmi/cli/plugins";
+
 export default defineConfig({
   out: "src/generated/contracts.ts",
   contracts: [
@@ -207,6 +253,11 @@ export default defineConfig({
       },
     },
     // ... more contracts
+  ],
+  plugins: [
+    actions({
+      overridePackageName: "@wagmi/core", // For non-React projects
+    }),
   ],
 });
 ```

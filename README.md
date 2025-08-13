@@ -9,6 +9,8 @@ Cross-chain atomic swap resolver for BMN token exchanges between Base and Optimi
 ## 🚀 Features
 
 - **Type-safe contract interactions** via Wagmi CLI code generation
+  - Auto-generated TypeScript bindings for all contracts
+  - Pre-built action functions for cleaner code
 - **Cross-chain atomic swaps** between Base and Optimism
 - **1inch Limit Order Protocol** integration with PostInteraction
 - **Automated escrow management** for secure token transfers
@@ -95,18 +97,24 @@ deno task alice --action withdraw --order 0xOrderHash
 This project uses Wagmi CLI for automatic TypeScript generation from contract ABIs:
 
 ```typescript
-// Import generated types
+// Import generated types and actions
 import {
-  simpleLimitOrderProtocolAbi,
   simpleLimitOrderProtocolAddress,
+  readSimpleLimitOrderProtocolHashOrder,
 } from "./src/generated/contracts.ts";
 
-// Use with full type safety
-const orderHash = await client.readContract({
+// Option 1: Use generated action functions (NEW!)
+const orderHash = await readSimpleLimitOrderProtocolHashOrder(config, {
   address: simpleLimitOrderProtocolAddress[8453], // Base
+  args: [order], // Type-checked!
+});
+
+// Option 2: Traditional approach with ABIs
+const orderHash = await client.readContract({
+  address: simpleLimitOrderProtocolAddress[8453],
   abi: simpleLimitOrderProtocolAbi,
   functionName: "hashOrder", // Auto-completed!
-  args: [order], // Type-checked!
+  args: [order],
 });
 ```
 
