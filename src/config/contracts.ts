@@ -91,7 +91,7 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
     escrowFactory: (Deno.env.get("BASE_ESCROW_FACTORY") ||
       CREATE3_ADDRESSES.ESCROW_FACTORY_V2) as Address, // SimplifiedEscrowFactory v2.3.0
     limitOrderProtocol: (Deno.env.get("BASE_LIMIT_ORDER_PROTOCOL") ||
-      "0xe767105dcfB3034a346578afd2aFD8e583171489") as Address, // SimpleLimitOrderProtocol (deployed)
+      CREATE3_ADDRESSES.LIMIT_ORDER_PROTOCOL_BASE) as Address, // SimpleLimitOrderProtocol (deployed)
     tokens: {
       BMN: (Deno.env.get("BASE_TOKEN_BMN") ||
         CREATE3_ADDRESSES.BMN_TOKEN) as Address, // BMN Token - CREATE3 deterministic address, 18 decimals, 20M supply
