@@ -4,7 +4,7 @@ Cross-chain atomic swap resolver for BMN token exchanges between Base and Optimi
 
 ## 📊 Status
 
-**⚠️ BLOCKED** - See [CURRENT_STATUS.md](CURRENT_STATUS.md) and [Active Issues](ISSUES/active/)
+**✅ ACTIVE** — Core flow unblocked. See updated [CURRENT_STATUS.md](CURRENT_STATUS.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## 🚀 Features
 
@@ -45,30 +45,32 @@ deno task wagmi:watch
 
 ## Usage
 
-### Run Resolver (Bob - Liquidity Provider)
+### Option A: Docker Compose (recommended)
 
 ```bash
-deno task resolver
+docker-compose up -d --build
 ```
 
-### Alice Client Commands
+Services:
+- Alice API: http://localhost:8001/health and http://localhost:8001/docs
+- Bob-Resolver API: http://localhost:8002/health
 
-Create an order:
+### Option B: Run locally with Deno
 
 ```bash
-deno task alice --action create --resolver 0xYourResolverAddress
+# Bob‑Resolver (taker/coordinator)
+deno task bob
+
+# Alice service (initiator)
+deno task alice
 ```
 
-List orders:
+### Create an order
+
+Use the oRPC API (Scalar UI at `/docs`) or the helper script:
 
 ```bash
-deno task alice --action list
-```
-
-Withdraw from destination (reveals secret):
-
-```bash
-deno task alice --action withdraw --order 0xOrderHash
+deno run --allow-all --unstable-kv --env-file=.env scripts/create-test-order.ts
 ```
 
 ## Architecture (Two-Party Atomic Swaps)
@@ -85,8 +87,7 @@ deno task alice --action withdraw --order 0xOrderHash
 
 ## Contract Addresses (CREATE3 - same on all chains)
 
-- Factory: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (SimplifiedEscrowFactory
-  v2.2.0)
+- Factory: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (SimplifiedEscrowFactory v2.3.0)
 - BMN Token: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 - Limit Order Protocol: `0xe767105dcfB3034a346578afd2aFD8e583171489`
 

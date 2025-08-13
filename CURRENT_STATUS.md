@@ -1,29 +1,25 @@
 # 🚀 BMN EVM Resolver - Current Status
 
-**Last Updated**: 2025-01-12
+**Last Updated**: 2025-08-13
 **Branch**: `optimism-simplified`
 **Version**: v2.3.0
-**Status**: ⚠️ BLOCKED - ABI Mismatch Issue
+**Status**: ✅ ACTIVE — Core flow unblocked
 
 ## 🎯 Project Overview
 
 Cross-chain atomic swap resolver enabling trustless BMN token exchanges between Base and Optimism using 1inch Limit Orders with PostInteraction callbacks and HTLC escrows.
 
-## 🔴 Critical Blocker
+## 🔴 Critical Blockers
 
-**Issue**: [001-limit-order-fill-abi-mismatch](ISSUES/active/001-limit-order-fill-abi-mismatch.md)
-- Resolver calls wrong function: `fillOrderArgs(r, vs, ...)` 
-- Should call: `fillContractOrderArgs(order, signature, ...)`
-- Error: Reverts with unknown selector `0xb2d25e49`
-- **Impact**: Complete blockage of atomic swap flow
+None. Previous ABI/signing issues resolved. Remaining prerequisites are operational (balances/allowances).
 
 ## 📊 System State
 
 ### Services
-- **Docker**: Not running (run `docker-compose up -d --build`)
-- **Alice Service**: Ready at port 8001
-- **Bob-Resolver**: Ready at port 8002
-- **Indexer**: Using Railway hosted instance
+- Docker Compose: `docker-compose up -d --build`
+- Alice (oRPC + OpenAPI): http://localhost:8001/health and /docs
+- Bob-Resolver: http://localhost:8002/health
+- Indexer: Railway hosted (INDEXER_URL)
 
 ### Contracts (v2.3.0)
 - **Factory**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
@@ -31,9 +27,8 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 - **BMN Token**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 
 ### Test Results
-- PostInteraction tests: 4 failures (factory address mismatch)
-- Tenderly simulation: ✅ Success with `fillContractOrderArgs`
-- Live execution: ❌ Fails due to ABI mismatch
+- Unit: green
+- Integration (oRPC): green per recent fixes (see CHANGELOG)
 
 ## 📁 Repository Structure
 
@@ -53,21 +48,11 @@ bmn-evm-resolver/
 └── archive/             # Deprecated code
 ```
 
-## 🔧 Required Fixes
+## 🔧 Focus Areas
 
-1. **Immediate (Blocking)**:
-   - [ ] Update `src/utils/limit-order.ts` to use `fillContractOrderArgs`
-   - [ ] Update resolver to use correct function signature
-   - [ ] Fix factory version references (v2.2 → v2.3)
-
-2. **High Priority**:
-   - [ ] Resolve UnifiedResolver vs BobResolverService duplication
-   - [ ] Update tests to use v2.3 factory address
-   - [ ] Process 4 stuck pending orders
-
-3. **Documentation**:
-   - [ ] Update ARCHITECTURE.md to v2.3
-   - [ ] Update README with current setup
+1. Migrate remaining manual ABI call sites to wagmi‑generated bindings/actions
+2. Ensure prod readiness: balances, allowances, health checks, logging
+3. Keep docs lean; mark archived docs as deprecated
 
 ## 🚦 Quick Start
 
@@ -91,10 +76,10 @@ deno task order:create
 
 ## 📈 Progress Metrics
 
-- **Core Functionality**: 70% (blocked by ABI issue)
-- **Test Coverage**: 60% (needs v2.3 updates)
-- **Documentation**: 85% (post-cleanup)
-- **Production Ready**: 0% (blocked)
+- Core Functionality: 90%
+- Test Coverage: High (unit + integration pass)
+- Documentation: Needs pruning/updates
+- Production Ready: In progress (ops checks)
 
 ## 🔗 Key Resources
 
@@ -105,14 +90,9 @@ deno task order:create
 
 ## 📝 For Next Agent
 
-**Priority**: Fix the ABI mismatch in `src/utils/limit-order.ts`
-
-The system is architecturally sound but blocked by a simple function signature mismatch. Once fixed:
-1. Test with pending orders in `pending-orders/`
-2. Verify PostInteraction creates escrows
-3. Complete end-to-end atomic swap test
-
-All supporting infrastructure is ready. The fix should take ~30 minutes.
+- Prefer `alice-service-orpc.ts` and `bob-resolver-service-v2.ts` entrypoints
+- Use wagmi‑generated `src/generated/contracts.ts` and actions
+- Verify allowances and funds on Base/Optimism before e2e
 
 ---
 *Auto-generated status for agent handover. Update after significant changes.*

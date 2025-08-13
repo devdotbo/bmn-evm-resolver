@@ -202,7 +202,7 @@ and this project adheres to
   - Added test:unit, test:integration, test:e2e, test:coverage, test:watch tasks
   - Configured test runners with proper sanitizers and parallel execution
 
-### Added - 2025-01-13
+### Added - 2025-08-13
 
 - `ATOMIC_SWAP_STATUS.md` - Comprehensive status document for atomic swap implementation progress
 - `scripts/create-simple-order.ts` - Script to create properly formatted limit orders with correct salt encoding
@@ -211,7 +211,7 @@ and this project adheres to
 - `scripts/monitor-escrow-creation.ts` - Monitor script for detecting source escrows and creating destination escrows
 - `alice-service-v2.ts` - Enhanced Alice service with automatic secret reveal capability
 
-### Fixed - 2025-01-14
+### Fixed - 2025-08-14
 
 - **TypeScript Type Checking** - Comprehensive fixes to enable type checking in test suite
   - Fixed viem client type incompatibilities by adding proper type casts to PublicClient/WalletClient creation
@@ -226,7 +226,7 @@ and this project adheres to
   - Removed outdated postinteraction-v2.2.test.ts file
   - All tests now run with TypeScript type checking enabled (no --no-check flag needed)
 
-### Fixed - 2025-01-13
+### Fixed - 2025-08-13
 
 - Signature format conversion from standard (v,r,s) to compact (r,vs) format for `fillOrderArgs`
 - Use `fillOrderArgs` for EOA accounts instead of `fillContractOrderArgs` (fixes BadSignature error)
@@ -236,7 +236,7 @@ and this project adheres to
 - Bob's destination escrow creation - now properly creates matching escrow on opposite chain
 - Alice's secret reveal - monitors destination escrows and reveals secrets to claim tokens
 
-### Changed - 2025-01-13
+### Changed - 2025-08-13
 
 - `docker-compose.yml` - Mount pending-orders directly instead of through data directory
 - `scripts/simulate-fill.ts` - Fixed function name in calldata output from fillContractOrderArgs to fillOrderArgs
@@ -429,7 +429,7 @@ and this project adheres to
   `process.env` with `Deno.env.get()` in PRODUCTION_INDEXER_CONFIG_TEMPLATE to
   ensure compatibility with Deno runtime
 
-### Changed - 2025-01-10
+### Changed - 2025-08-10
 
 - **Inlined import map into deno.json** to support `deno install` command
   - Removed separate `import_map.json` file
@@ -438,7 +438,7 @@ and this project adheres to
   - This fixes the error: "`deno install` is not supported when configuration
     file contains an 'importMap' field"
 
-### Added - 2025-01-10
+### Added - 2025-08-10
 
 - **@ponder/client dependency** for enhanced Ponder indexer integration
 - **.cursorrules file** for Cursor IDE configuration
@@ -506,7 +506,7 @@ and this project adheres to
 - `grafana-provisioning/` - Grafana datasources and dashboard configurations
 - Complete monitoring stack with Prometheus metrics and Grafana dashboards
 
-### Fixed - 2025-01-08
+### Fixed - 2025-08-08
 
 - Docker build failures due to Deno version mismatch (upgraded from 2.1.4 to
   2.4.3)
@@ -515,7 +515,7 @@ and this project adheres to
 - Import map validation errors by removing unsupported nodeModulesDir field
 - Container networking issues with indexer connection using host.docker.internal
 
-### Changed - 2025-01-08
+### Changed - 2025-08-08
 
 - Simplified docker-compose.yml configuration with named volumes
 - Updated all Dockerfiles to use Deno 2.4.3 and proper cache permissions
@@ -523,13 +523,13 @@ and this project adheres to
 - Updated INDEXER_URL environment variable to use host.docker.internal (later
   changed to Railway URL by default)
 
-### Added - 2025-01-08
+### Added - 2025-08-08
 
 - prometheus.yml configuration file for metrics collection
 - Grafana provisioning directory structure
 - Named volumes for better data persistence (bmn-data, redis-data)
 
-### Known Issues - 2025-01-08
+### Known Issues - 2025-08-08
 
 - Alice service exits immediately (needs to be converted to long-running
   service)
@@ -758,7 +758,7 @@ and this project adheres to
 - PostInteraction hooks for factory escrow creation
 - Atomic swap execution through SimpleLimitOrderProtocol
 
-## [0.3.0] - 2025-01-07 (Previous context)
+## [0.3.0] - 2025-08-07 (Previous context)
 
 ### Added
 
@@ -773,7 +773,7 @@ and this project adheres to
 - Removed circular dependencies between modules
 - Simplified resolver architecture
 
-## [0.2.0] - 2025-01-06 (Previous context)
+## [0.2.0] - 2025-08-06 (Previous context)
 
 ### Added
 
@@ -786,7 +786,7 @@ and this project adheres to
 - Added comprehensive security checks in CLAUDE.md
 - Implemented pre-commit security scanning
 
-## [0.1.0] - 2025-01-05 (Initial)
+## [0.1.0] - 2025-08-05 (Initial)
 
 ### Added
 
