@@ -151,11 +151,11 @@ const createOrderProcedure = (config: AliceOrpcServerConfig) => {
         
         // Save to swap state manager
         await context.swapStateManager.trackSwap(orderHash, {
-          orderHash,
-          hashlock,
-          secret: "", // Will be retrieved from SecretManager when needed
+          orderHash: orderHash as Hex,
+          hashlock: hashlock as Hex,
+          secret: "" as Hex, // Will be retrieved from SecretManager when needed
           alice: (context.limitOrderAlice as any).account.address,
-          bob: resolverAddress,
+          bob: resolverAddress as Address,
           srcChainId: input.srcChainId,
           dstChainId: input.dstChainId,
           srcToken: input.tokenAddress as Address,
@@ -307,7 +307,7 @@ const revealSecretProcedure = (config: AliceOrpcServerConfig) => {
     .input(RevealSecretInputSchema)
     .output(RevealSecretOutputSchema)
     .handler(async ({ input, context, errors }) => {
-      const secret = await context.secretManager.getSecret(input.hashlock as Hex);
+      const secret = await context.secretManager.getSecretByHashlock(input.hashlock as Hex);
       
       if (!secret) {
         throw errors.SECRET_NOT_FOUND({
@@ -370,6 +370,7 @@ export function createAliceRouter(config: AliceOrpcServerConfig) {
 
 export class AliceOrpcServer {
   private server?: Deno.HttpServer;
+  private abortController?: AbortController;
   private handler: RPCHandler<any>;
   private context: AliceContext;
   
@@ -381,7 +382,7 @@ export class AliceOrpcServer {
     this.handler = new RPCHandler(router, {
       plugins: [
         new CORSPlugin({
-          origins: ["*"], // Allow all origins for development
+          origin: "*", // Allow all origins for development
           methods: ["GET", "POST", "OPTIONS"],
           headers: ["Content-Type", "Authorization"],
         }),
@@ -434,7 +435,11 @@ export class AliceOrpcServer {
       );
     };
     
-    this.server = Deno.serve({ port: this.config.port }, handler);
+    this.abortController = new AbortController();
+    this.server = Deno.serve({ 
+      port: this.config.port, 
+      signal: this.abortController.signal 
+    }, handler);
     console.log(`🌐 Alice oRPC server started on port ${this.config.port}`);
     console.log(`📚 API endpoints:`);
     console.log(`   GET  /health`);
@@ -444,10 +449,12 @@ export class AliceOrpcServer {
     console.log(`   POST /api/alice/reveal-secret/{hashlock}`);
   }
   
-  stop() {
-    if (this.server) {
+  async stop() {
+    if (this.abortController) {
       console.log("🛑 Alice oRPC server stopping...");
-      // Server will be closed when the process exits
+      this.abortController.abort();
+      // Wait a bit for server to finish handling any pending requests
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 }

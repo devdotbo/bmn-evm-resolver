@@ -36,13 +36,17 @@ and this project adheres to
   - Modified deno.json with new test patterns and oRPC dependencies
   - Enhanced atomic swap flow with proper event monitoring and state management
 
-### Known Issues - 2025-08-13 (Part 3)
+### Fixed - 2025-08-13 (Part 4)
 
-- **Type System Mismatches** (Non-breaking, documented for fixes)
-  - alice-orpc-server.ts: Type casting needed for Hex/Address types (lines 154, 156, 158)
-  - SecretManager missing `getSecret()` method (needs `getSecretByHashlock()`)
-  - CORS configuration property name mismatch (`origins` should be `origin`)
-  - Error message format inconsistencies between implementation and tests
+- **oRPC Implementation Issues Resolved**
+  - Fixed type casting for Hex/Address types in alice-orpc-server.ts
+  - Corrected SecretManager method call from `getSecret()` to `getSecretByHashlock()`
+  - Fixed CORS configuration from `origins` to `origin`
+  - Updated test validation error messages to match oRPC framework format
+  - Fixed test data isolation with `clearAll()` methods for state managers
+  - Corrected hashlock calculation to use keccak256 of secret
+  - Fixed server shutdown to properly clean up resources
+  - All 41 integration test steps now passing
 
 ### Fixed - 2025-08-13 (Part 2)
 

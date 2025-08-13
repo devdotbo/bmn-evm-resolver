@@ -156,6 +156,18 @@ export class SecretManager {
     };
   }
 
+  async clearAll(): Promise<void> {
+    await this.ensureKv();
+    const entries = this.kv.list({ prefix: ["secrets"] });
+    for await (const entry of entries) {
+      await this.kv.delete(entry.key);
+    }
+    const orderEntries = this.kv.list({ prefix: ["secrets_by_order"] });
+    for await (const entry of orderEntries) {
+      await this.kv.delete(entry.key);
+    }
+  }
+
   async close(): Promise<void> {
     if (this.kv) this.kv.close();
   }

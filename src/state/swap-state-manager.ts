@@ -403,6 +403,20 @@ export class SwapStateManager {
   }
 
   /**
+   * Clear all swaps (for testing)
+   */
+  async clearAll(): Promise<void> {
+    const entries = this.kv.list<SwapState>({ prefix: ["swaps"] });
+    for await (const entry of entries) {
+      await this.kv.delete(entry.key);
+    }
+    const hashlockEntries = this.kv.list({ prefix: ["swaps_by_hashlock"] });
+    for await (const entry of hashlockEntries) {
+      await this.kv.delete(entry.key);
+    }
+  }
+  
+  /**
    * Close the KV store
    */
   async close(): Promise<void> {

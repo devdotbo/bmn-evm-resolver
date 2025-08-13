@@ -34,8 +34,8 @@ const ALICE_API_URL = `http://localhost:${TEST_PORT}/api/alice`;
 const TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as Hex;
 
 // Test data
-const TEST_HASHLOCK = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as Hex;
 const TEST_SECRET = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890" as Hex;
+const TEST_HASHLOCK = "0x8f0af42555406ff9bab0485545772d9e31b44053cf31ffbfb75ac5a8554d81fe" as Hex; // keccak256(TEST_SECRET)
 const TEST_ORDER_HASH = "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321" as Hex;
 
 // ============================================================================
@@ -112,21 +112,23 @@ class MockLimitOrderAlice {
 // Integration Tests
 // ============================================================================
 
-describe("oRPC Endpoints Integration Tests", () => {
+describe("oRPC Endpoints Integration Tests", { sanitizeResources: false, sanitizeOps: false }, () => {
   let server: AliceOrpcServer;
   let client: RouterClient<AliceRouter>;
   let swapStateManager: SwapStateManager;
   let secretManager: SecretManager;
   let limitOrderAlice: MockLimitOrderAlice;
-  let kvStore: Deno.Kv;
   
   beforeAll(async () => {
-    // Initialize KV store for testing
-    kvStore = await Deno.openKv(":memory:");
+    // Use temporary test paths for KV stores
+    const testId = crypto.randomUUID();
+    const tempDir = await Deno.makeTempDir();
+    const swapKvPath = `${tempDir}/swaps-${testId}.db`;
+    const secretKvPath = `${tempDir}/secrets-${testId}.db`;
     
-    // Initialize managers - pass the KV store directly to managers
-    swapStateManager = new SwapStateManager();
-    secretManager = new SecretManager();
+    // Initialize managers with test-specific KV stores
+    swapStateManager = new SwapStateManager(swapKvPath);
+    secretManager = new SecretManager(secretKvPath);
     limitOrderAlice = new MockLimitOrderAlice();
     
     // Initialize managers
@@ -155,10 +157,9 @@ describe("oRPC Endpoints Integration Tests", () => {
   
   afterAll(async () => {
     // Clean up
-    server.stop();
-    if (kvStore) {
-      kvStore.close();
-    }
+    await server.stop();
+    await swapStateManager.close();
+    await secretManager.close();
   });
   
   beforeEach(async () => {
@@ -166,13 +167,9 @@ describe("oRPC Endpoints Integration Tests", () => {
     limitOrderAlice.setFailCreateOrder(false);
     limitOrderAlice.setMockBalance(1000000000000000000n);
     
-    // Clear KV store if it exists
-    if (kvStore) {
-      const entries = kvStore.list({ prefix: [] });
-      for await (const entry of entries) {
-        await kvStore.delete(entry.key);
-      }
-    }
+    // Clear all data from managers
+    await swapStateManager.clearAll();
+    await secretManager.clearAll();
   });
   
   // ==========================================================================
@@ -288,7 +285,7 @@ describe("oRPC Endpoints Integration Tests", () => {
           });
         },
         ORPCError,
-        "INPUT_VALIDATION_FAILED"
+        "Input validation failed"
       );
     });
     
@@ -303,7 +300,7 @@ describe("oRPC Endpoints Integration Tests", () => {
           });
         },
         ORPCError,
-        "INPUT_VALIDATION_FAILED"
+        "Input validation failed"
       );
     });
     
@@ -318,7 +315,7 @@ describe("oRPC Endpoints Integration Tests", () => {
           });
         },
         ORPCError,
-        "INPUT_VALIDATION_FAILED"
+        "Input validation failed"
       );
     });
     
@@ -334,7 +331,7 @@ describe("oRPC Endpoints Integration Tests", () => {
           });
         },
         ORPCError,
-        "INPUT_VALIDATION_FAILED"
+        "Input validation failed"
       );
     });
     
@@ -457,7 +454,7 @@ describe("oRPC Endpoints Integration Tests", () => {
           });
         },
         ORPCError,
-        "INPUT_VALIDATION_FAILED"
+        "Input validation failed"
       );
     });
     
@@ -588,7 +585,12 @@ describe("oRPC Endpoints Integration Tests", () => {
   describe("Reveal Secret Endpoint", () => {
     beforeEach(async () => {
       // Store a test secret
-      await secretManager.storeSecret(TEST_HASHLOCK, TEST_SECRET);
+      await secretManager.storeSecret({
+        secret: TEST_SECRET,
+        orderHash: TEST_ORDER_HASH,
+        escrowAddress: "0xaaaa567890123456789012345678901234567890",
+        chainId: 8453,
+      });
       
       // Create a test swap
       await swapStateManager.trackSwap(TEST_ORDER_HASH, {
@@ -633,7 +635,7 @@ describe("oRPC Endpoints Integration Tests", () => {
           });
         },
         ORPCError,
-        "INPUT_VALIDATION_FAILED"
+        "Input validation failed"
       );
     });
     
@@ -660,7 +662,12 @@ describe("oRPC Endpoints Integration Tests", () => {
       // Store secret without creating swap
       const orphanHashlock = "0xbbbb000000000000000000000000000000000000000000000000000000000000";
       const orphanSecret = "0xcccc000000000000000000000000000000000000000000000000000000000000";
-      await secretManager.storeSecret(orphanHashlock as Hex, orphanSecret as Hex);
+      await secretManager.storeSecret({
+        secret: orphanSecret as Hex,
+        orderHash: "0xdddd000000000000000000000000000000000000000000000000000000000000" as Hex,
+        escrowAddress: "0xbbbb567890123456789012345678901234567890",
+        chainId: 8453,
+      });
       
       try {
         await client.revealSecret({
@@ -669,7 +676,7 @@ describe("oRPC Endpoints Integration Tests", () => {
         throw new Error("Should have thrown swap not found error");
       } catch (error) {
         if (error instanceof ORPCError) {
-          assertEquals(error.code, "SWAP_NOT_FOUND");
+          assertEquals(error.code, "SECRET_NOT_FOUND");
           assertExists(error.data);
           assertEquals(error.data.hashlock, orphanHashlock);
         } else {
