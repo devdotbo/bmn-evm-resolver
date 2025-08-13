@@ -2,9 +2,7 @@
   "abi": [
     {
       "type": "constructor",
-      "inputs": [
-        { "name": "_weth", "type": "address", "internalType": "contract IWETH" }
-      ],
+      "inputs": [{ "name": "_weth", "type": "address", "internalType": "contract IWETH" }],
       "stateMutability": "nonpayable"
     },
     { "type": "receive", "stateMutability": "payable" },
@@ -59,16 +57,8 @@
       "type": "function",
       "name": "bitsInvalidateForOrder",
       "inputs": [
-        {
-          "name": "makerTraits",
-          "type": "uint256",
-          "internalType": "MakerTraits"
-        },
-        {
-          "name": "additionalMask",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
+        { "name": "makerTraits", "type": "uint256", "internalType": "MakerTraits" },
+        { "name": "additionalMask", "type": "uint256", "internalType": "uint256" }
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
@@ -77,11 +67,7 @@
       "type": "function",
       "name": "cancelOrder",
       "inputs": [
-        {
-          "name": "makerTraits",
-          "type": "uint256",
-          "internalType": "MakerTraits"
-        },
+        { "name": "makerTraits", "type": "uint256", "internalType": "MakerTraits" },
         { "name": "orderHash", "type": "bytes32", "internalType": "bytes32" }
       ],
       "outputs": [],
@@ -91,16 +77,8 @@
       "type": "function",
       "name": "cancelOrders",
       "inputs": [
-        {
-          "name": "makerTraits",
-          "type": "uint256[]",
-          "internalType": "MakerTraits[]"
-        },
-        {
-          "name": "orderHashes",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        }
+        { "name": "makerTraits", "type": "uint256[]", "internalType": "MakerTraits[]" },
+        { "name": "orderHashes", "type": "bytes32[]", "internalType": "bytes32[]" }
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
@@ -108,9 +86,7 @@
     {
       "type": "function",
       "name": "checkPredicate",
-      "inputs": [
-        { "name": "predicate", "type": "bytes", "internalType": "bytes" }
-      ],
+      "inputs": [{ "name": "predicate", "type": "bytes", "internalType": "bytes" }],
       "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
       "stateMutability": "view"
     },
@@ -123,17 +99,9 @@
         { "name": "name", "type": "string", "internalType": "string" },
         { "name": "version", "type": "string", "internalType": "string" },
         { "name": "chainId", "type": "uint256", "internalType": "uint256" },
-        {
-          "name": "verifyingContract",
-          "type": "address",
-          "internalType": "address"
-        },
+        { "name": "verifyingContract", "type": "address", "internalType": "address" },
         { "name": "salt", "type": "bytes32", "internalType": "bytes32" },
-        {
-          "name": "extensions",
-          "type": "uint256[]",
-          "internalType": "uint256[]"
-        }
+        { "name": "extensions", "type": "uint256[]", "internalType": "uint256[]" }
       ],
       "stateMutability": "view"
     },
@@ -179,45 +147,17 @@
           "components": [
             { "name": "salt", "type": "uint256", "internalType": "uint256" },
             { "name": "maker", "type": "uint256", "internalType": "Address" },
-            {
-              "name": "receiver",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "takerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "takingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "makerTraits",
-              "type": "uint256",
-              "internalType": "MakerTraits"
-            }
+            { "name": "receiver", "type": "uint256", "internalType": "Address" },
+            { "name": "makerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "takerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "makingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "takingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "makerTraits", "type": "uint256", "internalType": "MakerTraits" }
           ]
         },
         { "name": "signature", "type": "bytes", "internalType": "bytes" },
         { "name": "amount", "type": "uint256", "internalType": "uint256" },
-        {
-          "name": "takerTraits",
-          "type": "uint256",
-          "internalType": "TakerTraits"
-        }
+        { "name": "takerTraits", "type": "uint256", "internalType": "TakerTraits" }
       ],
       "outputs": [
         { "name": "", "type": "uint256", "internalType": "uint256" },
@@ -237,45 +177,17 @@
           "components": [
             { "name": "salt", "type": "uint256", "internalType": "uint256" },
             { "name": "maker", "type": "uint256", "internalType": "Address" },
-            {
-              "name": "receiver",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "takerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "takingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "makerTraits",
-              "type": "uint256",
-              "internalType": "MakerTraits"
-            }
+            { "name": "receiver", "type": "uint256", "internalType": "Address" },
+            { "name": "makerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "takerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "makingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "takingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "makerTraits", "type": "uint256", "internalType": "MakerTraits" }
           ]
         },
         { "name": "signature", "type": "bytes", "internalType": "bytes" },
         { "name": "amount", "type": "uint256", "internalType": "uint256" },
-        {
-          "name": "takerTraits",
-          "type": "uint256",
-          "internalType": "TakerTraits"
-        },
+        { "name": "takerTraits", "type": "uint256", "internalType": "TakerTraits" },
         { "name": "args", "type": "bytes", "internalType": "bytes" }
       ],
       "outputs": [
@@ -296,46 +208,18 @@
           "components": [
             { "name": "salt", "type": "uint256", "internalType": "uint256" },
             { "name": "maker", "type": "uint256", "internalType": "Address" },
-            {
-              "name": "receiver",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "takerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "takingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "makerTraits",
-              "type": "uint256",
-              "internalType": "MakerTraits"
-            }
+            { "name": "receiver", "type": "uint256", "internalType": "Address" },
+            { "name": "makerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "takerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "makingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "takingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "makerTraits", "type": "uint256", "internalType": "MakerTraits" }
           ]
         },
         { "name": "r", "type": "bytes32", "internalType": "bytes32" },
         { "name": "vs", "type": "bytes32", "internalType": "bytes32" },
         { "name": "amount", "type": "uint256", "internalType": "uint256" },
-        {
-          "name": "takerTraits",
-          "type": "uint256",
-          "internalType": "TakerTraits"
-        }
+        { "name": "takerTraits", "type": "uint256", "internalType": "TakerTraits" }
       ],
       "outputs": [
         { "name": "", "type": "uint256", "internalType": "uint256" },
@@ -355,46 +239,18 @@
           "components": [
             { "name": "salt", "type": "uint256", "internalType": "uint256" },
             { "name": "maker", "type": "uint256", "internalType": "Address" },
-            {
-              "name": "receiver",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "takerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "takingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "makerTraits",
-              "type": "uint256",
-              "internalType": "MakerTraits"
-            }
+            { "name": "receiver", "type": "uint256", "internalType": "Address" },
+            { "name": "makerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "takerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "makingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "takingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "makerTraits", "type": "uint256", "internalType": "MakerTraits" }
           ]
         },
         { "name": "r", "type": "bytes32", "internalType": "bytes32" },
         { "name": "vs", "type": "bytes32", "internalType": "bytes32" },
         { "name": "amount", "type": "uint256", "internalType": "uint256" },
-        {
-          "name": "takerTraits",
-          "type": "uint256",
-          "internalType": "TakerTraits"
-        },
+        { "name": "takerTraits", "type": "uint256", "internalType": "TakerTraits" },
         { "name": "args", "type": "bytes", "internalType": "bytes" }
       ],
       "outputs": [
@@ -425,36 +281,12 @@
           "components": [
             { "name": "salt", "type": "uint256", "internalType": "uint256" },
             { "name": "maker", "type": "uint256", "internalType": "Address" },
-            {
-              "name": "receiver",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "takerAsset",
-              "type": "uint256",
-              "internalType": "Address"
-            },
-            {
-              "name": "makingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "takingAmount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "makerTraits",
-              "type": "uint256",
-              "internalType": "MakerTraits"
-            }
+            { "name": "receiver", "type": "uint256", "internalType": "Address" },
+            { "name": "makerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "takerAsset", "type": "uint256", "internalType": "Address" },
+            { "name": "makingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "takingAmount", "type": "uint256", "internalType": "uint256" },
+            { "name": "makerTraits", "type": "uint256", "internalType": "MakerTraits" }
           ]
         }
       ],
@@ -464,9 +296,7 @@
     {
       "type": "function",
       "name": "increaseEpoch",
-      "inputs": [
-        { "name": "series", "type": "uint96", "internalType": "uint96" }
-      ],
+      "inputs": [{ "name": "series", "type": "uint96", "internalType": "uint96" }],
       "outputs": [],
       "stateMutability": "nonpayable"
     },
@@ -548,55 +378,20 @@
       "type": "event",
       "name": "BitInvalidatorUpdated",
       "inputs": [
-        {
-          "name": "maker",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "slotIndex",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        },
-        {
-          "name": "slotValue",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        }
+        { "name": "maker", "type": "address", "indexed": true, "internalType": "address" },
+        { "name": "slotIndex", "type": "uint256", "indexed": false, "internalType": "uint256" },
+        { "name": "slotValue", "type": "uint256", "indexed": false, "internalType": "uint256" }
       ],
       "anonymous": false
     },
-    {
-      "type": "event",
-      "name": "EIP712DomainChanged",
-      "inputs": [],
-      "anonymous": false
-    },
+    { "type": "event", "name": "EIP712DomainChanged", "inputs": [], "anonymous": false },
     {
       "type": "event",
       "name": "EpochIncreased",
       "inputs": [
-        {
-          "name": "maker",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "series",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        },
-        {
-          "name": "newEpoch",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        }
+        { "name": "maker", "type": "address", "indexed": true, "internalType": "address" },
+        { "name": "series", "type": "uint256", "indexed": false, "internalType": "uint256" },
+        { "name": "newEpoch", "type": "uint256", "indexed": false, "internalType": "uint256" }
       ],
       "anonymous": false
     },
@@ -604,12 +399,7 @@
       "type": "event",
       "name": "OrderCancelled",
       "inputs": [
-        {
-          "name": "orderHash",
-          "type": "bytes32",
-          "indexed": false,
-          "internalType": "bytes32"
-        }
+        { "name": "orderHash", "type": "bytes32", "indexed": false, "internalType": "bytes32" }
       ],
       "anonymous": false
     },
@@ -617,12 +407,7 @@
       "type": "event",
       "name": "OrderFilled",
       "inputs": [
-        {
-          "name": "orderHash",
-          "type": "bytes32",
-          "indexed": false,
-          "internalType": "bytes32"
-        },
+        { "name": "orderHash", "type": "bytes32", "indexed": false, "internalType": "bytes32" },
         {
           "name": "remainingAmount",
           "type": "uint256",
@@ -636,12 +421,7 @@
       "type": "event",
       "name": "Paused",
       "inputs": [
-        {
-          "name": "account",
-          "type": "address",
-          "indexed": false,
-          "internalType": "address"
-        }
+        { "name": "account", "type": "address", "indexed": false, "internalType": "address" }
       ],
       "anonymous": false
     },
@@ -649,12 +429,7 @@
       "type": "event",
       "name": "Unpaused",
       "inputs": [
-        {
-          "name": "account",
-          "type": "address",
-          "indexed": false,
-          "internalType": "address"
-        }
+        { "name": "account", "type": "address", "indexed": false, "internalType": "address" }
       ],
       "anonymous": false
     },
@@ -664,11 +439,7 @@
     { "type": "error", "name": "BitInvalidatedOrder", "inputs": [] },
     { "type": "error", "name": "ETHTransferFailed", "inputs": [] },
     { "type": "error", "name": "EnforcedPause", "inputs": [] },
-    {
-      "type": "error",
-      "name": "EpochManagerAndBitInvalidatorsAreIncompatible",
-      "inputs": []
-    },
+    { "type": "error", "name": "EpochManagerAndBitInvalidatorsAreIncompatible", "inputs": [] },
     { "type": "error", "name": "EthDepositRejected", "inputs": [] },
     { "type": "error", "name": "ExpectedPause", "inputs": [] },
     { "type": "error", "name": "InvalidMsgValue", "inputs": [] },
@@ -678,11 +449,7 @@
     { "type": "error", "name": "MakingAmountTooLow", "inputs": [] },
     { "type": "error", "name": "MismatchArraysLengths", "inputs": [] },
     { "type": "error", "name": "OrderExpired", "inputs": [] },
-    {
-      "type": "error",
-      "name": "OrderIsNotSuitableForMassInvalidation",
-      "inputs": []
-    },
+    { "type": "error", "name": "OrderIsNotSuitableForMassInvalidation", "inputs": [] },
     { "type": "error", "name": "PartialFillNotAllowed", "inputs": [] },
     { "type": "error", "name": "Permit2TransferAmountTooHigh", "inputs": [] },
     { "type": "error", "name": "PredicateIsNotTrue", "inputs": [] },
@@ -782,13 +549,7 @@
     "output": {
       "abi": [
         {
-          "inputs": [
-            {
-              "internalType": "contract IWETH",
-              "name": "_weth",
-              "type": "address"
-            }
-          ],
+          "inputs": [{ "internalType": "contract IWETH", "name": "_weth", "type": "address" }],
           "stateMutability": "nonpayable",
           "type": "constructor"
         },
@@ -798,11 +559,7 @@
         { "inputs": [], "type": "error", "name": "BitInvalidatedOrder" },
         { "inputs": [], "type": "error", "name": "ETHTransferFailed" },
         { "inputs": [], "type": "error", "name": "EnforcedPause" },
-        {
-          "inputs": [],
-          "type": "error",
-          "name": "EpochManagerAndBitInvalidatorsAreIncompatible"
-        },
+        { "inputs": [], "type": "error", "name": "EpochManagerAndBitInvalidatorsAreIncompatible" },
         { "inputs": [], "type": "error", "name": "EthDepositRejected" },
         { "inputs": [], "type": "error", "name": "ExpectedPause" },
         { "inputs": [], "type": "error", "name": "InvalidMsgValue" },
@@ -812,17 +569,9 @@
         { "inputs": [], "type": "error", "name": "MakingAmountTooLow" },
         { "inputs": [], "type": "error", "name": "MismatchArraysLengths" },
         { "inputs": [], "type": "error", "name": "OrderExpired" },
-        {
-          "inputs": [],
-          "type": "error",
-          "name": "OrderIsNotSuitableForMassInvalidation"
-        },
+        { "inputs": [], "type": "error", "name": "OrderIsNotSuitableForMassInvalidation" },
         { "inputs": [], "type": "error", "name": "PartialFillNotAllowed" },
-        {
-          "inputs": [],
-          "type": "error",
-          "name": "Permit2TransferAmountTooHigh"
-        },
+        { "inputs": [], "type": "error", "name": "Permit2TransferAmountTooHigh" },
         { "inputs": [], "type": "error", "name": "PredicateIsNotTrue" },
         { "inputs": [], "type": "error", "name": "PrivateOrder" },
         { "inputs": [], "type": "error", "name": "ReentrancyDetected" },
@@ -838,77 +587,32 @@
           "name": "SimulationResults"
         },
         {
-          "inputs": [
-            { "internalType": "string", "name": "str", "type": "string" }
-          ],
+          "inputs": [{ "internalType": "string", "name": "str", "type": "string" }],
           "type": "error",
           "name": "StringTooLong"
         },
         { "inputs": [], "type": "error", "name": "SwapWithZeroAmount" },
         { "inputs": [], "type": "error", "name": "TakingAmountExceeded" },
         { "inputs": [], "type": "error", "name": "TakingAmountTooHigh" },
-        {
-          "inputs": [],
-          "type": "error",
-          "name": "TransferFromMakerToTakerFailed"
-        },
-        {
-          "inputs": [],
-          "type": "error",
-          "name": "TransferFromTakerToMakerFailed"
-        },
+        { "inputs": [], "type": "error", "name": "TransferFromMakerToTakerFailed" },
+        { "inputs": [], "type": "error", "name": "TransferFromTakerToMakerFailed" },
         { "inputs": [], "type": "error", "name": "WrongSeriesNonce" },
         {
           "inputs": [
-            {
-              "internalType": "address",
-              "name": "maker",
-              "type": "address",
-              "indexed": true
-            },
-            {
-              "internalType": "uint256",
-              "name": "slotIndex",
-              "type": "uint256",
-              "indexed": false
-            },
-            {
-              "internalType": "uint256",
-              "name": "slotValue",
-              "type": "uint256",
-              "indexed": false
-            }
+            { "internalType": "address", "name": "maker", "type": "address", "indexed": true },
+            { "internalType": "uint256", "name": "slotIndex", "type": "uint256", "indexed": false },
+            { "internalType": "uint256", "name": "slotValue", "type": "uint256", "indexed": false }
           ],
           "type": "event",
           "name": "BitInvalidatorUpdated",
           "anonymous": false
         },
-        {
-          "inputs": [],
-          "type": "event",
-          "name": "EIP712DomainChanged",
-          "anonymous": false
-        },
+        { "inputs": [], "type": "event", "name": "EIP712DomainChanged", "anonymous": false },
         {
           "inputs": [
-            {
-              "internalType": "address",
-              "name": "maker",
-              "type": "address",
-              "indexed": true
-            },
-            {
-              "internalType": "uint256",
-              "name": "series",
-              "type": "uint256",
-              "indexed": false
-            },
-            {
-              "internalType": "uint256",
-              "name": "newEpoch",
-              "type": "uint256",
-              "indexed": false
-            }
+            { "internalType": "address", "name": "maker", "type": "address", "indexed": true },
+            { "internalType": "uint256", "name": "series", "type": "uint256", "indexed": false },
+            { "internalType": "uint256", "name": "newEpoch", "type": "uint256", "indexed": false }
           ],
           "type": "event",
           "name": "EpochIncreased",
@@ -916,12 +620,7 @@
         },
         {
           "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "orderHash",
-              "type": "bytes32",
-              "indexed": false
-            }
+            { "internalType": "bytes32", "name": "orderHash", "type": "bytes32", "indexed": false }
           ],
           "type": "event",
           "name": "OrderCancelled",
@@ -929,12 +628,7 @@
         },
         {
           "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "orderHash",
-              "type": "bytes32",
-              "indexed": false
-            },
+            { "internalType": "bytes32", "name": "orderHash", "type": "bytes32", "indexed": false },
             {
               "internalType": "uint256",
               "name": "remainingAmount",
@@ -948,12 +642,7 @@
         },
         {
           "inputs": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address",
-              "indexed": false
-            }
+            { "internalType": "address", "name": "account", "type": "address", "indexed": false }
           ],
           "type": "event",
           "name": "Paused",
@@ -961,12 +650,7 @@
         },
         {
           "inputs": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address",
-              "indexed": false
-            }
+            { "internalType": "address", "name": "account", "type": "address", "indexed": false }
           ],
           "type": "event",
           "name": "Unpaused",
@@ -977,9 +661,7 @@
           "stateMutability": "view",
           "type": "function",
           "name": "DOMAIN_SEPARATOR",
-          "outputs": [
-            { "internalType": "bytes32", "name": "", "type": "bytes32" }
-          ]
+          "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }]
         },
         {
           "inputs": [
@@ -1008,9 +690,7 @@
           "stateMutability": "view",
           "type": "function",
           "name": "arbitraryStaticCall",
-          "outputs": [
-            { "internalType": "uint256", "name": "", "type": "uint256" }
-          ]
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
         },
         {
           "inputs": [
@@ -1020,22 +700,12 @@
           "stateMutability": "view",
           "type": "function",
           "name": "bitInvalidatorForOrder",
-          "outputs": [
-            { "internalType": "uint256", "name": "", "type": "uint256" }
-          ]
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
         },
         {
           "inputs": [
-            {
-              "internalType": "MakerTraits",
-              "name": "makerTraits",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "additionalMask",
-              "type": "uint256"
-            }
+            { "internalType": "MakerTraits", "name": "makerTraits", "type": "uint256" },
+            { "internalType": "uint256", "name": "additionalMask", "type": "uint256" }
           ],
           "stateMutability": "nonpayable",
           "type": "function",
@@ -1043,16 +713,8 @@
         },
         {
           "inputs": [
-            {
-              "internalType": "MakerTraits",
-              "name": "makerTraits",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "orderHash",
-              "type": "bytes32"
-            }
+            { "internalType": "MakerTraits", "name": "makerTraits", "type": "uint256" },
+            { "internalType": "bytes32", "name": "orderHash", "type": "bytes32" }
           ],
           "stateMutability": "nonpayable",
           "type": "function",
@@ -1060,25 +722,15 @@
         },
         {
           "inputs": [
-            {
-              "internalType": "MakerTraits[]",
-              "name": "makerTraits",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "bytes32[]",
-              "name": "orderHashes",
-              "type": "bytes32[]"
-            }
+            { "internalType": "MakerTraits[]", "name": "makerTraits", "type": "uint256[]" },
+            { "internalType": "bytes32[]", "name": "orderHashes", "type": "bytes32[]" }
           ],
           "stateMutability": "nonpayable",
           "type": "function",
           "name": "cancelOrders"
         },
         {
-          "inputs": [
-            { "internalType": "bytes", "name": "predicate", "type": "bytes" }
-          ],
+          "inputs": [{ "internalType": "bytes", "name": "predicate", "type": "bytes" }],
           "stateMutability": "view",
           "type": "function",
           "name": "checkPredicate",
@@ -1094,17 +746,9 @@
             { "internalType": "string", "name": "name", "type": "string" },
             { "internalType": "string", "name": "version", "type": "string" },
             { "internalType": "uint256", "name": "chainId", "type": "uint256" },
-            {
-              "internalType": "address",
-              "name": "verifyingContract",
-              "type": "address"
-            },
+            { "internalType": "address", "name": "verifyingContract", "type": "address" },
             { "internalType": "bytes32", "name": "salt", "type": "bytes32" },
-            {
-              "internalType": "uint256[]",
-              "name": "extensions",
-              "type": "uint256[]"
-            }
+            { "internalType": "uint256[]", "name": "extensions", "type": "uint256[]" }
           ]
         },
         {
@@ -1115,19 +759,13 @@
           "stateMutability": "view",
           "type": "function",
           "name": "epoch",
-          "outputs": [
-            { "internalType": "uint256", "name": "", "type": "uint256" }
-          ]
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
         },
         {
           "inputs": [
             { "internalType": "address", "name": "maker", "type": "address" },
             { "internalType": "uint256", "name": "series", "type": "uint256" },
-            {
-              "internalType": "uint256",
-              "name": "makerEpoch",
-              "type": "uint256"
-            }
+            { "internalType": "uint256", "name": "makerEpoch", "type": "uint256" }
           ],
           "stateMutability": "view",
           "type": "function",
@@ -1151,55 +789,19 @@
               "name": "order",
               "type": "tuple",
               "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "salt",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "maker",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "receiver",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "makerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "takerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "makingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "takingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "MakerTraits",
-                  "name": "makerTraits",
-                  "type": "uint256"
-                }
+                { "internalType": "uint256", "name": "salt", "type": "uint256" },
+                { "internalType": "Address", "name": "maker", "type": "uint256" },
+                { "internalType": "Address", "name": "receiver", "type": "uint256" },
+                { "internalType": "Address", "name": "makerAsset", "type": "uint256" },
+                { "internalType": "Address", "name": "takerAsset", "type": "uint256" },
+                { "internalType": "uint256", "name": "makingAmount", "type": "uint256" },
+                { "internalType": "uint256", "name": "takingAmount", "type": "uint256" },
+                { "internalType": "MakerTraits", "name": "makerTraits", "type": "uint256" }
               ]
             },
             { "internalType": "bytes", "name": "signature", "type": "bytes" },
             { "internalType": "uint256", "name": "amount", "type": "uint256" },
-            {
-              "internalType": "TakerTraits",
-              "name": "takerTraits",
-              "type": "uint256"
-            }
+            { "internalType": "TakerTraits", "name": "takerTraits", "type": "uint256" }
           ],
           "stateMutability": "nonpayable",
           "type": "function",
@@ -1217,55 +819,19 @@
               "name": "order",
               "type": "tuple",
               "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "salt",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "maker",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "receiver",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "makerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "takerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "makingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "takingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "MakerTraits",
-                  "name": "makerTraits",
-                  "type": "uint256"
-                }
+                { "internalType": "uint256", "name": "salt", "type": "uint256" },
+                { "internalType": "Address", "name": "maker", "type": "uint256" },
+                { "internalType": "Address", "name": "receiver", "type": "uint256" },
+                { "internalType": "Address", "name": "makerAsset", "type": "uint256" },
+                { "internalType": "Address", "name": "takerAsset", "type": "uint256" },
+                { "internalType": "uint256", "name": "makingAmount", "type": "uint256" },
+                { "internalType": "uint256", "name": "takingAmount", "type": "uint256" },
+                { "internalType": "MakerTraits", "name": "makerTraits", "type": "uint256" }
               ]
             },
             { "internalType": "bytes", "name": "signature", "type": "bytes" },
             { "internalType": "uint256", "name": "amount", "type": "uint256" },
-            {
-              "internalType": "TakerTraits",
-              "name": "takerTraits",
-              "type": "uint256"
-            },
+            { "internalType": "TakerTraits", "name": "takerTraits", "type": "uint256" },
             { "internalType": "bytes", "name": "args", "type": "bytes" }
           ],
           "stateMutability": "nonpayable",
@@ -1284,56 +850,20 @@
               "name": "order",
               "type": "tuple",
               "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "salt",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "maker",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "receiver",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "makerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "takerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "makingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "takingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "MakerTraits",
-                  "name": "makerTraits",
-                  "type": "uint256"
-                }
+                { "internalType": "uint256", "name": "salt", "type": "uint256" },
+                { "internalType": "Address", "name": "maker", "type": "uint256" },
+                { "internalType": "Address", "name": "receiver", "type": "uint256" },
+                { "internalType": "Address", "name": "makerAsset", "type": "uint256" },
+                { "internalType": "Address", "name": "takerAsset", "type": "uint256" },
+                { "internalType": "uint256", "name": "makingAmount", "type": "uint256" },
+                { "internalType": "uint256", "name": "takingAmount", "type": "uint256" },
+                { "internalType": "MakerTraits", "name": "makerTraits", "type": "uint256" }
               ]
             },
             { "internalType": "bytes32", "name": "r", "type": "bytes32" },
             { "internalType": "bytes32", "name": "vs", "type": "bytes32" },
             { "internalType": "uint256", "name": "amount", "type": "uint256" },
-            {
-              "internalType": "TakerTraits",
-              "name": "takerTraits",
-              "type": "uint256"
-            }
+            { "internalType": "TakerTraits", "name": "takerTraits", "type": "uint256" }
           ],
           "stateMutability": "payable",
           "type": "function",
@@ -1351,56 +881,20 @@
               "name": "order",
               "type": "tuple",
               "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "salt",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "maker",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "receiver",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "makerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "takerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "makingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "takingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "MakerTraits",
-                  "name": "makerTraits",
-                  "type": "uint256"
-                }
+                { "internalType": "uint256", "name": "salt", "type": "uint256" },
+                { "internalType": "Address", "name": "maker", "type": "uint256" },
+                { "internalType": "Address", "name": "receiver", "type": "uint256" },
+                { "internalType": "Address", "name": "makerAsset", "type": "uint256" },
+                { "internalType": "Address", "name": "takerAsset", "type": "uint256" },
+                { "internalType": "uint256", "name": "makingAmount", "type": "uint256" },
+                { "internalType": "uint256", "name": "takingAmount", "type": "uint256" },
+                { "internalType": "MakerTraits", "name": "makerTraits", "type": "uint256" }
               ]
             },
             { "internalType": "bytes32", "name": "r", "type": "bytes32" },
             { "internalType": "bytes32", "name": "vs", "type": "bytes32" },
             { "internalType": "uint256", "name": "amount", "type": "uint256" },
-            {
-              "internalType": "TakerTraits",
-              "name": "takerTraits",
-              "type": "uint256"
-            },
+            { "internalType": "TakerTraits", "name": "takerTraits", "type": "uint256" },
             { "internalType": "bytes", "name": "args", "type": "bytes" }
           ],
           "stateMutability": "payable",
@@ -1429,60 +923,24 @@
               "name": "order",
               "type": "tuple",
               "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "salt",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "maker",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "receiver",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "makerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "Address",
-                  "name": "takerAsset",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "makingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "takingAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "MakerTraits",
-                  "name": "makerTraits",
-                  "type": "uint256"
-                }
+                { "internalType": "uint256", "name": "salt", "type": "uint256" },
+                { "internalType": "Address", "name": "maker", "type": "uint256" },
+                { "internalType": "Address", "name": "receiver", "type": "uint256" },
+                { "internalType": "Address", "name": "makerAsset", "type": "uint256" },
+                { "internalType": "Address", "name": "takerAsset", "type": "uint256" },
+                { "internalType": "uint256", "name": "makingAmount", "type": "uint256" },
+                { "internalType": "uint256", "name": "takingAmount", "type": "uint256" },
+                { "internalType": "MakerTraits", "name": "makerTraits", "type": "uint256" }
               ]
             }
           ],
           "stateMutability": "view",
           "type": "function",
           "name": "hashOrder",
-          "outputs": [
-            { "internalType": "bytes32", "name": "", "type": "bytes32" }
-          ]
+          "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }]
         },
         {
-          "inputs": [
-            { "internalType": "uint96", "name": "series", "type": "uint96" }
-          ],
+          "inputs": [{ "internalType": "uint96", "name": "series", "type": "uint96" }],
           "stateMutability": "nonpayable",
           "type": "function",
           "name": "increaseEpoch"
@@ -1498,9 +956,7 @@
           "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }]
         },
         {
-          "inputs": [
-            { "internalType": "bytes", "name": "data", "type": "bytes" }
-          ],
+          "inputs": [{ "internalType": "bytes", "name": "data", "type": "bytes" }],
           "stateMutability": "view",
           "type": "function",
           "name": "not",
@@ -1535,34 +991,22 @@
         {
           "inputs": [
             { "internalType": "address", "name": "maker", "type": "address" },
-            {
-              "internalType": "bytes32",
-              "name": "orderHash",
-              "type": "bytes32"
-            }
+            { "internalType": "bytes32", "name": "orderHash", "type": "bytes32" }
           ],
           "stateMutability": "view",
           "type": "function",
           "name": "rawRemainingInvalidatorForOrder",
-          "outputs": [
-            { "internalType": "uint256", "name": "", "type": "uint256" }
-          ]
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
         },
         {
           "inputs": [
             { "internalType": "address", "name": "maker", "type": "address" },
-            {
-              "internalType": "bytes32",
-              "name": "orderHash",
-              "type": "bytes32"
-            }
+            { "internalType": "bytes32", "name": "orderHash", "type": "bytes32" }
           ],
           "stateMutability": "view",
           "type": "function",
           "name": "remainingInvalidatorForOrder",
-          "outputs": [
-            { "internalType": "uint256", "name": "", "type": "uint256" }
-          ]
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
         },
         {
           "inputs": [
@@ -1588,9 +1032,7 @@
           },
           "eip712Domain()": { "details": "See {IERC-5267}." },
           "epochEquals(address,uint256,uint256)": {
-            "returns": {
-              "_0": "Result True if `maker` has specified epoch. Otherwise, false"
-            }
+            "returns": { "_0": "Result True if `maker` has specified epoch. Otherwise, false" }
           },
           "eq(uint256,bytes)": {
             "params": { "value": "Value to test" },
@@ -1611,18 +1053,12 @@
             }
           },
           "not(bytes)": {
-            "returns": {
-              "_0": "Result True if call to target returns 0. Otherwise, false"
-            }
+            "returns": { "_0": "Result True if call to target returns 0. Otherwise, false" }
           },
           "or(uint256,bytes)": {
-            "returns": {
-              "_0": "Result True if call to any target returned True. Otherwise, false"
-            }
+            "returns": { "_0": "Result True if call to any target returned True. Otherwise, false" }
           },
-          "paused()": {
-            "details": "Returns true if the contract is paused, and false otherwise."
-          },
+          "paused()": { "details": "Returns true if the contract is paused, and false otherwise." },
           "permitAndCall(bytes,bytes)": {
             "params": {
               "action": "The data representing the action to be executed after the permit.",
@@ -1635,12 +1071,8 @@
       "userdoc": {
         "kind": "user",
         "methods": {
-          "advanceEpoch(uint96,uint256)": {
-            "notice": "Advances nonce by specified amount"
-          },
-          "and(uint256,bytes)": {
-            "notice": "Calls every target with corresponding data"
-          },
+          "advanceEpoch(uint96,uint256)": { "notice": "Advances nonce by specified amount" },
+          "and(uint256,bytes)": { "notice": "Calls every target with corresponding data" },
           "arbitraryStaticCall(address,bytes)": {
             "notice": "Performs an arbitrary call to target with data"
           },
@@ -1650,18 +1082,10 @@
           "bitsInvalidateForOrder(uint256,uint256)": {
             "notice": "See {IOrderMixin-bitsInvalidateForOrder}."
           },
-          "cancelOrder(uint256,bytes32)": {
-            "notice": "See {IOrderMixin-cancelOrder}."
-          },
-          "cancelOrders(uint256[],bytes32[])": {
-            "notice": "See {IOrderMixin-cancelOrders}."
-          },
-          "checkPredicate(bytes)": {
-            "notice": "See {IOrderMixin-checkPredicate}."
-          },
-          "epoch(address,uint96)": {
-            "notice": "Returns nonce for `maker` and `series`"
-          },
+          "cancelOrder(uint256,bytes32)": { "notice": "See {IOrderMixin-cancelOrder}." },
+          "cancelOrders(uint256[],bytes32[])": { "notice": "See {IOrderMixin-cancelOrders}." },
+          "checkPredicate(bytes)": { "notice": "See {IOrderMixin-checkPredicate}." },
+          "epoch(address,uint96)": { "notice": "Returns nonce for `maker` and `series`" },
           "epochEquals(address,uint256,uint256)": {
             "notice": "Checks if `maker` has specified `makerEpoch` for `series`"
           },
@@ -1693,9 +1117,7 @@
           "not(bytes)": {
             "notice": "Calls target with specified data and tests if it's equal to 0"
           },
-          "or(uint256,bytes)": {
-            "notice": "Calls every target with corresponding data"
-          },
+          "or(uint256,bytes)": { "notice": "Calls every target with corresponding data" },
           "permitAndCall(bytes,bytes)": {
             "notice": "Executes a permit for an ERC20 token and then a specified action in a single transaction."
           },
@@ -1720,9 +1142,7 @@
       ],
       "optimizer": { "enabled": true, "runs": 1000000 },
       "metadata": { "bytecodeHash": "ipfs" },
-      "compilationTarget": {
-        "contracts/SimpleLimitOrderProtocol.sol": "SimpleLimitOrderProtocol"
-      },
+      "compilationTarget": { "contracts/SimpleLimitOrderProtocol.sol": "SimpleLimitOrderProtocol" },
       "evmVersion": "shanghai",
       "libraries": {},
       "viaIR": true
