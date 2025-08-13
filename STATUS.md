@@ -37,6 +37,10 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
   - `deno task withdraw:dst`
   - `deno task withdraw:src`
   - `deno task status`
+  - Notes:
+    - CLIs are now self-contained under `cli/` and do not import from `src/`
+    - Addresses and RPCs come from env via `cli/cli-config.ts`
+    - ABIs are loaded from `abis/` via `cli/abis.ts` (no Wagmi dependency for CLIs)
 - Indexer: Railway hosted (INDEXER_URL)
 
 ### Contracts (v2.3.0)
@@ -47,7 +51,9 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
 ### Test Results / Smoke Tests
 - CLI smoke tests:
   - order:create → writes order, secret JSON, and status under `data/`
-  - swap:execute → compiles and runs; simulation revert expected without funded mainnet keys (PoC)
+  - swap:execute → compiles and runs; currently reverts with `BadSignature()` on fill in simulation
+    - revert_selector and revert_data are printed when present for `cast decode-error`
+  - withdraw:dst / withdraw:src unchanged
 - Formal tests removed in latest cleanup (2025-08-13)
 
 ## 📁 Repository Structure

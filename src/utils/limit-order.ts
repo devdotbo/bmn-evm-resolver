@@ -57,6 +57,7 @@ export function decodeProtocolError(error: any): {
   errorName?: string;
   errorArgs?: any[];
   data?: Hex;
+  selector?: string;
   message: string;
 } {
   const message = (error?.shortMessage || error?.message || String(error)) as string;
@@ -67,26 +68,39 @@ export function decodeProtocolError(error: any): {
     error?.cause?.data,
     error?.cause?.data?.data,
     error?.cause?.cause?.data,
+    error?.error?.data,
+    error?.cause?.error?.data,
   ];
 
   // Also attempt to extract a 0x... hex sequence from the message
   const hexInMessage = (message.match(/0x[0-9a-fA-F]{8,}/)?.[0]) as string | undefined;
   if (hexInMessage) candidates.push(hexInMessage);
 
+  let firstHexData: Hex | undefined;
   for (const c of candidates) {
     const data = typeof c === "string" && c.startsWith("0x") ? (c as Hex) : undefined;
     if (!data) continue;
+    if (!firstHexData) firstHexData = data;
     try {
       const decoded = decodeErrorResult({ abi: SimpleLimitOrderProtocolAbi.abi, data });
       return {
         errorName: (decoded as any)?.errorName,
         errorArgs: (decoded as any)?.args,
         data,
+        selector: (data.length >= 10 ? (data.slice(0, 10) as Hex) : undefined) as any,
         message,
       };
     } catch (_e) {
       // ignore and try next candidate
     }
+  }
+
+  if (firstHexData) {
+    return {
+      data: firstHexData,
+      selector: (firstHexData.length >= 10 ? (firstHexData.slice(0, 10) as Hex) : undefined) as any,
+      message,
+    };
   }
 
   return { message };
@@ -255,8 +269,12 @@ export async function fillLimitOrder(
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
+        if (decoded.selector) console.error(`revert_selector: ${decoded.selector}`);
+        if (decoded.data) console.error(`revert_data: ${decoded.data}`);
       } else {
         console.error(`${functionName} simulation error: ${decoded.message}`);
+        if (decoded.selector) console.error(`revert_selector: ${decoded.selector}`);
+        if (decoded.data) console.error(`revert_data: ${decoded.data}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,
@@ -290,8 +308,12 @@ export async function fillLimitOrder(
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
+        if (decoded.selector) console.error(`revert_selector: ${decoded.selector}`);
+        if (decoded.data) console.error(`revert_data: ${decoded.data}`);
       } else {
         console.error(`${functionName} send error: ${decoded.message}`);
+        if (decoded.selector) console.error(`revert_selector: ${decoded.selector}`);
+        if (decoded.data) console.error(`revert_data: ${decoded.data}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,

@@ -9,6 +9,28 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed - 2025-08-13 (CLI decoupled from src)
+
+- CLIs no longer import from `src/` or use Wagmi bindings; they use `viem` + ABIs from `abis/` directly
+- Improved error handling in all CLIs: always throw on failure and log full errors plus
+  `revert_selector` and `revert_data` (hex) for `cast decode-error`
+- Environment-driven addresses now resolved in CLI via new `cli/cli-config.ts` (reads the example `.env` keys: `MAINNET_ESCROW_FACTORY_V2`, `BASE_ESCROW_FACTORY`, `OPTIMISM_ESCROW_FACTORY`, `MAINNET_BMN_TOKEN`, `BASE_TOKEN_BMN`, `OPTIMISM_TOKEN_BMN`, `BASE_LIMIT_ORDER_PROTOCOL`, `OPTIMISM_LIMIT_ORDER_PROTOCOL`)
+
+### Added - 2025-08-13 (CLI modules)
+
+- `cli/cli-config.ts`: chain RPC and address resolution from env
+- `cli/abis.ts`: centralized ABIs for CLIs (SimpleLimitOrderProtocol, EscrowSrcV2, EscrowDstV2, SimplifiedEscrowFactoryV2_3, IERC20)
+- `cli/eip712.ts`: EIP-712 order types, signing, and order hash helpers
+- `cli/postinteraction.ts`: postInteraction data encoder, offsets, timelock/nonce utilities
+- `cli/limit-order.ts`: approval helper, fill logic, and revert-data decoder
+
+### Diagnostics - 2025-08-13
+
+- Revert reproduced on fill; CLIs now log selector/data for decoding. Example captured:
+  - selector: `0x1b39b146`
+  - data: `0x1b39b146a18293dd679d5034acb3ee96ee214418bea10608e86588747ef1d8d905`
+  - later runs show `BadSignature()` from the LOP when simulating `fillOrderArgs`
+
 ### Changed - 2025-08-13
 
 - Updated factory address references to v2.3:

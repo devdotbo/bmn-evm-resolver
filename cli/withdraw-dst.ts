@@ -6,9 +6,8 @@ import { atomicWriteJson, readJson, nowMs } from "./_fs.ts";
 import { base, optimism } from "viem/chains";
 import { createPublicClient, createWalletClient, http, type Address, type Hex } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
-import {
-  escrowDstV2Abi,
-} from "../src/generated/contracts.ts";
+import { getPrivateKey, getRpcUrl, type SupportedChainId } from "./cli-config.ts";
+import { escrowDstV2Abi } from "./abis.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/withdraw-dst.ts --hashlock 0x...");
@@ -30,19 +29,17 @@ async function main() {
   const secretJson = await readJson<{ secret: Hex }>(secretFile);
   const dstJson = await readJson<{ dstChainId: number; escrowAddress: Address }>(dstFile);
 
-  const ALICE_PK = (Deno.env.get("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
+  const ALICE_PK = (getPrivateKey("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
   if (!ALICE_PK) {
     console.error("ALICE_PRIVATE_KEY missing");
     Deno.exit(1);
   }
 
   const account = privateKeyToAccount(ALICE_PK, { nonceManager });
-  const dstChainId = dstJson.dstChainId as 10 | 8453;
+  const dstChainId = dstJson.dstChainId as SupportedChainId;
   const ANKR = Deno.env.get("ANKR_API_KEY") || "";
   const chain = dstChainId === base.id ? base : optimism;
-  const rpc = dstChainId === base.id
-    ? (ANKR ? `https://rpc.ankr.com/base/${ANKR}` : "https://mainnet.base.org")
-    : (ANKR ? `https://rpc.ankr.com/optimism/${ANKR}` : "https://mainnet.optimism.io");
+  const rpc = getRpcUrl(dstChainId);
   const client = createPublicClient({ chain, transport: http(rpc) });
   const wallet = createWalletClient({ chain, transport: http(rpc), account });
 
@@ -91,9 +88,17 @@ async function main() {
   console.log(receipt.transactionHash);
 }
 
-main().catch((e) => {
-  console.error(e);
-  Deno.exit(1);
+main().catch(async (e) => {
+  console.error("unhandled_error:", e);
+  try {
+    const { decodeRevert } = await import("./limit-order.ts");
+    const dec: any = (decodeRevert as any)(e);
+    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
+    if (dec?.data) console.error(`revert_data: ${dec.data}`);
+  } catch (decErr) {
+    console.error("decode_error_failed:", decErr);
+  }
+  throw e;
 });
 
 

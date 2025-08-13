@@ -3,28 +3,13 @@
 // Bob executes: approvals -> fill order -> create dst escrow. Writes data/fills and data/escrows/dst
 
 import { base, optimism } from "viem/chains";
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  type Address,
-  type Hex,
-} from "viem";
+import { createPublicClient, createWalletClient, http, type Address, type Hex } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { atomicWriteJson, ensureDir, readJson, nowMs } from "./_fs.ts";
-import { getContractAddresses } from "../src/config/contracts.ts";
-import { orderToStruct } from "../src/utils/eip712-signer.ts";
-import {
-  ensureLimitOrderApprovals,
-  fillLimitOrder,
-  type FillOrderParams,
-} from "../src/utils/limit-order.ts";
-import {
-  writeSimplifiedEscrowFactoryV2_3CreateDstEscrow,
-  simplifiedEscrowFactoryV2_3Address,
-  readSimplifiedEscrowFactoryV2_3AddressOfEscrow,
-} from "../src/generated/contracts.ts";
-import * as wagmiCore from "@wagmi/core";
+import { orderToStruct } from "./eip712.ts";
+import { ensureApprovals as ensureLimitOrderApprovals, fillLimitOrder, type FillOrderParams, decodeRevert } from "./limit-order.ts";
+import { simplifiedEscrowFactoryAbi } from "./abis.ts";
+import { getCliAddresses, getPrivateKey, getRpcUrl, type SupportedChainId } from "./cli-config.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/swap-execute.ts --file ./data/orders/pending/{hashlock}.json");
@@ -65,22 +50,20 @@ interface OrderFile {
 async function main() {
   const order: OrderFile = await readJson<OrderFile>(fileArg!);
 
-  const SRC = order.srcChainId;
+  const SRC = order.srcChainId as SupportedChainId;
   const ANKR = Deno.env.get("ANKR_API_KEY") || "";
-  const BOB_PK = (Deno.env.get("BOB_PRIVATE_KEY") || Deno.env.get("RESOLVER_PRIVATE_KEY") || "") as `0x${string}`;
+  const BOB_PK = (getPrivateKey("BOB_PRIVATE_KEY") || getPrivateKey("RESOLVER_PRIVATE_KEY") || "") as `0x${string}`;
   if (!BOB_PK) {
     console.error("BOB_PRIVATE_KEY or RESOLVER_PRIVATE_KEY missing");
     Deno.exit(1);
   }
   const account = privateKeyToAccount(BOB_PK, { nonceManager });
   const chain = SRC === base.id ? base : optimism;
-  const rpc = SRC === base.id
-    ? (ANKR ? `https://rpc.ankr.com/base/${ANKR}` : "https://mainnet.base.org")
-    : (ANKR ? `https://rpc.ankr.com/optimism/${ANKR}` : "https://mainnet.optimism.io");
+  const rpc = getRpcUrl(SRC);
   const client = createPublicClient({ chain, transport: http(rpc) });
   const wallet = createWalletClient({ chain, transport: http(rpc), account });
 
-  const addrs = getContractAddresses(SRC);
+  const addrs = getCliAddresses(SRC);
 
   // Ensure approvals (Bob for protocol + factory)
   await ensureLimitOrderApprovals(
@@ -127,13 +110,13 @@ async function main() {
     fillAmount: orderStruct.makingAmount,
   };
 
-  const fill = await fillLimitOrder(
+  const fillRes = await fillLimitOrder(
     client as any,
     wallet as any,
     addrs.limitOrderProtocol,
     fillParams,
-    addrs.escrowFactory,
   );
+  const fillReceipt = await client.waitForTransactionReceipt({ hash: fillRes.hash });
 
   const fillsDir = `./data/fills`;
   await ensureDir(fillsDir);
@@ -142,53 +125,59 @@ async function main() {
     orderHash: order.orderHash,
     srcChainId: order.srcChainId,
     taker: account.address,
-    fillTxHash: fill.transactionHash,
-    gasUsed: fill.gasUsed.toString(),
+    fillTxHash: fillReceipt.transactionHash,
+    gasUsed: fillReceipt.gasUsed.toString(),
     postInteraction: {
-      executed: fill.postInteractionExecuted,
-      srcEscrow: fill.srcEscrow || null,
+      executed: false,
+      srcEscrow: null,
     },
     writtenAt: nowMs(),
   });
 
   // Create destination escrow (idempotent): call factory.createDstEscrow with immutables
   // Use readSimplifiedEscrowFactoryV2_3AddressOfEscrow for address if tx doesn't emit
-  const dstChainId = order.dstChainId as 10 | 8453;
+  const dstChainId = order.dstChainId as SupportedChainId;
   const dstChain = dstChainId === base.id ? base : optimism;
-  const dstRpc = dstChainId === base.id
-    ? (ANKR ? `https://rpc.ankr.com/base/${ANKR}` : "https://mainnet.base.org")
-    : (ANKR ? `https://rpc.ankr.com/optimism/${ANKR}` : "https://mainnet.optimism.io");
+  const dstRpc = getRpcUrl(dstChainId);
   const _dstClient = createPublicClient({ chain: dstChain, transport: http(dstRpc) });
   const _dstWallet = createWalletClient({ chain: dstChain, transport: http(dstRpc), account });
 
   // immutables are computed onchain from order + extension in v2.3; call createDstEscrow with tuple from events is not possible directly.
   // For this PoC CLI, rely on factory helper to compute address after create call.
-  const config = wagmiCore.createConfig({
-    chains: [base, optimism],
-    transports: {
-      [base.id]: wagmiCore.http(dstRpc),
-      [optimism.id]: wagmiCore.http(dstRpc),
-    },
-  } as any);
-  const tx = await writeSimplifiedEscrowFactoryV2_3CreateDstEscrow(config as any, {
-    address: simplifiedEscrowFactoryV2_3Address[dstChainId],
-    args: [{
-      orderHash: order.orderHash as Hex,
-      hashlock: order.hashlock as Hex,
-      maker: 0n,
-      taker: 0n,
-      token: 0n,
-      amount: 0n,
-      safetyDeposit: 0n,
-      timelocks: 0n,
-    } as any],
-  } as any);
-  const receipt = await wagmiCore.waitForTransactionReceipt(config as any, { chainId: dstChainId, hash: tx } as any);
+  const factoryAddr = getCliAddresses(dstChainId).escrowFactory;
+  let tx: Hex;
+  try {
+    tx = await _dstWallet.writeContract({
+      address: factoryAddr,
+      abi: simplifiedEscrowFactoryAbi as any,
+      functionName: "createDstEscrow",
+      args: [{
+        orderHash: order.orderHash as Hex,
+        hashlock: order.hashlock as Hex,
+        maker: 0n,
+        taker: 0n,
+        token: 0n,
+        amount: 0n,
+        safetyDeposit: 0n,
+        timelocks: 0n,
+      } as any],
+      account,
+      chain: null,
+    } as any);
+  } catch (e: any) {
+    const dec = decodeRevert(e);
+    if (dec?.selector) console.error(`factory.revert_selector: ${dec.selector}`);
+    if (dec?.data) console.error(`factory.revert_data: ${dec.data}`);
+    throw e;
+  }
+  const receipt = await _dstClient.waitForTransactionReceipt({ hash: tx });
 
   let escrowAddress: Address | null = null;
   try {
-    const res = await readSimplifiedEscrowFactoryV2_3AddressOfEscrow(config as any, {
-      address: simplifiedEscrowFactoryV2_3Address[dstChainId],
+    const res = await _dstClient.readContract({
+      address: factoryAddr,
+      abi: simplifiedEscrowFactoryAbi as any,
+      functionName: "addressOfEscrow",
       args: [{
         orderHash: order.orderHash as Hex,
         hashlock: order.hashlock as Hex,
@@ -233,9 +222,17 @@ async function main() {
   console.log(escrowAddress || "0x");
 }
 
-main().catch((e) => {
-  console.error(e);
-  Deno.exit(1);
+main().catch(async (e) => {
+  // Always show the full error object
+  console.error("unhandled_error:", e);
+  try {
+    const dec: any = decodeRevert(e);
+    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
+    if (dec?.data) console.error(`revert_data: ${dec.data}`);
+  } catch (decErr) {
+    console.error("decode_error_failed:", decErr);
+  }
+  throw e;
 });
 
 

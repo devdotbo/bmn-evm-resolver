@@ -6,7 +6,8 @@ import { atomicWriteJson, readJson, nowMs } from "./_fs.ts";
 import { base } from "viem/chains";
 import { createPublicClient, createWalletClient, http, type Address, type Hex } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
-import { escrowSrcV2Abi } from "../src/generated/contracts.ts";
+import { escrowSrcV2Abi } from "./abis.ts";
+import { getPrivateKey, getRpcUrl } from "./cli-config.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/withdraw-src.ts --hashlock 0x...");
@@ -31,7 +32,7 @@ async function main() {
   }
   const srcEscrow = fillJson.postInteraction.srcEscrow as Address;
 
-  const BOB_PK = (Deno.env.get("BOB_PRIVATE_KEY") || Deno.env.get("RESOLVER_PRIVATE_KEY") || "") as `0x${string}`;
+  const BOB_PK = (getPrivateKey("BOB_PRIVATE_KEY") || getPrivateKey("RESOLVER_PRIVATE_KEY") || "") as `0x${string}`;
   if (!BOB_PK) {
     console.error("BOB_PRIVATE_KEY or RESOLVER_PRIVATE_KEY missing");
     Deno.exit(1);
@@ -40,7 +41,7 @@ async function main() {
   const ANKR = Deno.env.get("ANKR_API_KEY") || "";
   // Source chain is Base for PoC; adjust by reading a src record if needed
   const chain = base;
-  const rpc = ANKR ? `https://rpc.ankr.com/base/${ANKR}` : "https://mainnet.base.org";
+  const rpc = getRpcUrl(8453);
   const client = createPublicClient({ chain, transport: http(rpc) });
   const wallet = createWalletClient({ chain, transport: http(rpc), account });
 
@@ -75,9 +76,17 @@ async function main() {
   console.log(receipt.transactionHash);
 }
 
-main().catch((e) => {
-  console.error(e);
-  Deno.exit(1);
+main().catch(async (e) => {
+  console.error("unhandled_error:", e);
+  try {
+    const { decodeRevert } = await import("./limit-order.ts");
+    const dec: any = (decodeRevert as any)(e);
+    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
+    if (dec?.data) console.error(`revert_data: ${dec.data}`);
+  } catch (decErr) {
+    console.error("decode_error_failed:", decErr);
+  }
+  throw e;
 });
 
 

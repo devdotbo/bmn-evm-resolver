@@ -3,27 +3,12 @@
 // Alice creates an order, writes ./data/orders/pending/{hashlock}.json and ./data/swaps/{hashlock}/status.json
 
 import { base, optimism } from "viem/chains";
-import {
-  createWalletClient,
-  http,
-  type Address,
-  type Hex,
-  keccak256,
-} from "viem";
+import { createWalletClient, http, type Address, type Hex, keccak256 } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { ensureDir, atomicWriteJson, nowMs } from "./_fs.ts";
-import {
-  encode1inchExtension,
-  encodePostInteractionData,
-  MAKER_TRAITS,
-  packTimelocks,
-  generateNonce,
-} from "../src/utils/postinteraction-v2.ts";
-import { getContractAddresses } from "../src/config/contracts.ts";
-import {
-  type OrderInput,
-  signOrder,
-} from "../src/utils/eip712-signer.ts";
+import { encode1inchExtension, encodePostInteractionData, MAKER_TRAITS, packTimelocks, generateNonce } from "./postinteraction.ts";
+import { type OrderInput, signOrder } from "./eip712.ts";
+import { getCliAddresses, getPrivateKey, getRpcUrl, type SupportedChainId } from "./cli-config.ts";
 
 function usage(): never {
   console.log("Usage: deno run -A --env-file=.env cli/order-create.ts --src 8453|10 --dst 10|8453 --srcAmount <wei> --dstAmount <wei> --resolver 0x...");
@@ -44,14 +29,14 @@ const resolverArg = getArg("resolver");
 
 if (!srcArg || !dstArg || !srcAmountArg || !dstAmountArg || !resolverArg) usage();
 
-const SRC = Number(srcArg);
-const DST = Number(dstArg);
+const SRC = Number(srcArg) as SupportedChainId;
+const DST = Number(dstArg) as SupportedChainId;
 const SRC_AMOUNT = BigInt(srcAmountArg);
 const DST_AMOUNT = BigInt(dstAmountArg);
 const RESOLVER = resolverArg as Address;
 
 const ANKR_API_KEY = Deno.env.get("ANKR_API_KEY") || "";
-const ALICE_PK = (Deno.env.get("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
+const ALICE_PK = (getPrivateKey("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
 if (!ALICE_PK) {
   console.error("ALICE_PRIVATE_KEY missing");
   Deno.exit(1);
@@ -59,14 +44,12 @@ if (!ALICE_PK) {
 
 const account = privateKeyToAccount(ALICE_PK, { nonceManager });
 const srcChain = SRC === base.id ? base : optimism;
-const srcRpc = SRC === base.id
-  ? (ANKR_API_KEY ? `https://rpc.ankr.com/base/${ANKR_API_KEY}` : "https://mainnet.base.org")
-  : (ANKR_API_KEY ? `https://rpc.ankr.com/optimism/${ANKR_API_KEY}` : "https://mainnet.optimism.io");
+const srcRpc = getRpcUrl(SRC);
 
 const wallet = createWalletClient({ chain: srcChain, transport: http(srcRpc), account });
 
-const addressesSrc = getContractAddresses(SRC);
-const addressesDst = getContractAddresses(DST);
+const addressesSrc = getCliAddresses(SRC);
+const addressesDst = getCliAddresses(DST);
 
 const BMN_SRC = addressesSrc.tokens.BMN;
 const BMN_DST = addressesDst.tokens.BMN;
@@ -128,28 +111,17 @@ async function main() {
   };
 
   // Get order hash from chain using generated action (requires config + params object)
-  const wagmiCore = await import("@wagmi/core");
-  const { base: baseChain, optimism: opChain } = await import("viem/chains");
-  const { simpleLimitOrderProtocolAddress, readSimpleLimitOrderProtocolHashOrder } = await import("../src/generated/contracts.ts");
-  const config = wagmiCore.createConfig({
-    chains: [baseChain, opChain],
-    transports: {
-      [baseChain.id]: wagmiCore.http(srcRpc),
-      [opChain.id]: wagmiCore.http(srcRpc),
-    },
-  } as any);
-  const orderHash = await readSimpleLimitOrderProtocolHashOrder(config as any, {
-    address: simpleLimitOrderProtocolAddress[SRC as 10 | 8453],
-    args: [[
-      order.salt,
-      order.maker,
-      order.receiver,
-      order.makerAsset,
-      order.takerAsset,
-      order.makingAmount,
-      order.takingAmount,
-      order.makerTraits,
-    ]],
+  // Compute offchain hash (for tracking); onchain hash will be used by protocol
+  const { computeOrderHash } = await import("./eip712.ts");
+  const orderHash = computeOrderHash({
+    salt: order.salt,
+    maker: BigInt(order.maker),
+    receiver: BigInt(order.receiver),
+    makerAsset: BigInt(order.makerAsset),
+    takerAsset: BigInt(order.takerAsset),
+    makingAmount: order.makingAmount,
+    takingAmount: order.takingAmount,
+    makerTraits: order.makerTraits,
   } as any);
 
   // Sign EIP-712
@@ -208,9 +180,17 @@ async function main() {
   console.log(hashlock);
 }
 
-main().catch((e) => {
-  console.error(e);
-  Deno.exit(1);
+main().catch(async (e) => {
+  console.error("unhandled_error:", e);
+  try {
+    const { decodeRevert } = await import("./limit-order.ts");
+    const dec: any = (decodeRevert as any)(e);
+    if (dec?.selector) console.error(`revert_selector: ${dec.selector}`);
+    if (dec?.data) console.error(`revert_data: ${dec.data}`);
+  } catch (decErr) {
+    console.error("decode_error_failed:", decErr);
+  }
+  throw e;
 });
 
 
