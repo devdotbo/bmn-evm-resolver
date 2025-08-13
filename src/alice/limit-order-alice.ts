@@ -133,6 +133,14 @@ export class LimitOrderAlice {
   }
 
   async createOrder(params: OrderParams): Promise<string> {
+    // Validate input parameters
+    if (!params.srcAmount || params.srcAmount === 0n) {
+      throw new Error("Invalid srcAmount: must be a positive BigInt");
+    }
+    if (!params.dstAmount || params.dstAmount === 0n) {
+      throw new Error("Invalid dstAmount: must be a positive BigInt");
+    }
+    
     console.log(
       `\n🎯 Creating MAINNET atomic swap order via Limit Order Protocol`,
     );

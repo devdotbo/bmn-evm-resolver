@@ -31,7 +31,7 @@ RUN mkdir -p /app/data/secrets /app/data/orders /app/data/logs /app/data/kv \
 
 # Pre-cache dependencies for both service entrypoints (lockfile enforced)
 # Avoid lockfile strict mode due to npm graph; cache entrypoints without --frozen
-RUN deno cache --unstable-kv alice-service.ts bob-resolver-service.ts src/indexer/ponder-client.ts
+RUN deno cache --unstable-kv alice-service-orpc.ts bob-resolver-service-v2.ts src/indexer/ponder-client.ts
 
 # Switch to non-root
 USER deno
@@ -48,7 +48,7 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["deno", "run", \
      "--allow-net", "--allow-env", "--allow-read", "--allow-write", \
      "--unstable-kv", \
-     "alice-service.ts"]
+     "alice-service-orpc.ts"]
 
 # --- Bob-Resolver runtime image ---
 FROM base AS bob
@@ -61,4 +61,4 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["deno", "run", \
      "--allow-net", "--allow-env", "--allow-read", "--allow-write", \
      "--unstable-kv", \
-     "bob-resolver-service.ts"]
+     "bob-resolver-service-v2.ts"]

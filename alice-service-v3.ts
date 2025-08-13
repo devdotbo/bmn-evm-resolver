@@ -31,7 +31,7 @@ import { LimitOrderAlice } from "./src/alice/limit-order-alice.ts";
 import { SecretManager } from "./src/state/SecretManager.ts";
 import { SecretRevealer } from "./src/utils/secret-reveal.ts";
 import { EscrowWithdrawManager } from "./src/utils/escrow-withdraw.ts";
-import { startHealthServer } from "./src/utils/health-server.ts";
+import { AliceApiServer } from "./src/utils/alice-api-server.ts";
 
 const BMN_TOKEN = "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address;
 
@@ -56,6 +56,7 @@ class AliceServiceV3 {
   private secretManager: SecretManager;
   private secretRevealer: SecretRevealer;
   private withdrawManager: EscrowWithdrawManager;
+  private apiServer: AliceApiServer;
   private account: any;
   private baseClient: any;
   private optimismClient: any;
@@ -82,6 +83,14 @@ class AliceServiceV3 {
     this.secretManager = new SecretManager();
     this.secretRevealer = new SecretRevealer();
     this.withdrawManager = new EscrowWithdrawManager();
+    
+    // Initialize API server
+    this.apiServer = new AliceApiServer({
+      port: config.healthPort,
+      limitOrderAlice: this.alice,
+      swapStateManager: this.swapStateManager,
+      secretManager: this.secretManager,
+    });
     
     // Setup account
     this.account = privateKeyToAccount(config.privateKey as `0x${string}`, { nonceManager });
@@ -141,8 +150,8 @@ class AliceServiceV3 {
     // Start event monitoring
     await this.eventMonitor.startMonitoring();
     
-    // Start health server
-    const healthServer = startHealthServer(this.config.healthPort, "alice-v3");
+    // Start API server (includes health endpoint)
+    await this.apiServer.start();
     
     // Start background tasks
     this.startBackgroundTasks();

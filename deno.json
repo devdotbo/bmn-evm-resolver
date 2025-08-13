@@ -1,5 +1,8 @@
 {
   "imports": {
+    "@orpc/client": "npm:@orpc/client@^1.8.0",
+    "@orpc/openapi": "npm:@orpc/openapi@^1.8.0",
+    "@orpc/server": "npm:@orpc/server@^1.8.0",
     "@ponder/client": "npm:@ponder/client@0.12.0",
     "viem": "npm:viem@2.21.21",
     "viem/accounts": "npm:viem@2.21.21/accounts",
@@ -14,7 +17,8 @@
     "@std/testing/mock": "https://deno.land/std@0.210.0/testing/mock.ts",
     "@std/testing/snapshot": "https://deno.land/std@0.210.0/testing/snapshot.ts",
     "@std/testing/bdd": "https://deno.land/std@0.210.0/testing/bdd.ts",
-    "@std/async": "https://deno.land/std@0.210.0/async/mod.ts"
+    "@std/async": "https://deno.land/std@0.210.0/async/mod.ts",
+    "zod": "npm:zod@^4.0.17"
   },
   "nodeModulesDir": "none",
   "test": {

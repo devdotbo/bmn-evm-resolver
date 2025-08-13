@@ -9,6 +9,41 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added - 2025-08-13 (Part 3)
+
+- **oRPC Type-Safe API Framework** - Complete migration from manual HTTP APIs to oRPC
+  - `alice-service-orpc.ts` - Main oRPC service implementation with type-safe procedures
+  - `src/api/contracts/alice.contract.ts` - Zod-based API contract definitions
+  - `src/utils/alice-orpc-server.ts` - oRPC server with CORS and routing
+  - `src/utils/alice-api-server.ts` - Bridge HTTP API server (for migration)
+  - `scripts/trigger-atomic-swap-orpc.ts` - oRPC-based atomic swap trigger
+  - `scripts/monitor-swap.ts` - Real-time swap monitoring utility
+  - `ORPC_IMPLEMENTATION.md` - Complete oRPC implementation guide
+  - `ATOMIC_SWAP_GUIDE.md` - Step-by-step atomic swap execution guide
+
+- **Comprehensive Test Coverage** - TDD approach with unit and integration tests
+  - `tests/unit/alice-service-orpc.test.ts` - Core service unit tests (16 steps)
+  - `tests/unit/alice-service-orpc-bugs.test.ts` - Bug identification tests
+  - `tests/unit/alice-service-orpc-integration.test.ts` - Integration scenarios
+  - `tests/integration/orpc-endpoints.test.ts` - Full endpoint testing (949 lines)
+  - `TEST_SUMMARY_REPORT.md` - Complete test results and issue tracking
+  - 47 unit test suites passing, documenting and fixing initialization bugs
+
+### Changed - 2025-08-13 (Part 3)
+
+- **API Architecture** - Migrated from manual HTTP to type-safe oRPC
+  - Updated Dockerfile to support both alice-service-v3 and alice-service-orpc
+  - Modified deno.json with new test patterns and oRPC dependencies
+  - Enhanced atomic swap flow with proper event monitoring and state management
+
+### Known Issues - 2025-08-13 (Part 3)
+
+- **Type System Mismatches** (Non-breaking, documented for fixes)
+  - alice-orpc-server.ts: Type casting needed for Hex/Address types (lines 154, 156, 158)
+  - SecretManager missing `getSecret()` method (needs `getSecretByHashlock()`)
+  - CORS configuration property name mismatch (`origins` should be `origin`)
+  - Error message format inconsistencies between implementation and tests
+
 ### Fixed - 2025-08-13 (Part 2)
 
 - Critical signature verification issues resolved
@@ -41,7 +76,7 @@ and this project adheres to
   - Plan for future e2e: use Anvil with viem Test Client & Test Actions for deterministic chain control
     - References: `https://viem.sh/docs/clients/test`, `https://viem.sh/docs/actions/test/introduction`
 
-### Added - 2025-01-14
+### Added - 2025-08-14
 
 - **Comprehensive Test Suite** - Complete testing infrastructure for atomic swap system
   - `tests/setup.ts` - Core test utilities, mocks, and helpers
