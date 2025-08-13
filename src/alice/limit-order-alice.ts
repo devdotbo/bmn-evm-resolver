@@ -45,6 +45,13 @@ import SimplifiedEscrowFactoryV2_3Abi from "../../abis/SimplifiedEscrowFactoryV2
 import EscrowDstAbi from "../../abis/EscrowDst.json" with { type: "json" };
 import IERC20Abi from "../../abis/IERC20.json" with { type: "json" };
 import { EscrowWithdrawManager } from "../utils/escrow-withdraw.ts";
+import {
+  type OrderInput,
+  type OrderSignature,
+  orderToStruct,
+  signOrder as signOrderEIP712,
+  computeOrderHash as computeOrderHashEIP712,
+} from "../utils/eip712-signer.ts";
 
 const INDEXER_URL = Deno.env.get("INDEXER_URL") || "http://localhost:42069";
 const ALICE_PRIVATE_KEY = Deno.env.get("ALICE_PRIVATE_KEY") || "";
@@ -60,16 +67,8 @@ interface OrderParams {
   dstSafetyDeposit?: bigint;
 }
 
-interface LimitOrder {
-  salt: bigint;
-  maker: Address;
-  receiver: Address;
-  makerAsset: Address;
-  takerAsset: Address;
-  makingAmount: bigint;
-  takingAmount: bigint;
-  makerTraits: bigint;
-}
+// Use OrderInput from eip712-signer instead
+type LimitOrder = OrderInput;
 
 export class LimitOrderAlice {
   private ponderClient: PonderClient;
@@ -283,9 +282,15 @@ export class LimitOrderAlice {
     const orderHash = await this.calculateOrderHash(order, params.srcChainId);
     console.log(`📝 Order hash: ${orderHash}`);
 
-    // Sign the order
-    const signature = await this.signOrder(order, params.srcChainId);
-    console.log(`✍️ Order signed`);
+    // Sign the order with proper EIP-712 format
+    const wallet = params.srcChainId === base.id ? this.baseWallet : this.optimismWallet;
+    const signature = await signOrderEIP712(
+      wallet,
+      order,
+      params.srcChainId,
+      LIMIT_ORDER_PROTOCOL as Address,
+    );
+    console.log(`✍️ Order signed with r: ${signature.r}, vs: ${signature.vs}`);
 
     // Store order data for resolver to pick up
     await this.storeOrderForResolver({
@@ -339,50 +344,11 @@ export class LimitOrderAlice {
     return onchain as string;
   }
 
-  private async signOrder(order: LimitOrder, chainId: number): Promise<Hex> {
-    // Use the appropriate wallet based on the chain
-    const wallet = chainId === base.id ? this.baseWallet : this.optimismWallet;
-    
-    // Sign using EIP-712 typed data with proper domain
-    const signature = await wallet.signTypedData({
-      account: this.account,
-      domain: {
-        name: "Bridge-Me-Not Orders",
-        version: "1",
-        chainId: chainId,
-        verifyingContract: getContractAddresses(chainId).limitOrderProtocol as Address,
-      },
-      types: {
-        Order: [
-          { name: "salt", type: "uint256" },
-          { name: "maker", type: "address" },
-          { name: "receiver", type: "address" },
-          { name: "makerAsset", type: "address" },
-          { name: "takerAsset", type: "address" },
-          { name: "makingAmount", type: "uint256" },
-          { name: "takingAmount", type: "uint256" },
-          { name: "makerTraits", type: "uint256" },
-        ],
-      },
-      message: {
-        salt: order.salt,
-        maker: order.maker,
-        receiver: order.receiver,
-        makerAsset: order.makerAsset,
-        takerAsset: order.takerAsset,
-        makingAmount: order.makingAmount,
-        takingAmount: order.takingAmount,
-        makerTraits: order.makerTraits,
-      },
-      primaryType: "Order",
-    });
-    
-    return signature as Hex;
-  }
+  // Removed signOrder - now using signOrderEIP712 from eip712-signer.ts
 
   private async storeOrderForResolver(data: {
     order: LimitOrder;
-    signature: Hex;
+    signature: OrderSignature;
     extensionData: Hex;
     chainId: number;
     hashlock: string;
@@ -403,7 +369,8 @@ export class LimitOrderAlice {
         takingAmount: data.order.takingAmount.toString(),
         makerTraits: data.order.makerTraits.toString(),
       },
-      signature: data.signature,
+      signature: data.signature.r,
+      signatureVs: data.signature.vs,
       extensionData: data.extensionData,
       chainId: data.chainId,
       hashlock: data.hashlock,

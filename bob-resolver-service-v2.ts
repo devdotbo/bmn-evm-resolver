@@ -31,6 +31,7 @@ import { PonderClient } from "./src/indexer/ponder-client.ts";
 import { SecretManager } from "./src/state/SecretManager.ts";
 import { EscrowWithdrawManager } from "./src/utils/escrow-withdraw.ts";
 import { createDestinationEscrow, extractImmutables, parsePostInteractionData } from "./src/utils/escrow-creation.ts";
+import { orderToStruct, type OrderInput, type OrderSignature } from "./src/utils/eip712-signer.ts";
 import {
   ensureLimitOrderApprovals,
   fillLimitOrder,
@@ -360,7 +361,7 @@ class BobResolverServiceV2 {
       
       // Rebuild order struct with proper bigint types
       const rawOrder = (orderData as any).order || (orderData as any);
-      const order: LimitOrderData = {
+      const orderInput: OrderInput = {
         salt: BigInt(rawOrder.salt),
         maker: rawOrder.maker as Address,
         receiver: rawOrder.receiver as Address,
@@ -371,13 +372,31 @@ class BobResolverServiceV2 {
         makerTraits: BigInt(rawOrder.makerTraits),
       };
 
-      // Build fill parameters
+      // Convert to struct format with addresses as uint256
+      const orderStruct = orderToStruct(orderInput);
+
+      // Handle signature format (r and vs components)
+      const signature: OrderSignature = {
+        r: (orderData as any).signature as Hex,
+        vs: (orderData as any).signatureVs as Hex,
+      };
+
+      // Build fill parameters with converted order
       const params: FillOrderParams = {
-        order,
-        signature: (orderData as any).signature as Hex,
+        order: {
+          salt: orderStruct.salt,
+          maker: orderStruct.maker as any as Address, // Cast back for the fillLimitOrder function
+          receiver: orderStruct.receiver as any as Address,
+          makerAsset: orderStruct.makerAsset as any as Address,
+          takerAsset: orderStruct.takerAsset as any as Address,
+          makingAmount: orderStruct.makingAmount,
+          takingAmount: orderStruct.takingAmount,
+          makerTraits: orderStruct.makerTraits,
+        },
+        signature: signature.r,
         extensionData: (orderData as any).extensionData as Hex,
         // Fill full making amount to align with protocol expectations
-        fillAmount: order.makingAmount,
+        fillAmount: orderStruct.makingAmount,
       };
 
       // Fill the order using the correct signature

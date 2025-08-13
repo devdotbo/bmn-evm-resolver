@@ -9,6 +9,22 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added - 2025-08-13 (Part 6)
+
+- **Wagmi CLI Integration for Type-Safe Contract Interactions**
+  - Added `@wagmi/core@^2.19.0` and `@wagmi/cli@^2.4.0` dependencies to deno.json
+  - Created `wagmi.config.ts` for automatic TypeScript generation from contract ABIs
+  - Generated `src/generated/contracts.ts` with type-safe contract bindings for:
+    - SimpleLimitOrderProtocol with chain-specific addresses
+    - SimplifiedEscrowFactory (v2.3 and base versions)
+    - Escrow contracts (EscrowSrcV2, EscrowDstV2, EscrowDst)
+    - IERC20 token interface
+  - Added wagmi tasks: `wagmi:generate` and `wagmi:watch` for code generation
+  - Created `src/utils/wagmi-contracts.ts` with example usage of @wagmi/core
+  - Added comprehensive migration guide in `docs/WAGMI_MIGRATION_GUIDE.md`
+  - Updated README with wagmi setup instructions and development guide
+  - Set `nodeModulesDir: "auto"` for npm package compatibility
+
 ### Fixed - 2025-08-13 (Part 5)
 
 - **Service File Version Issues**

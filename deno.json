@@ -19,9 +19,11 @@
     "@std/testing/mock": "https://deno.land/std@0.210.0/testing/mock.ts",
     "@std/testing/snapshot": "https://deno.land/std@0.210.0/testing/snapshot.ts",
     "@std/testing/bdd": "https://deno.land/std@0.210.0/testing/bdd.ts",
-    "@std/async": "https://deno.land/std@0.210.0/async/mod.ts"
+    "@std/async": "https://deno.land/std@0.210.0/async/mod.ts",
+    "@wagmi/core": "npm:@wagmi/core@^2.19.0",
+    "@wagmi/cli": "npm:@wagmi/cli@^2.4.0"
   },
-  "nodeModulesDir": "none",
+  "nodeModulesDir": "auto",
   "test": {
     "include": [
       "tests/**/*.test.ts",
@@ -48,7 +50,9 @@
     "decode:factory": "deno run --allow-net --allow-env --allow-read scripts/decode-factory-events.ts",
     "human2abi": "deno run --allow-read scripts/human2abi.ts",
     "abis:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-abis.ts",
-    "ponder:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-ponder-schema.ts"
+    "ponder:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-ponder-schema.ts",
+    "wagmi:generate": "deno run -A npm:@wagmi/cli generate",
+    "wagmi:watch": "deno run -A npm:@wagmi/cli generate --watch"
   },
   "fmt": {
     "useTabs": false,

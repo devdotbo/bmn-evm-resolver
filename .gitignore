@@ -95,3 +95,4 @@ completed-orders/
 
 # Crush working dir
 .crush/
+node_modules/

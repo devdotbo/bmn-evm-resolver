@@ -6,6 +6,14 @@ Cross-chain atomic swap resolver for BMN token exchanges between Base and Optimi
 
 **⚠️ BLOCKED** - See [CURRENT_STATUS.md](CURRENT_STATUS.md) and [Active Issues](ISSUES/active/)
 
+## 🚀 Features
+
+- **Type-safe contract interactions** via Wagmi CLI code generation
+- **Cross-chain atomic swaps** between Base and Optimism
+- **1inch Limit Order Protocol** integration with PostInteraction
+- **Automated escrow management** for secure token transfers
+- **Event monitoring** via Ponder indexer
+
 ## Setup
 
 1. Copy environment configuration:
@@ -19,6 +27,19 @@ cp .env.example .env
    - `BOB_PRIVATE_KEY` - Bob/Resolver wallet private key  
    - `ANKR_API_KEY` - Ankr API key for RPC access
    - `INDEXER_URL` - Ponder indexer URL (default: Railway hosted)
+
+3. Generate TypeScript contract bindings:
+
+```bash
+# Install dependencies
+deno cache deno.json
+
+# Generate contract types
+deno task wagmi:generate
+
+# Or watch mode for development
+deno task wagmi:watch
+```
 
 ## Usage
 
@@ -65,3 +86,28 @@ deno task alice --action withdraw --order 0xOrderHash
 - Factory: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (SimplifiedEscrowFactory
   v2.2.0)
 - BMN Token: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
+- Limit Order Protocol: `0xe767105dcfB3034a346578afd2aFD8e583171489`
+
+## Development
+
+### Type-Safe Contract Interactions
+
+This project uses Wagmi CLI for automatic TypeScript generation from contract ABIs:
+
+```typescript
+// Import generated types
+import {
+  simpleLimitOrderProtocolAbi,
+  simpleLimitOrderProtocolAddress,
+} from "./src/generated/contracts.ts";
+
+// Use with full type safety
+const orderHash = await client.readContract({
+  address: simpleLimitOrderProtocolAddress[8453], // Base
+  abi: simpleLimitOrderProtocolAbi,
+  functionName: "hashOrder", // Auto-completed!
+  args: [order], // Type-checked!
+});
+```
+
+See [WAGMI_MIGRATION_GUIDE.md](docs/WAGMI_MIGRATION_GUIDE.md) for migration details.
