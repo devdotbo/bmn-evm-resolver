@@ -33,7 +33,7 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
 - Indexer: Railway hosted (INDEXER_URL)
 
 ### Contracts (v2.3.0)
-- **Factory**: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+- **Factory**: `0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A`
 - **Protocol (Optimism)**: `0xe767105dcfB3034a346578afd2aFD8e583171489`
 - **BMN Token**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 

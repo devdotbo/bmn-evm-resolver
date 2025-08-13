@@ -59,11 +59,7 @@ Services:
 
 ### Create an order
 
-Use the oRPC API (Scalar UI at `/docs`) or the helper script:
-
-```bash
-deno run --allow-all --unstable-kv --env-file=.env scripts/create-test-order.ts
-```
+Use the oRPC API (Scalar UI at `/docs`) or the new CLIs (see `plan.md`).
 
 For contributors: read `STATUS.md` first each session. It contains a short runbook and grep commands to verify state.
 
@@ -81,7 +77,7 @@ For contributors: read `STATUS.md` first each session. It contains a short runbo
 
 ## Contract Addresses (CREATE3 - same on all chains)
 
-- Factory: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68` (SimplifiedEscrowFactory v2.3.0)
+- Factory: `0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A` (SimplifiedEscrowFactory v2.3.0)
 - BMN Token: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 - Limit Order Protocol: `0xe767105dcfB3034a346578afd2aFD8e583171489`
 

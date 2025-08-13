@@ -33,8 +33,8 @@ export default defineConfig({
       name: "SimplifiedEscrowFactoryV2_3",
       abi: loadAbi("./abis/SimplifiedEscrowFactoryV2_3.json"),
       address: {
-        10: "0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31", // Optimism
-        8453: "0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31", // Base
+        10: "0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A", // Optimism (v2.3)
+        8453: "0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A", // Base (v2.3)
       },
     },
     {

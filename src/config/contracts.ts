@@ -11,7 +11,7 @@ export const PLACEHOLDER_ADDRESS: Address =
 export const CREATE3_ADDRESSES = {
   // UPDATED: Factory v2.3.0 address (EIP-712 resolver-signed actions)
   ESCROW_FACTORY_V2: (Deno.env.get("MAINNET_ESCROW_FACTORY_V2") ||
-    "0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68") as Address, // SimplifiedEscrowFactory v2.3.0
+    "0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A") as Address, // SimplifiedEscrowFactory v2.3.0
 
   // Legacy factory addresses (INSECURE - TO BE DEPRECATED)
   ESCROW_FACTORY_V1_BASE:

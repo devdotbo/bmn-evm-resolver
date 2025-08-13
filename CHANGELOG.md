@@ -9,6 +9,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed - 2025-08-13
+
+- Updated factory address references to v2.3:
+  - Now using `0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A` on Base (8453) and Optimism (10)
+  - Removed deprecated `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+  - Removed non-existent `0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31`
+- Deprecated old scripts in `scripts/` in favor of file-based CLI flow (see `plan.md`)
+
 ### Removed - 2025-08-13
 
 - **Major Cleanup - Removed Tests and Docker Infrastructure**
