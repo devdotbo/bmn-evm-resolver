@@ -332,9 +332,43 @@ export class LimitOrderAlice {
   }
 
   private async signOrder(order: LimitOrder, chainId: number): Promise<Hex> {
-    const digest = await this.calculateOrderHash(order, chainId);
-    // Sign the exact hash returned from the protocol's hashOrder
-    const signature = await this.account.sign({ hash: digest as Hex });
+    // Use the appropriate wallet based on the chain
+    const wallet = chainId === base.id ? this.baseWallet : this.optimismWallet;
+    
+    // Sign using EIP-712 typed data with proper domain
+    const signature = await wallet.signTypedData({
+      account: this.account,
+      domain: {
+        name: "Bridge-Me-Not Orders",
+        version: "1",
+        chainId: chainId,
+        verifyingContract: getContractAddresses(chainId).limitOrderProtocol as Address,
+      },
+      types: {
+        Order: [
+          { name: "salt", type: "uint256" },
+          { name: "maker", type: "address" },
+          { name: "receiver", type: "address" },
+          { name: "makerAsset", type: "address" },
+          { name: "takerAsset", type: "address" },
+          { name: "makingAmount", type: "uint256" },
+          { name: "takingAmount", type: "uint256" },
+          { name: "makerTraits", type: "uint256" },
+        ],
+      },
+      message: {
+        salt: order.salt,
+        maker: order.maker,
+        receiver: order.receiver,
+        makerAsset: order.makerAsset,
+        takerAsset: order.takerAsset,
+        makingAmount: order.makingAmount,
+        takingAmount: order.takingAmount,
+        makerTraits: order.makerTraits,
+      },
+      primaryType: "Order",
+    });
+    
     return signature as Hex;
   }
 

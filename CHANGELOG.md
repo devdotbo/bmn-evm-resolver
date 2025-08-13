@@ -18,6 +18,9 @@ and this project adheres to
   - Fixed signature format conversion for EOA accounts (r,vs split format)
   - Scripts now properly use `fillOrderArgs` for EOAs and `fillContractOrderArgs` for smart contracts
   - All signature validation now passing correctly
+  - Fixed LimitOrderAlice to use EIP-712 typed data signing instead of raw signing
+  - Fixed bob-resolver-service-v2.ts broken fillLimitOrder call with correct parameters
+  - Verified all order creation scripts use correct domain and signing method
 
 ### Fixed - 2025-08-13
 

@@ -34,6 +34,7 @@ import { createDestinationEscrow, extractImmutables } from "./src/utils/escrow-c
 import {
   ensureLimitOrderApprovals,
   fillLimitOrder,
+  type FillOrderParams,
   type LimitOrderData,
 } from "./src/utils/limit-order.ts";
 import { getContractAddresses } from "./src/config/contracts.ts";
@@ -344,15 +345,36 @@ class BobResolverServiceV2 {
         BigInt((orderData as any).order?.takingAmount || 0),
       );
       
-      // Fill the order
-      const result = await fillLimitOrder({
-        order: (orderData as any).order,
-        signature: (orderData as any).signature,
-        fillAmount: BigInt((orderData as any).order?.takingAmount || 0),
-        chainId,
-        extensionData: (orderData as any).extensionData,
-        resolverPrivateKey: this.config.privateKey,
-      });
+      // Rebuild order struct with proper bigint types
+      const rawOrder = (orderData as any).order || (orderData as any);
+      const order: LimitOrderData = {
+        salt: BigInt(rawOrder.salt),
+        maker: rawOrder.maker as Address,
+        receiver: rawOrder.receiver as Address,
+        makerAsset: rawOrder.makerAsset as Address,
+        takerAsset: rawOrder.takerAsset as Address,
+        makingAmount: BigInt(rawOrder.makingAmount),
+        takingAmount: BigInt(rawOrder.takingAmount),
+        makerTraits: BigInt(rawOrder.makerTraits),
+      };
+
+      // Build fill parameters
+      const params: FillOrderParams = {
+        order,
+        signature: (orderData as any).signature as Hex,
+        extensionData: (orderData as any).extensionData as Hex,
+        // Fill full making amount to align with protocol expectations
+        fillAmount: order.makingAmount,
+      };
+
+      // Fill the order using the correct signature
+      const result = await fillLimitOrder(
+        client,
+        wallet,
+        chainAddrs.limitOrderProtocol as Address,
+        params,
+        chainAddrs.escrowFactory as Address,
+      );
       
       console.log(`✅ Order filled: ${result.transactionHash}`);
       return true;
