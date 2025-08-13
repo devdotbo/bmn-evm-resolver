@@ -695,13 +695,13 @@ describe("oRPC Endpoints Integration Tests", { sanitizeResources: false, sanitiz
       // This test verifies TypeScript type checking works correctly
       // The following would cause TypeScript errors if uncommented:
       
-      // @ts-expect-error - srcChainId must be 10 or 8453
+      // srcChainId must be 10 or 8453
       // await client.createOrder({ srcChainId: 1, dstChainId: 10, srcAmount: "100", dstAmount: "100" });
       
-      // @ts-expect-error - srcAmount must be string
+      // srcAmount must be string
       // await client.createOrder({ srcChainId: 8453, dstChainId: 10, srcAmount: 100, dstAmount: "100" });
       
-      // @ts-expect-error - missing required fields
+      // missing required fields
       // await client.createOrder({ srcChainId: 8453 });
       
       // Valid call should work

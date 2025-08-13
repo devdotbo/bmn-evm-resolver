@@ -48,6 +48,15 @@ and this project adheres to
   - Fixed server shutdown to properly clean up resources
   - All 41 integration test steps now passing
 
+### Fixed - 2025-08-13 (Part 5)
+
+- **TypeScript and Test Improvements**
+  - Removed unnecessary `@ts-expect-error` directives from commented test code
+  - Fixed CORS plugin configuration to only use supported `origin` property
+  - Tests now run with full type checking enabled (`deno check`)
+  - Added `--unstable-kv` flag to test runs for Deno KV support
+  - All tests passing with strict TypeScript checking
+
 ### Fixed - 2025-08-13 (Part 2)
 
 - Critical signature verification issues resolved

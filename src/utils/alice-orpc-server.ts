@@ -383,8 +383,6 @@ export class AliceOrpcServer {
       plugins: [
         new CORSPlugin({
           origin: "*", // Allow all origins for development
-          methods: ["GET", "POST", "OPTIONS"],
-          headers: ["Content-Type", "Authorization"],
         }),
       ],
     });
