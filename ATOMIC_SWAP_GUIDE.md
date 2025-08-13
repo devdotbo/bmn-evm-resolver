@@ -9,10 +9,10 @@ This guide explains how to execute a complete atomic swap between Alice and Bob 
 1. **Docker Services Running**
    ```bash
    # Start both Alice and Bob services
-   docker-compose up -d --build
+   docker compose up -d --build
    
    # Verify services are healthy
-   docker-compose ps
+   docker compose ps
    curl http://localhost:8001/health  # Alice
    curl http://localhost:8002/health  # Bob
    ```
@@ -144,13 +144,13 @@ Bob service automatically:
 
 ```bash
 # Watch Alice logs
-docker-compose logs -f alice
+docker compose logs -f alice
 
 # Watch Bob logs  
-docker-compose logs -f bob
+docker compose logs -f bob
 
 # Or both
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Method 3: Direct Script Execution
@@ -187,12 +187,12 @@ deno run --allow-all scripts/monitor-swap.ts 0xHASHLOCK
 1. **"Both services are not healthy"**
    ```bash
    # Restart services
-   docker-compose down
-   docker-compose up -d --build
+   docker compose down
+   docker compose up -d --build
    
    # Check logs
-   docker-compose logs alice
-   docker-compose logs bob
+   docker compose logs alice
+   docker compose logs bob
    ```
 
 2. **"Failed to create order"**
@@ -295,13 +295,13 @@ Edit `docker-compose.yml` to adjust:
 
 ```bash
 # 1. Ensure services are running
-docker-compose up -d --build && docker-compose logs
+docker compose up -d --build && docker compose logs
 
 # 2. Execute a swap
 deno run --allow-all scripts/trigger-atomic-swap.ts 8453 10 0.01
 
 # 3. Monitor in another terminal (optional)
-docker-compose logs -f
+docker compose logs -f
 
 # 4. Verify completion
 # The trigger script will report success

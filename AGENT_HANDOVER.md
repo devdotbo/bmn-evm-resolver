@@ -1,4 +1,4 @@
-# 🤝 Agent Handover - Post Cleanup
+# 🤝 Agent Handover (Read CURRENT_STATUS.md first)
 
 **Date**: 2025-01-12
 **Previous Agent**: Cleanup & Organization
@@ -19,25 +19,9 @@
 - Updated README to v2.3 with clear setup instructions
 - Consolidated all status documents into one
 
-## 🔴 Critical Blocker - MUST FIX FIRST
+## ✅ Status
 
-**[ISSUE-001: ABI Mismatch](ISSUES/active/001-limit-order-fill-abi-mismatch.md)**
-
-The system is completely blocked until this is fixed:
-
-```typescript
-// WRONG (current):
-protocol.fillOrderArgs(order, r, vs, amount, takerTraits, extensionData)
-
-// CORRECT (needed):
-protocol.fillContractOrderArgs(order, signature, amount, takerTraits, extensionData)
-```
-
-**Files to fix**:
-1. `src/utils/limit-order.ts` - Change function call
-2. `scripts/simulate-fill.ts` - Update for testing
-
-This should take ~30 minutes to fix and test.
+See `CURRENT_STATUS.md` for live status. Previous ABI/signing blocker resolved; focus on operational readiness and type‑safe migrations.
 
 ## 📂 Current Structure
 

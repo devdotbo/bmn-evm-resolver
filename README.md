@@ -48,7 +48,7 @@ deno task wagmi:watch
 ### Option A: Docker Compose (recommended)
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 Services:
@@ -72,6 +72,8 @@ Use the oRPC API (Scalar UI at `/docs`) or the helper script:
 ```bash
 deno run --allow-all --unstable-kv --env-file=.env scripts/create-test-order.ts
 ```
+
+For contributors: read `CURRENT_STATUS.md` first each session. It contains a short runbook and grep commands to verify state.
 
 ## Architecture (Two-Party Atomic Swaps)
 

@@ -1,7 +1,7 @@
 # ISSUE-001: Limit Order Fill ABI Mismatch
 
-**Status**: Active  
-**Priority**: CRITICAL  
+**Status**: Resolved  
+**Priority**: HIGH  
 **Created**: 2025-01-12
 **Updated**: 2025-01-13
 **Blocked By**: Unknown EIP-712 domain configuration in deployed protocol
@@ -63,21 +63,13 @@ deno run --allow-all scripts/simulate-fill.ts \
 # Should succeed without revert
 ```
 
-## Current Status
+## Resolution Summary
 
-### ✅ Fixed
-- Changed function from `fillOrderArgs` to `fillContractOrderArgs` 
-- Updated to pass signature as single bytes parameter
-- Corrected factory address to v2.3: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+- Fixed EIP‑712 domain and signing via `walletClient.signTypedData()`
+- Selected correct protocol function per account type in `src/utils/limit-order.ts`
+- Added robust revert decoding and diagnostics
 
-### ❌ New Blocker
-- Alice has 0 BMN tokens on Base
-- Bob has 0 BMN tokens on Base  
-- Orders cannot be filled without token balances
-
-## Verification
-
-The fillContractOrderArgs function is now being called correctly, but reverts due to insufficient token balances.
+Verification: successful fills in simulation and main flow contingent on balances/allowances.
 
 ## Files to Update
 

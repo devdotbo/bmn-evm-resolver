@@ -190,7 +190,7 @@ SECRET_NOT_FOUND: {
 ./alice-service-orpc.ts
 
 # Or with Docker
-docker-compose up -d --build alice
+docker compose up -d --build alice
 ```
 
 ### Client Usage

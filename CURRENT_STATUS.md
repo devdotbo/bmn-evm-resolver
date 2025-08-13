@@ -1,4 +1,19 @@
-# 🚀 BMN EVM Resolver - Current Status
+# 🚀 BMN EVM Resolver - Agent Runbook & Current Status
+
+Read me first, every session.
+
+How to keep this file up-to-date (10 min checklist):
+- Verify services & versions
+  - Health: `curl -s localhost:8001/health | jq .status; curl -s localhost:8002/health | jq .status`
+  - Entrypoints: `rg -n "ENTRYPOINT|CMD .*deno run" Dockerfile*`
+- Confirm addresses and ABIs
+  - Protocol/factory: `rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" src/config/contracts.ts wagmi.config.ts`
+  - ABI function presence: `rg -n "fillContractOrderArgs|fillOrderArgs" abis/SimpleLimitOrderProtocol.json`
+- Check tests
+  - `deno task test:unit` then `deno task test:integration`
+- Scan for deprecated docs
+  - `rg -n "UnifiedResolver|resolver-service.ts|bob-service.ts" -- docs archive`
+- Update this file’s Status, Services, and Focus Areas accordingly
 
 **Last Updated**: 2025-08-13
 **Branch**: `optimism-simplified`

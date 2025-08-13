@@ -1,9 +1,8 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Project Structure & Module Organization (Deprecated)
 
-- Code: TypeScript in repo root and `src/` (e.g., `resolver-service.ts`,
-  `alice.ts`, `bob-service.ts`).
+- Code: TypeScript in repo root and `src/`.
 - Tests: `tests/` and top-level helper scripts like `test-*.ts` and `test-*.md`
   demos.
 - Docker: `docker-compose.yml`, `Dockerfile.*`, `init-docker.sh`, `Makefile` for
@@ -31,8 +30,7 @@
 - Formatting: `deno fmt` before commits; lint with `deno lint`.
 - Indentation: 2 spaces; prefer descriptive names (`camelCase` for
   vars/functions, `PascalCase` for types).
-- Files: hyphenated or descriptive (e.g., `resolver-service.ts`,
-  `alice-service.ts`).
+- Entrypoints: prefer `alice-service-orpc.ts` and `bob-resolver-service-v2.ts`.
 
 ## Testing Guidelines
 
