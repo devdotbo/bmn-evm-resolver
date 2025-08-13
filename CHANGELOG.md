@@ -57,6 +57,17 @@ and this project adheres to
   - Added `--unstable-kv` flag to test runs for Deno KV support
   - All tests passing with strict TypeScript checking
 
+### Changed - 2025-08-13 (Part 6)
+
+- **Docker Integration with oRPC**
+  - Docker configuration already uses `alice-service-orpc.ts` implementation
+  - Verified Dockerfile caches dependencies for both alice-service-orpc.ts and bob-resolver-service-v2.ts
+  - Tested successful Docker builds with no-cache to ensure clean builds work
+  - Both Alice and Bob-Resolver services start successfully with oRPC endpoints
+  - Health endpoints confirmed working at http://localhost:8001/health and http://localhost:8002/health
+  - oRPC API endpoints accessible and functional at /api/alice/*
+  - Docker Compose orchestration working with proper service dependencies
+
 ### Fixed - 2025-08-13 (Part 2)
 
 - Critical signature verification issues resolved
