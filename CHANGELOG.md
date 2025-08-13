@@ -29,11 +29,7 @@ and this project adheres to
 
 ### Changed - 2025-08-13 (Scripts and tasks alignment)
 
-- Archived legacy/experimental scripts to `scripts/archive/` (kept in repo for reference):
-  - `approve-bob-protocol.ts`, `check-bob-balance.ts`, `fill-order-cast.sh`
-  - `trigger-atomic-swap.ts`, `test-atomic-swap.ts`, `test-atomic-swap-v2.ts`
-  - `test-postinteraction.sh`, `test-signature-recovery.ts`, `verify-signature.ts`
-  - `run-resolver-with-log.sh`, `stop-resolver.sh`, `check-specific-order.ts`, `cast-migration-verify.sh`
+- Pruned legacy/experimental scripts; repository now only contains current utilities under `scripts/`.
 - Deno tasks updated to current entrypoints:
   - `alice` and `alice:docker` now run `alice-service-orpc.ts`
   - `bob` continues to run `bob-resolver-service-v2.ts`
