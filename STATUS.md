@@ -4,16 +4,13 @@ Read me first, every session.
 
 How to keep this file up-to-date (10 min checklist):
 - Verify services & versions
-  - Health: `curl -s localhost:8001/health | jq .status; curl -s localhost:8002/health | jq .status`
-  - Entrypoints: `rg -n "ENTRYPOINT|CMD .*deno run" Dockerfile*`
+  - Entrypoints: `ls alice-service-orpc.ts bob-resolver-service-v2.ts`
 - Confirm addresses and ABIs
   - Protocol/factory: `rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" src/config/contracts.ts wagmi.config.ts`
   - ABI function presence: `rg -n "fillContractOrderArgs|fillOrderArgs" abis/SimpleLimitOrderProtocol.json`
-- Check tests
-  - `deno task test:unit` then `deno task test:integration`
 - Scan for deprecated docs
   - `rg -n "UnifiedResolver|resolver-service.ts|bob-service.ts" -- docs archive`
-- Update this file’s Status, Services, and Focus Areas accordingly
+- Update this file's Status, Services, and Focus Areas accordingly
 
 **Last Updated**: 2025-08-13
 **Branch**: `optimism-simplified`
@@ -31,9 +28,8 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
 ## 📊 System State
 
 ### Services
-- Docker Compose: `docker-compose up -d --build`
-- Alice (oRPC + OpenAPI): http://localhost:8001/health and /docs
-- Bob-Resolver: http://localhost:8002/health
+- Alice (oRPC + OpenAPI): `deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts`
+- Bob-Resolver: `deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts`
 - Indexer: Railway hosted (INDEXER_URL)
 
 ### Contracts (v2.3.0)
@@ -42,8 +38,7 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
 - **BMN Token**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 
 ### Test Results
-- Unit: green
-- Integration (oRPC): green per recent fixes (see CHANGELOG)
+- Tests removed in latest cleanup (2025-08-13)
 
 ## 📁 Repository Structure
 
@@ -76,14 +71,11 @@ bmn-evm-resolver/
 cp .env.example .env
 # Add: ALICE_PRIVATE_KEY, BOB_PRIVATE_KEY, ANKR_API_KEY
 
-# 2. Start services
-docker-compose up -d --build
+# 2. Start services (no Docker)
+deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts &
+deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts &
 
-# 3. Check health
-curl http://localhost:8001/health  # Alice
-curl http://localhost:8002/health  # Bob-Resolver
-
-# 4. Create order (after fixes)
+# 3. Create order
 RESOLVER=0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5 \
 AMOUNT=0.01 SRC_CHAIN=10 DST_CHAIN=8453 \
 deno task order:create
@@ -92,7 +84,7 @@ deno task order:create
 ## 📈 Progress Metrics
 
 - Core Functionality: 90%
-- Test Coverage: High (unit + integration pass)
+- Test Coverage: N/A (tests removed)
 - Documentation: Needs pruning/updates
 - Production Ready: In progress (ops checks)
 
@@ -100,7 +92,6 @@ deno task order:create
 
 - [Latest Agent Handover](docs/agents/2025-08-12-AGENT-006-atomic-swap-execution-handover-1446.md)
 - [Architecture Overview](ARCHITECTURE.md)
-- [Docker Setup](DOCKER_QUICK_START.md)
 - [Issue Tracker](ISSUES/active/)
 
 ## 📝 For Next Agent

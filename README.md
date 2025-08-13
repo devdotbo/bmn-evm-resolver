@@ -45,18 +45,6 @@ deno task wagmi:watch
 
 ## Usage
 
-### Option A: Docker Compose (recommended)
-
-```bash
-docker compose up -d --build
-```
-
-Services:
-- Alice API: http://localhost:8001/health and http://localhost:8001/docs
-- Bob-Resolver API: http://localhost:8002/health
-
-### Option B: Run locally with Deno
-
 ```bash
 # Bob‑Resolver (taker/coordinator)
 deno task bob
@@ -64,6 +52,10 @@ deno task bob
 # Alice service (initiator)
 deno task alice
 ```
+
+Services:
+- Alice API: http://localhost:8001/health and http://localhost:8001/docs
+- Bob-Resolver API: http://localhost:8002/health
 
 ### Create an order
 

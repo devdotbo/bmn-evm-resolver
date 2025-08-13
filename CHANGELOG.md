@@ -9,6 +9,35 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Removed - 2025-08-13
+
+- **Major Cleanup - Removed Tests and Docker Infrastructure**
+  - Deleted all test files and test infrastructure:
+    - `tests/` directory completely removed including unit and integration tests
+    - Test fixtures, mocks, and setup utilities removed
+  - Removed Docker infrastructure:
+    - All Dockerfiles (main, alice, bob) deleted
+    - `docker-compose.yml` removed
+    - Docker initialization scripts removed
+  - Removed deprecated service versions:
+    - `alice-service.ts`, `alice-service-v2.ts`, `alice-service-v3.ts` deleted
+    - `bob-resolver-service.ts` (v1) deleted
+  - Removed example files:
+    - `src/examples/using-wagmi-actions.ts` deleted
+  - Updated `deno.json` to remove test-related tasks
+  - Project now focuses on core resolver functionality without containerization
+
+### Changed - 2025-08-13 (Scripts and tasks alignment)
+
+- Archived legacy/experimental scripts to `scripts/archive/` (kept in repo for reference):
+  - `approve-bob-protocol.ts`, `check-bob-balance.ts`, `fill-order-cast.sh`
+  - `trigger-atomic-swap.ts`, `test-atomic-swap.ts`, `test-atomic-swap-v2.ts`
+  - `test-postinteraction.sh`, `test-signature-recovery.ts`, `verify-signature.ts`
+  - `run-resolver-with-log.sh`, `stop-resolver.sh`, `check-specific-order.ts`, `cast-migration-verify.sh`
+- Deno tasks updated to current entrypoints:
+  - `alice` and `alice:docker` now run `alice-service-orpc.ts`
+  - `bob` continues to run `bob-resolver-service-v2.ts`
+
 ### Added - 2025-08-13 (Part 7)
 
 - **Wagmi Actions Plugin Integration**
