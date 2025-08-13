@@ -498,11 +498,24 @@ export class EscrowWithdrawManager {
     wallet: WalletClient,
     account: any,
     pollingInterval: number = 10000,
+    abortSignal?: AbortSignal,
   ): Promise<void> {
     console.log(`\n🔍 Starting withdrawal monitor...`);
     console.log(`   Polling interval: ${pollingInterval / 1000}s`);
 
-    while (true) {
+    const sleep = (ms: number) => new Promise<void>((resolve) => {
+      const timerId = setTimeout(resolve, ms);
+      if (abortSignal) {
+        const onAbort = () => {
+          clearTimeout(timerId);
+          abortSignal.removeEventListener("abort", onAbort);
+          resolve();
+        };
+        abortSignal.addEventListener("abort", onAbort, { once: true });
+      }
+    });
+
+    while (!abortSignal?.aborted) {
       try {
         // Check for revealed secrets that haven't been withdrawn
         const pendingSecrets = await this.secretManager.getPendingSecrets();
@@ -541,7 +554,7 @@ export class EscrowWithdrawManager {
         console.error("❌ Error in withdrawal monitor:", error);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, pollingInterval));
+      await sleep(pollingInterval);
     }
   }
 }

@@ -284,14 +284,14 @@ export class MockEventEmitter {
  * Mock KV store for testing
  */
 export class MockKVStore {
-  private store: Map<string[], unknown> = new Map();
+  private store: Map<string, unknown> = new Map();
   
   private keyToString(key: string[]): string {
     return JSON.stringify(key);
   }
   
   async get<T>(key: string[]): Promise<{ value: T | null; versionstamp: string | null }> {
-    const value = this.store.get(key) as T | undefined;
+    const value = this.store.get(this.keyToString(key)) as T | undefined;
     return {
       value: value ?? null,
       versionstamp: value ? "mock-version-1" : null,
@@ -299,26 +299,24 @@ export class MockKVStore {
   }
   
   async set(key: string[], value: unknown): Promise<{ versionstamp: string }> {
-    this.store.set(key, value);
+    this.store.set(this.keyToString(key), value);
     return { versionstamp: "mock-version-1" };
   }
   
   async delete(key: string[]): Promise<void> {
-    this.store.delete(key);
+    this.store.delete(this.keyToString(key));
   }
   
   list<T>(selector: { prefix?: string[]; start?: string[]; end?: string[] }): AsyncIterableIterator<{ key: string[]; value: T; versionstamp: string }> {
     const results: Array<{ key: string[]; value: T; versionstamp: string }> = [];
     
-    for (const [key, value] of this.store.entries()) {
-      if (selector.prefix) {
-        const keyStr = this.keyToString(key);
-        const prefixStr = this.keyToString(selector.prefix);
-        if (!keyStr.startsWith(prefixStr)) continue;
-      }
+    const prefixStr = selector.prefix ? this.keyToString(selector.prefix) : undefined;
+    
+    for (const [keyStr, value] of this.store.entries()) {
+      if (prefixStr && !keyStr.startsWith(prefixStr)) continue;
       
       results.push({
-        key,
+        key: JSON.parse(keyStr),
         value: value as T,
         versionstamp: "mock-version-1",
       });

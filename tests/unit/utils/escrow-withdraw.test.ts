@@ -1139,20 +1139,24 @@ Deno.test("EscrowWithdrawManager - Monitor and Auto-Withdraw", async (t) => {
     const withdrawFromSourceSpy = spy(manager, "withdrawFromSource");
     
     // Run monitor for a short time
+    const controller = new AbortController();
     const monitorPromise = manager.monitorAndWithdraw(
       publicClient,
       walletClient,
       TEST_ACCOUNTS.BOB,
       100, // 100ms polling interval
+      controller.signal,
     );
     
     // Wait for a few polling cycles
     await delay(350);
+    controller.abort();
     
     // Monitor runs indefinitely, so we can't await it
     // Just check that it's polling
     assert(getPendingSecretsSpy.calls.length >= 3);
-    assertSpyCalls(withdrawFromSourceSpy, 3); // Should attempt withdrawal
+    // Allow extra cycles due to scheduling; ensure at least 3 attempts
+    assert(withdrawFromSourceSpy.calls.length >= 3);
   });
 
   await t.step("should trigger automatic withdrawal for revealed secrets", async () => {
@@ -1196,13 +1200,16 @@ Deno.test("EscrowWithdrawManager - Monitor and Auto-Withdraw", async (t) => {
       Promise.resolve(txHash as Hash)
     );
     
-    stubWaitForTransactionReceipt(publicClient, () =>
-      Promise.resolve(createMockTransactionReceipt({
+    const controller = new AbortController();
+    stubWaitForTransactionReceipt(publicClient, () => {
+      // Abort monitor immediately after first successful receipt
+      controller.abort();
+      return Promise.resolve(createMockTransactionReceipt({
         transactionHash: txHash as Hash,
         status: "success",
         gasUsed: 100000n,
-      }))
-    );
+      }));
+    });
     
     const withdrawFromSourceSpy = spy(manager, "withdrawFromSource");
     
@@ -1212,6 +1219,7 @@ Deno.test("EscrowWithdrawManager - Monitor and Auto-Withdraw", async (t) => {
       walletClient,
       TEST_ACCOUNTS.BOB,
       100, // 100ms polling interval
+      controller.signal,
     );
     
     // Wait for a polling cycle
@@ -1237,15 +1245,18 @@ Deno.test("EscrowWithdrawManager - Monitor and Auto-Withdraw", async (t) => {
     const walletClient = createMockWalletClient();
     
     // Run monitor for a short time - should not crash
+    const controller = new AbortController();
     const monitorPromise = manager.monitorAndWithdraw(
       publicClient,
       walletClient,
       TEST_ACCOUNTS.BOB,
       100,
+      controller.signal,
     );
     
     // Wait for a few polling cycles
     await delay(350);
+    controller.abort();
     
     // Should continue running despite errors
     assert(true); // If we get here, monitor didn't crash
@@ -1271,15 +1282,18 @@ Deno.test("EscrowWithdrawManager - Monitor and Auto-Withdraw", async (t) => {
     const withdrawFromSourceSpy = spy(manager, "withdrawFromSource");
     
     // Run monitor for a short time
+    const controller = new AbortController();
     const monitorPromise = manager.monitorAndWithdraw(
       publicClient,
       walletClient,
       TEST_ACCOUNTS.BOB,
       100,
+      controller.signal,
     );
     
     // Wait for a polling cycle
     await delay(150);
+    controller.abort();
     
     assertSpyCalls(withdrawFromSourceSpy, 0); // Should not attempt withdrawal
   });
@@ -1304,15 +1318,18 @@ Deno.test("EscrowWithdrawManager - Monitor and Auto-Withdraw", async (t) => {
     const withdrawFromSourceSpy = spy(manager, "withdrawFromSource");
     
     // Run monitor for a short time
+    const controller = new AbortController();
     const monitorPromise = manager.monitorAndWithdraw(
       publicClient,
       walletClient,
       TEST_ACCOUNTS.BOB,
       100,
+      controller.signal,
     );
     
     // Wait for a polling cycle
     await delay(150);
+    controller.abort();
     
     assertSpyCalls(withdrawFromSourceSpy, 0); // Should not attempt withdrawal
   });

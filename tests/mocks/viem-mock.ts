@@ -210,11 +210,11 @@ export function createMockPublicClient(
       Promise.resolve(store.getReceipt(args.hash) || null)
     ) as any),
     
-    waitForTransactionReceipt: stub(client, "waitForTransactionReceipt", ((args: { hash: Hash }) => {
+    waitForTransactionReceipt: ((args: { hash: Hash }) => {
       const receipt = store.getReceipt(args.hash);
       if (receipt) return Promise.resolve(receipt);
       
-      // Simulate waiting and then return a mock receipt
+      // Simulate waiting and then return a mock receipt (faster for tests)
       return new Promise(resolve => {
         setTimeout(() => {
           resolve(store.getReceipt(args.hash) || {
@@ -233,12 +233,12 @@ export function createMockPublicClient(
             transactionIndex: 0,
             type: "legacy",
           } as TransactionReceipt);
-        }, 100);
+        }, 10);
       });
-    }) as any),
+    }) as any,
     
     // Contract methods
-    readContract: stub(client, "readContract", ((args: any) => {
+    readContract: ((args: any) => {
       // Return mock data based on function name
       const functionName = args.functionName;
       
@@ -258,45 +258,45 @@ export function createMockPublicClient(
         default:
           return Promise.resolve(null);
       }
-    }) as any),
+    }) as any,
     
-    simulateContract: stub(client, "simulateContract", ((args: any) => {
+    simulateContract: ((args: any) => {
       // Return successful simulation
       return Promise.resolve({
         result: true,
         request: args,
       });
-    }) as any),
+    }) as any,
     
-    call: stub(client, "call", ((args: any) => {
+    call: ((args: any) => {
       // Return mock call data
       return Promise.resolve({
         data: "0x" + "0".repeat(64) as Hex,
       });
-    }) as any),
+    }) as any,
     
-    estimateGas: stub(client, "estimateGas", (() => 
+    estimateGas: (() => 
       Promise.resolve(100000n)
-    ) as any),
+    ) as any,
     
-    getGasPrice: stub(client, "getGasPrice", (() =>
+    getGasPrice: (() =>
       Promise.resolve(1000000000n) // 1 gwei
-    ) as any),
+    ) as any,
     
     // Event methods
-    getLogs: stub(client, "getLogs", (() =>
+    getLogs: (() =>
       Promise.resolve([])
-    ) as any),
+    ) as any,
     
-    watchContractEvent: stub(client, "watchContractEvent", ((args: any) => {
+    watchContractEvent: ((args: any) => {
       // Return a mock unwatch function
       return () => {};
-    }) as any),
+    }) as any,
     
     // Chain methods
-    getChainId: stub(client, "getChainId", (() =>
+    getChainId: (() =>
       Promise.resolve(chain.id)
-    ) as any),
+    ) as any,
     
     // Apply any custom mock functions
     ...mockFunctions,
@@ -333,7 +333,7 @@ export function createMockWalletClient(
   const mockedClient = {
     ...client,
     
-    sendTransaction: stub(client, "sendTransaction", ((args: any) => {
+    sendTransaction: ((args: any) => {
       const hash = store.addTransaction({
         from: account.address,
         to: args.to,
@@ -342,34 +342,34 @@ export function createMockWalletClient(
         gas: args.gas,
       });
       return Promise.resolve(hash);
-    }) as any),
+    }) as any,
     
-    writeContract: stub(client, "writeContract", ((args: any) => {
+    writeContract: ((args: any) => {
       const hash = store.addTransaction({
         from: account.address,
         to: args.address,
         input: args.data,
       });
       return Promise.resolve(hash);
-    }) as any),
+    }) as any,
     
-    signMessage: stub(client, "signMessage", ((args: { message: string }) => {
+    signMessage: ((args: { message: string }) => {
       // Return a mock signature
       return Promise.resolve(`0x${"1".repeat(130)}` as Hex);
-    }) as any),
+    }) as any,
     
-    signTypedData: stub(client, "signTypedData", (() => {
+    signTypedData: (() => {
       // Return a mock signature
       return Promise.resolve(`0x${"2".repeat(130)}` as Hex);
-    }) as any),
+    }) as any,
     
-    requestAddresses: stub(client, "requestAddresses", (() =>
+    requestAddresses: (() =>
       Promise.resolve([account.address])
-    ) as any),
+    ) as any,
     
-    getAddresses: stub(client, "getAddresses", (() =>
+    getAddresses: (() =>
       Promise.resolve([account.address])
-    ) as any),
+    ) as any,
     
     // Apply any custom mock functions
     ...mockFunctions,
