@@ -67,7 +67,7 @@ export interface SwapState {
 }
 
 export class SwapStateManager {
-  private kv: Deno.Kv;
+  private kv!: Deno.Kv; // Initialized in init()
   private kvPath: string;
 
   constructor(kvPath?: string) {

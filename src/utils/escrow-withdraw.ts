@@ -15,7 +15,7 @@ import { base, optimism } from "viem/chains";
 import EscrowSrcV2Abi from "../../abis/EscrowSrcV2.json" with { type: "json" };
 import EscrowDstV2Abi from "../../abis/EscrowDstV2.json" with { type: "json" };
 import SimplifiedEscrowFactoryV2_3Abi from "../../abis/SimplifiedEscrowFactoryV2_3.json" with { type: "json" };
-import { hashTypedData, signTypedData, type Address as ViemAddress } from "viem";
+import { hashTypedData, type Address as ViemAddress } from "viem";
 import { SecretManager } from "../state/SecretManager.ts";
 import { PonderClient } from "../indexer/ponder-client.ts";
 
@@ -92,9 +92,9 @@ export class EscrowWithdrawManager {
         maker: this.packAddress(swap.dstReceiver as Address), // Destination maker is receiver
         taker: this.packAddress(swap.srcMaker as Address), // Taker is source maker (resolver)
         token: this.packAddress(swap.dstToken as Address),
-        amount: BigInt(swap.dstAmount),
-        safetyDeposit: BigInt(swap.dstSafetyDeposit || 0),
-        timelocks: BigInt(swap.timelocks),
+        amount: BigInt(swap.dstAmount as string | number | bigint),
+        safetyDeposit: BigInt((swap.dstSafetyDeposit || 0) as string | number | bigint),
+        timelocks: BigInt(swap.timelocks as string | number | bigint),
       };
 
       // Prefer EIP-712 signed public withdrawal on v2.3
@@ -137,7 +137,7 @@ export class EscrowWithdrawManager {
       });
 
       // Execute the withdrawal
-      const hash = await wallet.writeContract(request);
+      const hash = await wallet.writeContract(request as any);
       console.log(`📝 Withdrawal (signed) transaction sent: ${hash}`);
 
       // Wait for confirmation
@@ -207,9 +207,9 @@ export class EscrowWithdrawManager {
         maker: this.packAddress(swap.srcMaker as Address),
         taker: this.packAddress(swap.srcTaker as Address), // Resolver address
         token: this.packAddress(swap.srcToken as Address),
-        amount: BigInt(swap.srcAmount),
-        safetyDeposit: BigInt(swap.srcSafetyDeposit || 0),
-        timelocks: BigInt(swap.timelocks),
+        amount: BigInt(swap.srcAmount as string | number | bigint),
+        safetyDeposit: BigInt((swap.srcSafetyDeposit || 0) as string | number | bigint),
+        timelocks: BigInt(swap.timelocks as string | number | bigint),
       };
 
       // Simulate the withdrawal first
@@ -222,7 +222,7 @@ export class EscrowWithdrawManager {
       });
 
       // Execute the withdrawal
-      const hash = await wallet.writeContract(request);
+      const hash = await wallet.writeContract(request as any);
       console.log(`📝 Withdrawal transaction sent: ${hash}`);
 
       // Wait for confirmation
@@ -279,7 +279,7 @@ export class EscrowWithdrawManager {
         });
 
         // Execute
-        const hash = await wallet.writeContract(request);
+        const hash = await wallet.writeContract(request as any);
         console.log(`📝 Transaction sent: ${hash}`);
 
         // Wait for confirmation
@@ -355,13 +355,13 @@ export class EscrowWithdrawManager {
 
       for (const withdrawal of recentWithdrawals) {
         if (withdrawal.secret && withdrawal.hashlock) {
-          secretsMap.set(withdrawal.hashlock, withdrawal.secret);
+          secretsMap.set(withdrawal.hashlock as string, withdrawal.secret as string);
         }
       }
 
       for (const secret of revealedSecrets) {
         if (secret.secret && secret.hashlock) {
-          secretsMap.set(secret.hashlock, secret.secret);
+          secretsMap.set(secret.hashlock as string, secret.secret as string);
         }
       }
 
@@ -472,13 +472,13 @@ export class EscrowWithdrawManager {
         ? await this.withdrawFromSource(
           escrow.hashlock,
           escrow.secret as `0x${string}`,
-          publicClient,
+          publicClient as any,
           walletClient,
           walletClient.account,
         )
         : await this.withdrawFromDestination(
           escrow.hashlock,
-          publicClient,
+          publicClient as any,
           walletClient,
           walletClient.account,
         );
@@ -508,9 +508,9 @@ export class EscrowWithdrawManager {
         const pendingSecrets = await this.secretManager.getPendingSecrets();
 
         for (const secretRecord of pendingSecrets) {
-          if (secretRecord.isRevealed && !secretRecord.isConfirmed) {
+          if (secretRecord.status === "pending") {
             console.log(
-              `\n🎯 Found revealed secret for order ${secretRecord.hashlock}`,
+              `\n🎯 Found pending secret for order ${secretRecord.hashlock}`,
             );
 
             // Get swap details

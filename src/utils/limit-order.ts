@@ -253,6 +253,7 @@ export async function fillLimitOrder(
     try {
       hash = await wallet.writeContract({
         address: protocolAddress,
+        chain: null,
         abi: SimpleLimitOrderProtocolAbi.abi,
         functionName: "fillOrderArgs",
         args: [
@@ -270,7 +271,7 @@ export async function fillLimitOrder(
           params.extensionData,
         ],
         gas: 2_500_000n,
-        account: wallet.account,
+        account: wallet.account!,
         ...(feeParams.maxFeePerGas
           ? { maxFeePerGas: feeParams.maxFeePerGas, maxPriorityFeePerGas: feeParams.maxPriorityFeePerGas }
           : feeParams.gasPrice
@@ -393,6 +394,8 @@ export async function ensureLimitOrderApprovals(
 
     const approveHash = await wallet.writeContract({
       address: tokenAddress,
+      chain: null,
+      account: wallet.account!,
       abi: parseAbi([
         "function approve(address spender, uint256 amount) returns (bool)",
       ]),
@@ -440,7 +443,7 @@ export async function handleLimitOrderError(
   error: any,
   context: {
     orderHash: string;
-    resolverAddress: string;
+    resolverAddress: Address;
     factoryAddress: Address;
     tokenAddress: Address;
     amount: bigint;

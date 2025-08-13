@@ -104,12 +104,12 @@ export class EventMonitorService {
     this.baseClient = createPublicClient({
       chain: base,
       transport: http(baseRpc),
-    });
+    }) as PublicClient;
 
     this.optimismClient = createPublicClient({
       chain: optimism,
       transport: http(optimismRpc),
-    });
+    }) as PublicClient;
   }
 
   /**
@@ -284,7 +284,7 @@ export class EventMonitorService {
    */
   private async handleOrderFilled(log: Log, chainId: number): Promise<void> {
     try {
-      const { orderHash, remainingAmount } = log.args as any;
+      const { orderHash, remainingAmount } = (log as any).args || {};
       
       console.log(`📦 OrderFilled detected on chain ${chainId}`);
       console.log(`   Order Hash: ${orderHash}`);
@@ -312,7 +312,7 @@ export class EventMonitorService {
     isSource: boolean
   ): Promise<void> {
     try {
-      const args = log.args as any;
+      const args = (log as any).args || {};
       const escrowAddress = args.escrow || args.escrowAddress;
       const hashlock = args.hashlock;
       const orderHash = args.orderHash || hashlock; // Use hashlock as fallback
@@ -352,11 +352,11 @@ export class EventMonitorService {
     // Watch for Transfer events to the escrow
     const unwatch = client.watchContractEvent({
       address: escrowAddress,
-      abi: parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)"),
+      abi: [parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)")] as const,
       eventName: "Transfer",
       onLogs: async (logs) => {
         for (const log of logs) {
-          const { from, to, value } = log.args as any;
+          const { from, to, value } = (log as any).args || {};
           if (to === escrowAddress) {
             console.log(`💰 Token deposit detected to escrow ${escrowAddress}`);
             console.log(`   From: ${from}`);
@@ -394,7 +394,7 @@ export class EventMonitorService {
       eventName: "Withdraw",
       onLogs: async (logs) => {
         for (const log of logs) {
-          const { withdrawer, amount } = log.args as any;
+          const { withdrawer, amount } = (log as any).args || {};
           
           // Get the secret from transaction input
           const tx = await client.getTransaction({

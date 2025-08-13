@@ -106,7 +106,7 @@ export class MockTransactionStore {
   
   addBlock(block?: Partial<Block>): Block {
     const blockNumber = block?.number || this.currentBlockNumber++;
-    const fullBlock: Block = {
+    const fullBlock = {
       baseFeePerGas: 1000000000n,
       blobGasUsed: 0n,
       difficulty: 0n,
@@ -123,6 +123,7 @@ export class MockTransactionStore {
       parentHash: this.generateHash(),
       receiptsRoot: this.generateHash(),
       sha3Uncles: this.generateHash(),
+      sealFields: [] as Hex[],
       size: 1000n,
       stateRoot: this.generateHash(),
       timestamp: BigInt(Math.floor(Date.now() / 1000)),
@@ -131,7 +132,7 @@ export class MockTransactionStore {
       transactionsRoot: this.generateHash(),
       uncles: [],
       ...block,
-    };
+    } as Block;
     
     this.blocks.set(blockNumber, fullBlock);
     return fullBlock;
@@ -184,32 +185,32 @@ export function createMockPublicClient(
   const client = createPublicClient({
     chain,
     transport: http("http://localhost:8545"),
-  });
+  }) as any;
   
   // Mock common functions
   const mockedClient = {
     ...client,
     
     // Block methods
-    getBlockNumber: stub(client, "getBlockNumber", () => 
+    getBlockNumber: stub(client, "getBlockNumber", (() => 
       Promise.resolve(store.getCurrentBlockNumber())
-    ),
+    ) as any),
     
-    getBlock: stub(client, "getBlock", (args: any) => {
+    getBlock: stub(client, "getBlock", ((args: any) => {
       const block = store.getBlock(args?.blockNumber || store.getCurrentBlockNumber());
       return Promise.resolve(block || store.addBlock());
-    }),
+    }) as any),
     
     // Transaction methods
-    getTransaction: stub(client, "getTransaction", (args: { hash: Hash }) => 
+    getTransaction: stub(client, "getTransaction", ((args: { hash: Hash }) => 
       Promise.resolve(store.getTransaction(args.hash) || null)
-    ),
+    ) as any),
     
-    getTransactionReceipt: stub(client, "getTransactionReceipt", (args: { hash: Hash }) =>
+    getTransactionReceipt: stub(client, "getTransactionReceipt", ((args: { hash: Hash }) =>
       Promise.resolve(store.getReceipt(args.hash) || null)
-    ),
+    ) as any),
     
-    waitForTransactionReceipt: stub(client, "waitForTransactionReceipt", (args: { hash: Hash }) => {
+    waitForTransactionReceipt: stub(client, "waitForTransactionReceipt", ((args: { hash: Hash }) => {
       const receipt = store.getReceipt(args.hash);
       if (receipt) return Promise.resolve(receipt);
       
@@ -234,10 +235,10 @@ export function createMockPublicClient(
           } as TransactionReceipt);
         }, 100);
       });
-    }),
+    }) as any),
     
     // Contract methods
-    readContract: stub(client, "readContract", (args: any) => {
+    readContract: stub(client, "readContract", ((args: any) => {
       // Return mock data based on function name
       const functionName = args.functionName;
       
@@ -257,45 +258,45 @@ export function createMockPublicClient(
         default:
           return Promise.resolve(null);
       }
-    }),
+    }) as any),
     
-    simulateContract: stub(client, "simulateContract", (args: any) => {
+    simulateContract: stub(client, "simulateContract", ((args: any) => {
       // Return successful simulation
       return Promise.resolve({
         result: true,
         request: args,
       });
-    }),
+    }) as any),
     
-    call: stub(client, "call", (args: any) => {
+    call: stub(client, "call", ((args: any) => {
       // Return mock call data
       return Promise.resolve({
         data: "0x" + "0".repeat(64) as Hex,
       });
-    }),
+    }) as any),
     
-    estimateGas: stub(client, "estimateGas", () => 
+    estimateGas: stub(client, "estimateGas", (() => 
       Promise.resolve(100000n)
-    ),
+    ) as any),
     
-    getGasPrice: stub(client, "getGasPrice", () =>
+    getGasPrice: stub(client, "getGasPrice", (() =>
       Promise.resolve(1000000000n) // 1 gwei
-    ),
+    ) as any),
     
     // Event methods
-    getLogs: stub(client, "getLogs", () =>
+    getLogs: stub(client, "getLogs", (() =>
       Promise.resolve([])
-    ),
+    ) as any),
     
-    watchContractEvent: stub(client, "watchContractEvent", (args: any) => {
+    watchContractEvent: stub(client, "watchContractEvent", ((args: any) => {
       // Return a mock unwatch function
       return () => {};
-    }),
+    }) as any),
     
     // Chain methods
-    getChainId: stub(client, "getChainId", () =>
+    getChainId: stub(client, "getChainId", (() =>
       Promise.resolve(chain.id)
-    ),
+    ) as any),
     
     // Apply any custom mock functions
     ...mockFunctions,
@@ -326,49 +327,49 @@ export function createMockWalletClient(
     account,
     chain,
     transport: http("http://localhost:8545"),
-  });
+  }) as any;
   
   // Mock common functions
   const mockedClient = {
     ...client,
     
-    sendTransaction: stub(client, "sendTransaction", (args: any) => {
+    sendTransaction: stub(client, "sendTransaction", ((args: any) => {
       const hash = store.addTransaction({
         from: account.address,
         to: args.to,
         value: args.value,
-        data: args.data,
+        input: args.data,
         gas: args.gas,
       });
       return Promise.resolve(hash);
-    }),
+    }) as any),
     
-    writeContract: stub(client, "writeContract", (args: any) => {
+    writeContract: stub(client, "writeContract", ((args: any) => {
       const hash = store.addTransaction({
         from: account.address,
         to: args.address,
-        data: args.data,
+        input: args.data,
       });
       return Promise.resolve(hash);
-    }),
+    }) as any),
     
-    signMessage: stub(client, "signMessage", (args: { message: string }) => {
+    signMessage: stub(client, "signMessage", ((args: { message: string }) => {
       // Return a mock signature
       return Promise.resolve(`0x${"1".repeat(130)}` as Hex);
-    }),
+    }) as any),
     
-    signTypedData: stub(client, "signTypedData", () => {
+    signTypedData: stub(client, "signTypedData", (() => {
       // Return a mock signature
       return Promise.resolve(`0x${"2".repeat(130)}` as Hex);
-    }),
+    }) as any),
     
-    requestAddresses: stub(client, "requestAddresses", () =>
+    requestAddresses: stub(client, "requestAddresses", (() =>
       Promise.resolve([account.address])
-    ),
+    ) as any),
     
-    getAddresses: stub(client, "getAddresses", () =>
+    getAddresses: stub(client, "getAddresses", (() =>
       Promise.resolve([account.address])
-    ),
+    ) as any),
     
     // Apply any custom mock functions
     ...mockFunctions,

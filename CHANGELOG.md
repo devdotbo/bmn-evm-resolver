@@ -46,6 +46,21 @@ and this project adheres to
 - `scripts/monitor-escrow-creation.ts` - Monitor script for detecting source escrows and creating destination escrows
 - `alice-service-v2.ts` - Enhanced Alice service with automatic secret reveal capability
 
+### Fixed - 2025-01-14
+
+- **TypeScript Type Checking** - Comprehensive fixes to enable type checking in test suite
+  - Fixed viem client type incompatibilities by adding proper type casts to PublicClient/WalletClient creation
+  - Fixed missing Hash type imports across test files
+  - Added override modifiers to mock class methods for proper inheritance
+  - Fixed Transaction data vs input property naming in viem-mock.ts
+  - Fixed Log.args property access issues using type assertions
+  - Fixed SecretRecord property usage (changed from isRevealed/isConfirmed to status)
+  - Added missing chain and account properties to writeContract calls
+  - Fixed SwapStateManager uninitialized kv property with definite assignment assertion
+  - Added proper type assertions for captured events in test assertions
+  - Removed outdated postinteraction-v2.2.test.ts file
+  - All tests now run with TypeScript type checking enabled (no --no-check flag needed)
+
 ### Fixed - 2025-01-13
 
 - Signature format conversion from standard (v,r,s) to compact (r,vs) format for `fillOrderArgs`

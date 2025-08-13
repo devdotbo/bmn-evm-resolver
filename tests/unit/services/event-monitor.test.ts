@@ -179,10 +179,10 @@ Deno.test("EventMonitorService - Event Processing", async (t) => {
     await (service as any).handleOrderFilled(log, base.id);
     
     assertExists(capturedEvent);
-    assertEquals(capturedEvent!.orderHash, TEST_ORDER_HASH);
-    assertEquals(capturedEvent!.remainingAmount, 250000000000000000n);
-    assertEquals(capturedEvent!.blockNumber, 1001n);
-    assertEquals(capturedEvent!.transactionHash, "0xabc123");
+    assertEquals((capturedEvent as OrderFilledEvent).orderHash, TEST_ORDER_HASH);
+    assertEquals((capturedEvent as OrderFilledEvent).remainingAmount, 250000000000000000n);
+    assertEquals((capturedEvent as OrderFilledEvent).blockNumber, 1001n);
+    assertEquals((capturedEvent as OrderFilledEvent).transactionHash, "0xabc123");
   });
 
   await t.step("OrderFilled with Missing Data", async () => {
@@ -202,10 +202,10 @@ Deno.test("EventMonitorService - Event Processing", async (t) => {
     await (service as any).handleOrderFilled(log, base.id);
     
     assertExists(capturedEvent);
-    assertEquals(capturedEvent!.orderHash, TEST_ORDER_HASH);
-    assertEquals(capturedEvent!.remainingAmount, 0n); // Default value
-    assertEquals(capturedEvent!.blockNumber, 0n); // Default value
-    assertEquals(capturedEvent!.transactionHash, "0x"); // Default value
+    assertEquals((capturedEvent as OrderFilledEvent).orderHash, TEST_ORDER_HASH);
+    assertEquals((capturedEvent as OrderFilledEvent).remainingAmount, 0n); // Default value
+    assertEquals((capturedEvent as OrderFilledEvent).blockNumber, 0n); // Default value
+    assertEquals((capturedEvent as OrderFilledEvent).transactionHash, "0x"); // Default value
   });
 
   await t.step("Source Escrow Creation", async () => {
@@ -232,14 +232,14 @@ Deno.test("EventMonitorService - Event Processing", async (t) => {
     await (service as any).handleEscrowCreated(log, base.id, true);
     
     assertExists(capturedEvent);
-    assertEquals(capturedEvent!.escrowAddress, TEST_ESCROW_ADDRESS);
-    assertEquals(capturedEvent!.hashlock, TEST_HASHLOCK);
-    assertEquals(capturedEvent!.orderHash, TEST_ORDER_HASH);
-    assertEquals(capturedEvent!.maker, TEST_ALICE_ADDRESS);
-    assertEquals(capturedEvent!.taker, TEST_BOB_ADDRESS);
-    assertEquals(capturedEvent!.amount, TEST_AMOUNT);
-    assertEquals(capturedEvent!.chainId, base.id);
-    assertEquals(capturedEvent!.isSource, true);
+    assertEquals((capturedEvent as EscrowCreatedEvent).escrowAddress, TEST_ESCROW_ADDRESS);
+    assertEquals((capturedEvent as EscrowCreatedEvent).hashlock, TEST_HASHLOCK);
+    assertEquals((capturedEvent as EscrowCreatedEvent).orderHash, TEST_ORDER_HASH);
+    assertEquals((capturedEvent as EscrowCreatedEvent).maker, TEST_ALICE_ADDRESS);
+    assertEquals((capturedEvent as EscrowCreatedEvent).taker, TEST_BOB_ADDRESS);
+    assertEquals((capturedEvent as EscrowCreatedEvent).amount, TEST_AMOUNT);
+    assertEquals((capturedEvent as EscrowCreatedEvent).chainId, base.id);
+    assertEquals((capturedEvent as EscrowCreatedEvent).isSource, true);
   });
 
   await t.step("Destination Escrow Creation", async () => {
@@ -264,9 +264,9 @@ Deno.test("EventMonitorService - Event Processing", async (t) => {
     await (service as any).handleEscrowCreated(log, optimism.id, false);
     
     assertExists(capturedEvent);
-    assertEquals(capturedEvent!.escrowAddress, TEST_ESCROW_ADDRESS);
-    assertEquals(capturedEvent!.chainId, optimism.id);
-    assertEquals(capturedEvent!.isSource, false);
+    assertEquals((capturedEvent as EscrowCreatedEvent).escrowAddress, TEST_ESCROW_ADDRESS);
+    assertEquals((capturedEvent as EscrowCreatedEvent).chainId, optimism.id);
+    assertEquals((capturedEvent as EscrowCreatedEvent).isSource, false);
   });
 
   await t.step("Hashlock as OrderHash Fallback", async () => {
@@ -290,7 +290,7 @@ Deno.test("EventMonitorService - Event Processing", async (t) => {
     await (service as any).handleEscrowCreated(log, base.id, true);
     
     assertExists(capturedEvent);
-    assertEquals(capturedEvent!.orderHash, TEST_HASHLOCK);
+    assertEquals((capturedEvent as EscrowCreatedEvent).orderHash, TEST_HASHLOCK);
   });
 });
 

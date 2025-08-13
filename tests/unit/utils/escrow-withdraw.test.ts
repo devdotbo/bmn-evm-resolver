@@ -29,8 +29,21 @@ import { TEST_ADDRESSES, TEST_VALUES, TestDataGenerator, MockKVStore } from "../
 import { EscrowWithdrawManager, type EscrowImmutables, type WithdrawParams } from "../../../src/utils/escrow-withdraw.ts";
 import { SecretManager, type SecretRecord } from "../../../src/state/SecretManager.ts";
 import { PonderClient } from "../../../src/indexer/ponder-client.ts";
-import type { Address, Hex, PublicClient, WalletClient } from "viem";
+import type { Address, Hex, Hash, PublicClient, WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+
+// Helper functions to create type-safe stubs for viem clients
+function stubSimulateContract(client: any, handler: (args?: any) => any) {
+  return stub(client, "simulateContract", handler as any);
+}
+
+function stubWriteContract(client: any, handler: (args?: any) => any) {
+  return stub(client, "writeContract", handler as any);
+}
+
+function stubWaitForTransactionReceipt(client: any, handler: (args?: any) => any) {
+  return stub(client, "waitForTransactionReceipt", handler as any);
+}
 
 // Mock implementations
 class MockSecretManager extends SecretManager {
@@ -41,11 +54,11 @@ class MockSecretManager extends SecretManager {
     super();
   }
 
-  async init(): Promise<void> {
+  override async init(): Promise<void> {
     // No-op for testing
   }
 
-  async storeSecret(params: {
+  override async storeSecret(params: {
     secret: Hex;
     orderHash: Hex;
     escrowAddress: string;
@@ -67,18 +80,18 @@ class MockSecretManager extends SecretManager {
     return record;
   }
 
-  async getSecretByHashlock(hashlock: string): Promise<string | null> {
+  override async getSecretByHashlock(hashlock: string): Promise<string | null> {
     const record = this.secrets.get(hashlock);
     return record?.secret || null;
   }
 
-  async getSecretByOrderHash(orderHash: string): Promise<string | null> {
+  override async getSecretByOrderHash(orderHash: string): Promise<string | null> {
     const hashlock = this.secretsByOrder.get(orderHash);
     if (!hashlock) return null;
     return this.getSecretByHashlock(hashlock);
   }
 
-  async confirmSecret(
+  override async confirmSecret(
     orderHash: string,
     txHash: string,
     gasUsed: bigint,
@@ -94,7 +107,7 @@ class MockSecretManager extends SecretManager {
     }
   }
 
-  async markFailed(orderHash: string, error: string): Promise<void> {
+  override async markFailed(orderHash: string, error: string): Promise<void> {
     const hashlock = this.secretsByOrder.get(orderHash);
     if (!hashlock) return;
     
@@ -104,7 +117,7 @@ class MockSecretManager extends SecretManager {
     }
   }
 
-  async getPendingSecrets(): Promise<SecretRecord[]> {
+  override async getPendingSecrets(): Promise<SecretRecord[]> {
     return Array.from(this.secrets.values()).filter(s => s.status === "pending");
   }
 
@@ -139,19 +152,19 @@ class MockPonderClient extends PonderClient {
     super({ url: "http://mock-indexer" });
   }
 
-  async getAtomicSwapByOrderHash(orderHash: string) {
+  override async getAtomicSwapByOrderHash(orderHash: string) {
     return this.atomicSwaps.get(orderHash) || null;
   }
 
-  async getRecentWithdrawals(limit: number) {
+  override async getRecentWithdrawals(limit: number) {
     return this.withdrawals.slice(0, limit);
   }
 
-  async getRevealedSecrets() {
+  override async getRevealedSecrets() {
     return this.revealedSecrets;
   }
 
-  async getSwapsByHashlock(hashlock: string) {
+  override async getSwapsByHashlock(hashlock: string) {
     const swaps = [];
     for (const swap of this.atomicSwaps.values()) {
       if (swap.hashlock === hashlock) {
@@ -243,15 +256,15 @@ Deno.test("EscrowWithdrawManager - Withdraw from Destination", async (t) => {
     const walletClient = createMockWalletClient({ account: TEST_ACCOUNTS.ALICE, store });
     
     // Mock successful simulation and transaction
-    const simulateStub = stub(publicClient, "simulateContract", () => 
+    const simulateStub = stubSimulateContract(publicClient, () => 
       Promise.resolve({ result: true, request: {} })
     );
     
-    const writeStub = stub(walletClient, "writeContract", () => 
+    const writeStub = stubWriteContract(walletClient, () => 
       Promise.resolve(txHash as Hash)
     );
     
-    const waitStub = stub(publicClient, "waitForTransactionReceipt", () =>
+    const waitStub = stubWaitForTransactionReceipt(publicClient, () =>
       Promise.resolve(createMockTransactionReceipt({
         transactionHash: txHash as Hash,
         status: "success",
@@ -414,15 +427,15 @@ Deno.test("EscrowWithdrawManager - Withdraw from Destination", async (t) => {
     const publicClient = createMockPublicClient({ store });
     const walletClient = createMockWalletClient({ account: TEST_ACCOUNTS.ALICE, store });
     
-    stub(publicClient, "simulateContract", () => 
+    stubSimulateContract(publicClient, () => 
       Promise.resolve({ result: true, request: {} })
     );
     
-    stub(walletClient, "writeContract", () => 
+    stubWriteContract(walletClient, () => 
       Promise.resolve(txHash as Hash)
     );
     
-    stub(publicClient, "waitForTransactionReceipt", () =>
+    stubWaitForTransactionReceipt(publicClient, () =>
       Promise.resolve(createMockTransactionReceipt({
         transactionHash: txHash as Hash,
         status: "success",
@@ -474,15 +487,15 @@ Deno.test("EscrowWithdrawManager - Withdraw from Source", async (t) => {
     const publicClient = createMockPublicClient({ store });
     const walletClient = createMockWalletClient({ account: TEST_ACCOUNTS.BOB, store });
     
-    const simulateStub = stub(publicClient, "simulateContract", () => 
+    const simulateStub = stubSimulateContract(publicClient, () => 
       Promise.resolve({ result: true, request: {} })
     );
     
-    const writeStub = stub(walletClient, "writeContract", () => 
+    const writeStub = stubWriteContract(walletClient, () => 
       Promise.resolve(txHash as Hash)
     );
     
-    const waitStub = stub(publicClient, "waitForTransactionReceipt", () =>
+    const waitStub = stubWaitForTransactionReceipt(publicClient, () =>
       Promise.resolve(createMockTransactionReceipt({
         transactionHash: txHash as Hash,
         status: "success",
@@ -558,15 +571,15 @@ Deno.test("EscrowWithdrawManager - Withdraw from Source", async (t) => {
     const publicClient = createMockPublicClient({ store });
     const walletClient = createMockWalletClient({ account: TEST_ACCOUNTS.BOB, store });
     
-    stub(publicClient, "simulateContract", () => 
+    stubSimulateContract(publicClient, () => 
       Promise.resolve({ result: true, request: {} })
     );
     
-    stub(walletClient, "writeContract", () => 
+    stubWriteContract(walletClient, () => 
       Promise.resolve(txHash as Hash)
     );
     
-    stub(publicClient, "waitForTransactionReceipt", () =>
+    stubWaitForTransactionReceipt(publicClient, () =>
       Promise.resolve(createMockTransactionReceipt({
         transactionHash: txHash as Hash,
         status: "reverted",
@@ -614,7 +627,7 @@ Deno.test("EscrowWithdrawManager - Retry Logic", async (t) => {
     const walletClient = createMockWalletClient();
     
     let attemptCount = 0;
-    const simulateStub = stub(publicClient, "simulateContract", () => {
+    const simulateStub = stubSimulateContract(publicClient, () => {
       attemptCount++;
       if (attemptCount < 3) {
         return Promise.reject(new Error("Network error"));
@@ -622,11 +635,11 @@ Deno.test("EscrowWithdrawManager - Retry Logic", async (t) => {
       return Promise.resolve({ result: true, request: {} });
     });
     
-    stub(walletClient, "writeContract", () => 
+    stubWriteContract(walletClient, () => 
       Promise.resolve(dataGen.nextHashlock() as Hash)
     );
     
-    stub(publicClient, "waitForTransactionReceipt", () =>
+    stubWaitForTransactionReceipt(publicClient, () =>
       Promise.resolve(createMockTransactionReceipt({
         status: "success",
       }))
@@ -671,7 +684,7 @@ Deno.test("EscrowWithdrawManager - Retry Logic", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    const simulateStub = stub(publicClient, "simulateContract", () => {
+    const simulateStub = stubSimulateContract(publicClient, () => {
       return Promise.reject(new Error("Network error"));
     });
     
@@ -711,7 +724,7 @@ Deno.test("EscrowWithdrawManager - Retry Logic", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    const simulateStub = stub(publicClient, "simulateContract", () => {
+    const simulateStub = stubSimulateContract(publicClient, () => {
       return Promise.reject(new Error("InvalidSecret: Wrong secret provided"));
     });
     
@@ -751,7 +764,7 @@ Deno.test("EscrowWithdrawManager - Retry Logic", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    const simulateStub = stub(publicClient, "simulateContract", () => {
+    const simulateStub = stubSimulateContract(publicClient, () => {
       return Promise.reject(new Error("InvalidTime: Timelock not expired"));
     });
     
@@ -791,7 +804,7 @@ Deno.test("EscrowWithdrawManager - Retry Logic", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    const simulateStub = stub(publicClient, "simulateContract", () => {
+    const simulateStub = stubSimulateContract(publicClient, () => {
       return Promise.reject(new Error("InvalidCaller: Not authorized"));
     });
     
@@ -1175,15 +1188,15 @@ Deno.test("EscrowWithdrawManager - Monitor and Auto-Withdraw", async (t) => {
     const publicClient = createMockPublicClient({ store });
     const walletClient = createMockWalletClient({ account: TEST_ACCOUNTS.BOB, store });
     
-    stub(publicClient, "simulateContract", () => 
+    stubSimulateContract(publicClient, () => 
       Promise.resolve({ result: true, request: {} })
     );
     
-    stub(walletClient, "writeContract", () => 
+    stubWriteContract(walletClient, () => 
       Promise.resolve(txHash as Hash)
     );
     
-    stub(publicClient, "waitForTransactionReceipt", () =>
+    stubWaitForTransactionReceipt(publicClient, () =>
       Promise.resolve(createMockTransactionReceipt({
         transactionHash: txHash as Hash,
         status: "success",
@@ -1333,7 +1346,7 @@ Deno.test("EscrowWithdrawManager - Error Scenarios", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    stub(publicClient, "simulateContract", () => {
+    stubSimulateContract(publicClient, () => {
       throw new Error("Simulation failed: Insufficient balance");
     });
     
@@ -1375,11 +1388,11 @@ Deno.test("EscrowWithdrawManager - Error Scenarios", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    stub(publicClient, "simulateContract", () => 
+    stubSimulateContract(publicClient, () => 
       Promise.resolve({ result: true, request: {} })
     );
     
-    stub(walletClient, "writeContract", () => {
+    stubWriteContract(walletClient, () => {
       throw new Error("User rejected transaction");
     });
     
@@ -1422,15 +1435,15 @@ Deno.test("EscrowWithdrawManager - Error Scenarios", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    stub(publicClient, "simulateContract", () => 
+    stubSimulateContract(publicClient, () => 
       Promise.resolve({ result: true, request: {} })
     );
     
-    stub(walletClient, "writeContract", () => 
+    stubWriteContract(walletClient, () => 
       Promise.resolve(txHash as Hash)
     );
     
-    stub(publicClient, "waitForTransactionReceipt", () => {
+    stubWaitForTransactionReceipt(publicClient, () => {
       throw new Error("Transaction timeout");
     });
     
@@ -1475,7 +1488,7 @@ Deno.test("EscrowWithdrawManager - Error Scenarios", async (t) => {
     const publicClient = createMockPublicClient();
     const walletClient = createMockWalletClient();
     
-    stub(publicClient, "simulateContract", () => {
+    stubSimulateContract(publicClient, () => {
       throw new Error("Contract error");
     });
     
@@ -1528,7 +1541,7 @@ Deno.test("EscrowWithdrawManager - Immutables Construction", async (t) => {
     const walletClient = createMockWalletClient();
     
     let capturedImmutables: any;
-    stub(publicClient, "simulateContract", (args: any) => {
+    stubSimulateContract(publicClient, (args: any) => {
       capturedImmutables = args.args[1]; // Second argument is immutables
       return Promise.resolve({ result: true, request: {} });
     });
@@ -1578,7 +1591,7 @@ Deno.test("EscrowWithdrawManager - Immutables Construction", async (t) => {
     const walletClient = createMockWalletClient();
     
     let capturedImmutables: any;
-    stub(publicClient, "simulateContract", (args: any) => {
+    stubSimulateContract(publicClient, (args: any) => {
       capturedImmutables = args.args[1]; // Second argument is immutables
       return Promise.resolve({ result: true, request: {} });
     });
@@ -1629,7 +1642,7 @@ Deno.test("EscrowWithdrawManager - Immutables Construction", async (t) => {
     const walletClient = createMockWalletClient();
     
     let capturedImmutables: any;
-    stub(publicClient, "simulateContract", (args: any) => {
+    stubSimulateContract(publicClient, (args: any) => {
       capturedImmutables = args.args[1];
       return Promise.resolve({ result: true, request: {} });
     });

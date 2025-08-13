@@ -812,7 +812,7 @@ Deno.test("Atomic Swap Flow - Race Condition Prevention", async () => {
         }),
       ]);
     } catch (error) {
-      if (error.message.includes("race condition detected")) {
+      if (error instanceof Error && error.message.includes("race condition detected")) {
         raceConditionDetected = true;
       }
     }
@@ -853,7 +853,7 @@ Deno.test("Atomic Swap Flow - Race Condition Prevention", async () => {
         }),
       ]);
     } catch (error) {
-      if (error.message.includes("race condition detected")) {
+      if (error instanceof Error && error.message.includes("race condition detected")) {
         raceConditionDetected = true;
       }
     }
