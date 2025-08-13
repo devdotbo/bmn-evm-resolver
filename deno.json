@@ -4,11 +4,13 @@
     "@orpc/openapi": "npm:@orpc/openapi@^1.8.0",
     "@orpc/server": "npm:@orpc/server@^1.8.0",
     "@ponder/client": "npm:@ponder/client@0.12.0",
-    "viem": "npm:viem@2.21.21",
-    "viem/accounts": "npm:viem@2.21.21/accounts",
-    "viem/chains": "npm:viem@2.21.21/chains",
-    "viem/actions": "npm:viem@2.21.21/actions",
-    "viem/utils": "npm:viem@2.21.21/utils",
+    "@scalar/api-reference": "npm:@scalar/api-reference@^1.34.2",
+    "zod": "jsr:@zod/zod@^4.0.17",
+    "viem": "jsr:@wevm/viem@^2.33.3",
+    "viem/accounts": "jsr:@wevm/viem@^2.33.3/accounts",
+    "viem/chains": "jsr:@wevm/viem@^2.33.3/chains",
+    "viem/actions": "jsr:@wevm/viem@^2.33.3/actions",
+    "viem/utils": "jsr:@wevm/viem@^2.33.3/utils",
     "abitype": "npm:abitype@1.0.6",
     "@noble/hashes": "npm:@noble/hashes@^1.6.1",
     "@noble/hashes/sha256": "npm:@noble/hashes@^1.6.1/sha256",
@@ -17,8 +19,7 @@
     "@std/testing/mock": "https://deno.land/std@0.210.0/testing/mock.ts",
     "@std/testing/snapshot": "https://deno.land/std@0.210.0/testing/snapshot.ts",
     "@std/testing/bdd": "https://deno.land/std@0.210.0/testing/bdd.ts",
-    "@std/async": "https://deno.land/std@0.210.0/async/mod.ts",
-    "zod": "npm:zod@^4.0.17"
+    "@std/async": "https://deno.land/std@0.210.0/async/mod.ts"
   },
   "nodeModulesDir": "none",
   "test": {

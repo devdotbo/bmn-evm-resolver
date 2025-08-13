@@ -68,6 +68,28 @@ and this project adheres to
   - oRPC API endpoints accessible and functional at /api/alice/*
   - Docker Compose orchestration working with proper service dependencies
 
+### Added - 2025-08-13 (Part 7)
+
+- **OpenAPI/Scalar Documentation Support**
+  - Integrated OpenAPI specification generation for all oRPC endpoints
+  - Added Scalar UI for interactive API documentation at `/docs`
+  - Migrated dependencies from npm to JSR for better Deno compatibility:
+    - `viem` now uses `jsr:@wevm/viem` instead of npm version
+    - `zod` now uses `jsr:@zod/zod` for type-safe validation
+  - Created `alice-orpc-server-simple-openapi.ts` with simplified OpenAPI generation
+  - OpenAPI specification available at `/openapi.json` endpoint
+  - API documentation features:
+    - Interactive endpoint testing through Scalar UI
+    - Automatic request/response schema documentation
+    - Type-safe API contracts with Zod validation
+    - Full CORS support for cross-origin requests
+  - Service endpoints documented:
+    - `GET /health` - Health check endpoint
+    - `POST /api/alice/createOrder` - Create atomic swap order
+    - `POST /api/alice/getSwapStatus` - Get swap status by hashlock
+    - `POST /api/alice/getPendingOrders` - List all pending orders
+    - `POST /api/alice/revealSecret` - Reveal secret for completed swap
+
 ### Fixed - 2025-08-13 (Part 2)
 
 - Critical signature verification issues resolved

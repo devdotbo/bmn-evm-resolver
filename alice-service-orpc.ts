@@ -25,10 +25,10 @@ import {
   http,
   type Hex,
   parseEther,
+  erc20Abi,
 } from "viem";
 import { privateKeyToAccount, nonceManager } from "viem/accounts";
 import { base, optimism } from "viem/chains";
-import { erc20Abi } from "viem";
 
 // Import services and utilities
 import { EventMonitorService } from "./src/services/event-monitor.ts";
@@ -37,7 +37,7 @@ import { LimitOrderAlice } from "./src/alice/limit-order-alice.ts";
 import { SecretManager } from "./src/state/SecretManager.ts";
 import { SecretRevealer } from "./src/utils/secret-reveal.ts";
 import { EscrowWithdrawManager } from "./src/utils/escrow-withdraw.ts";
-import { AliceOrpcServer } from "./src/utils/alice-orpc-server.ts";
+import { AliceOrpcServerWithSimpleOpenAPI } from "./src/utils/alice-orpc-server-simple-openapi.ts";
 
 const BMN_TOKEN = "0x8287CD2aC7E227D9D927F998EB600a0683a832A1" as Address;
 
@@ -62,7 +62,7 @@ class AliceServiceWithOrpc {
   private secretManager: SecretManager;
   private secretRevealer: SecretRevealer;
   private withdrawManager: EscrowWithdrawManager;
-  private orpcServer: AliceOrpcServer;
+  private orpcServer: AliceOrpcServerWithSimpleOpenAPI;
   private account: any;
   private baseClient: any;
   private optimismClient: any;
@@ -90,12 +90,15 @@ class AliceServiceWithOrpc {
     this.secretRevealer = new SecretRevealer();
     this.withdrawManager = new EscrowWithdrawManager();
     
-    // Initialize oRPC server instead of manual API server
-    this.orpcServer = new AliceOrpcServer({
+    // Initialize oRPC server with OpenAPI support
+    this.orpcServer = new AliceOrpcServerWithSimpleOpenAPI({
       port: config.healthPort,
       limitOrderAlice: this.alice,
       swapStateManager: this.swapStateManager,
       secretManager: this.secretManager,
+      enableOpenAPI: true,
+      apiTitle: "Alice Atomic Swap API",
+      apiVersion: "1.0.0",
     });
     
     // Setup account
