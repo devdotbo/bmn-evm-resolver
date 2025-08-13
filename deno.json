@@ -9,10 +9,31 @@
     "abitype": "npm:abitype@^1.0.6",
     "@noble/hashes": "npm:@noble/hashes@^1.6.1",
     "@noble/hashes/sha256": "npm:@noble/hashes@^1.6.1/sha256",
-    "@t3-oss/env-core": "npm:@t3-oss/env-core@^0.11.1"
+    "@t3-oss/env-core": "npm:@t3-oss/env-core@^0.11.1",
+    "@std/assert": "https://deno.land/std@0.210.0/assert/mod.ts",
+    "@std/testing/mock": "https://deno.land/std@0.210.0/testing/mock.ts",
+    "@std/testing/snapshot": "https://deno.land/std@0.210.0/testing/snapshot.ts",
+    "@std/testing/bdd": "https://deno.land/std@0.210.0/testing/bdd.ts",
+    "@std/async": "https://deno.land/std@0.210.0/async/mod.ts"
   },
   "nodeModulesDir": "none",
+  "test": {
+    "include": [
+      "tests/**/*.test.ts",
+      "src/**/*.test.ts"
+    ],
+    "exclude": [
+      "tests/fixtures/**/*",
+      "tests/mocks/**/*"
+    ]
+  },
   "tasks": {
+    "test": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv",
+    "test:watch": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv --watch",
+    "test:coverage": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv --coverage=coverage",
+    "test:unit": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv tests/unit/",
+    "test:integration": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv tests/integration/",
+    "test:e2e": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv tests/e2e/",
     "resolver:test": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env test-resolver.ts",
     "alice": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env alice-service.ts",
     "bob": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env bob-resolver-service.ts",
@@ -23,5 +44,19 @@
     "human2abi": "deno run --allow-read scripts/human2abi.ts",
     "abis:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-abis.ts",
     "ponder:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-ponder-schema.ts"
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "proseWrap": "preserve"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-explicit-any"]
+    }
   }
 }
