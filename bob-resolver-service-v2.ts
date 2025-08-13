@@ -30,7 +30,7 @@ import { SwapStateManager, SwapStatus } from "./src/state/swap-state-manager.ts"
 import { PonderClient } from "./src/indexer/ponder-client.ts";
 import { SecretManager } from "./src/state/SecretManager.ts";
 import { EscrowWithdrawManager } from "./src/utils/escrow-withdraw.ts";
-import { createDestinationEscrow, extractImmutables } from "./src/utils/escrow-creation.ts";
+import { createDestinationEscrow, extractImmutables, parsePostInteractionData } from "./src/utils/escrow-creation.ts";
 import {
   ensureLimitOrderApprovals,
   fillLimitOrder,
@@ -292,7 +292,15 @@ class BobResolverServiceV2 {
           const orderPath = `${pendingOrdersDir}/${entry.name}`;
           const orderData = JSON.parse(await Deno.readTextFile(orderPath));
           
-          // Track in state manager
+          // Parse extension data to get destination details
+          const extensionData = orderData.extensionData as Hex;
+          const parsed = parsePostInteractionData(extensionData);
+          
+          // Check if order has expired (extract timelocks to validate)
+          // Note: Don't skip orders based on time - let the contract handle that
+          // The fillOrder will fail naturally if expired
+          
+          // Track in state manager with correct destination details
           await this.swapStateManager.trackSwap(orderData.hashlock, {
             orderHash: orderData.orderHash || orderData.hashlock,
             hashlock: orderData.hashlock,
@@ -301,8 +309,8 @@ class BobResolverServiceV2 {
             srcChainId: orderData.chainId || 8453,
             srcToken: orderData.order?.makerAsset || BMN_TOKEN,
             srcAmount: BigInt(orderData.order?.makingAmount || 0),
-            dstChainId: Number(orderData.dstChainId || 10),
-            dstToken: orderData.dstToken || BMN_TOKEN,
+            dstChainId: Number(parsed.dstChainId),
+            dstToken: parsed.dstToken,
             dstAmount: BigInt(orderData.order?.takingAmount || 0),
           });
           
@@ -319,7 +327,12 @@ class BobResolverServiceV2 {
       }
     } catch (error) {
       if (error.code !== "ENOENT") {
-        console.error("Error processing pending orders:", error);
+        console.error("Error processing pending orders:");
+        console.error('Full error details:', error);
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Stack trace:', error.stack);
+        }
       }
     }
   }
@@ -379,7 +392,16 @@ class BobResolverServiceV2 {
       console.log(`✅ Order filled: ${result.transactionHash}`);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to fill order:`, error);
+      console.error(`❌ Failed to fill order:`);
+      console.error('Full error details:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Stack trace:', error.stack);
+        if ('cause' in error) console.error('Cause:', error.cause);
+        if ('data' in error) console.error('Data:', error.data);
+        if ('shortMessage' in error) console.error('Short message:', error.shortMessage);
+        if ('metaMessages' in error) console.error('Meta messages:', error.metaMessages);
+      }
       this.stats.errors++;
       return false;
     }
@@ -469,7 +491,14 @@ class BobResolverServiceV2 {
       
       this.stats.escrowsCreated++;
     } catch (error) {
-      console.error(`❌ Failed to create destination escrow:`, error);
+      console.error(`❌ Failed to create destination escrow:`);
+      console.error('Full error details:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Stack trace:', error.stack);
+        if ('cause' in error) console.error('Cause:', error.cause);
+        if ('data' in error) console.error('Data:', error.data);
+      }
       this.stats.errors++;
       
       // Retry logic
@@ -518,7 +547,14 @@ class BobResolverServiceV2 {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error(`❌ Failed to withdraw from source:`, error);
+      console.error(`❌ Failed to withdraw from source:`);
+      console.error('Full error details:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Stack trace:', error.stack);
+        if ('cause' in error) console.error('Cause:', error.cause);
+        if ('data' in error) console.error('Data:', error.data);
+      }
       this.stats.errors++;
       
       // Retry logic

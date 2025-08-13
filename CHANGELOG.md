@@ -9,6 +9,27 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed - 2025-08-13 (Part 5)
+
+- **Service File Version Issues**
+  - Updated deno.json tasks to use correct service versions (alice-service-v3.ts and bob-resolver-service-v2.ts)
+  - Fixed tendency to keep old versions of source files instead of replacing them
+  
+- **Error Logging Enhancement**
+  - Enhanced error logging throughout Bob service with full stack traces
+  - Added comprehensive error details including error.message, error.stack, error.cause, and error.data
+  - Improved debugging visibility for all try-catch blocks
+  
+- **Bob Order Processing**
+  - Fixed Bob's order processing to properly extract destination chain and token from extension data
+  - Added parsePostInteractionData import and usage for correct parameter extraction
+  - Removed incorrect order expiry validation that was blocking valid orders
+  
+- **Atomic Swap Progress**
+  - Successfully tested atomic swap flow with Bob filling orders (tx: 0x5dcb2fc3c9b6302108e634f6df78bd6ef09c90ba648aab7343cadfa3ea3924dc)
+  - Bob now correctly creates source escrows (e.g., 0xf1DB3FEe0a17f4D41b8d6d6aBFbaF7412d690485)
+  - Fixed swap state tracking with proper destination parameters
+
 ### Added - 2025-08-13 (Part 3)
 
 - **oRPC Type-Safe API Framework** - Complete migration from manual HTTP APIs to oRPC

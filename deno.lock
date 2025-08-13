@@ -5,6 +5,7 @@
     "jsr:@zod/zod@^4.0.17": "4.0.17",
     "npm:@noble/curves@1.9.2": "1.9.2",
     "npm:@noble/hashes@1.8.0": "1.8.0",
+    "npm:@noble/hashes@^1.6.1": "1.8.0",
     "npm:@orpc/client@*": "1.8.0",
     "npm:@orpc/client@^1.8.0": "1.8.0",
     "npm:@orpc/client@latest": "1.8.0",
@@ -19,6 +20,7 @@
     "npm:@scure/bip32@1.7.0": "1.7.0",
     "npm:@scure/bip39@1.6.0": "1.6.0",
     "npm:@t3-oss/env-core@~0.11.1": "0.11.1_zod@3.25.76",
+    "npm:abitype@1.0.6": "1.0.6_zod@4.0.17",
     "npm:abitype@1.0.8": "1.0.8_zod@4.0.17",
     "npm:isows@1.0.7": "1.0.7_ws@8.18.3",
     "npm:ox@0.8.6": "0.8.6_zod@4.0.17",
@@ -29,10 +31,10 @@
       "integrity": "e9b8187ce4513c40664784096b9498fc94a87c83dac29ed0c27dfcbde41d6c96",
       "dependencies": [
         "npm:@noble/curves",
-        "npm:@noble/hashes",
+        "npm:@noble/hashes@1.8.0",
         "npm:@scure/bip32",
         "npm:@scure/bip39",
-        "npm:abitype",
+        "npm:abitype@1.0.8",
         "npm:isows",
         "npm:ox"
       ]
@@ -1003,6 +1005,15 @@
         "vue-demi"
       ]
     },
+    "abitype@1.0.6_zod@4.0.17": {
+      "integrity": "sha512-MMSqYh4+C/aVqI2RQaWqbvI4Kxo5cQV40WQ4QFtDnNzCkqChm8MuENhElmynZlO0qUy/ObkEUaXtKqYnx1Kp3A==",
+      "dependencies": [
+        "zod@4.0.17"
+      ],
+      "optionalPeers": [
+        "zod@4.0.17"
+      ]
+    },
     "abitype@1.0.8_zod@4.0.17": {
       "integrity": "sha512-ZeiI6h3GnW06uYDLx0etQtX/p8E24UaHHBj57RSjK7YBFe7iuVn07EDpOeP451D06sF27VOz9JJPlIKJmXgkEg==",
       "dependencies": [
@@ -1819,7 +1830,7 @@
         "@noble/hashes",
         "@scure/bip32",
         "@scure/bip39",
-        "abitype",
+        "abitype@1.0.8_zod@4.0.17",
         "eventemitter3"
       ]
     },
