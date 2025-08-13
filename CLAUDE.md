@@ -1,4 +1,54 @@
-# 🐳 DOCKER INFRASTRUCTURE
+# 🧭 Agent Runbook (BMN Resolver)
+
+Read this first each session. Humans use `README.md`. Agents use this and `STATUS.md`.
+
+## Sources of truth
+- STATUS: `STATUS.md` (live status, checklist, grep commands)
+- Changelog: `CHANGELOG.md`
+- Human docs: `README.md`
+- Extended docs: `docs/`
+
+## Quick health
+```bash
+curl -s localhost:8001/health | jq .status
+curl -s localhost:8002/health | jq .status
+docker compose ps | cat
+```
+
+## Contracts sanity
+```bash
+rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" src/config/contracts.ts wagmi.config.ts
+rg -n "fillContractOrderArgs|fillOrderArgs" abis/SimpleLimitOrderProtocol.json
+```
+
+## Tests
+```bash
+deno task test:unit
+deno task test:integration
+```
+
+## Entrypoints
+- Alice: `alice-service-orpc.ts`
+- Bob-Resolver: `bob-resolver-service-v2.ts`
+- Dockerfile targets: `alice`, `bob`
+
+## Common actions
+```bash
+deno task wagmi:generate
+docker compose up -d --build
+deno run -A --unstable-kv --env-file=.env scripts/create-test-order.ts
+```
+
+## Edit policy
+- Keep `STATUS.md` current (runbook header + status sections)
+- Prefer wagmi-generated bindings over manual ABIs
+- Update addresses/ABIs → regenerate types and update `STATUS.md`
+
+## Links
+- STATUS: ./STATUS.md
+- README: ./README.md
+- CHANGELOG: ./CHANGELOG.md
+- Docs: ./docs/
 
 ## Quick Start
 

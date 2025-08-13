@@ -4,7 +4,7 @@ Cross-chain atomic swap resolver for BMN token exchanges between Base and Optimi
 
 ## 📊 Status
 
-**✅ ACTIVE** — Core flow unblocked. See updated [CURRENT_STATUS.md](CURRENT_STATUS.md) and [CHANGELOG.md](CHANGELOG.md).
+**✅ ACTIVE** — Core flow unblocked. See updated [STATUS.md](STATUS.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## 🚀 Features
 
@@ -73,7 +73,7 @@ Use the oRPC API (Scalar UI at `/docs`) or the helper script:
 deno run --allow-all --unstable-kv --env-file=.env scripts/create-test-order.ts
 ```
 
-For contributors: read `CURRENT_STATUS.md` first each session. It contains a short runbook and grep commands to verify state.
+For contributors: read `STATUS.md` first each session. It contains a short runbook and grep commands to verify state.
 
 ## Architecture (Two-Party Atomic Swaps)
 
