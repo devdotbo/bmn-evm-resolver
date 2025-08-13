@@ -16,6 +16,9 @@ and this project adheres to
   - Removed deprecated `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
   - Removed non-existent `0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31`
 - Deprecated old scripts in `scripts/` in favor of file-based CLI flow (see `plan.md`)
+  - Added CLI under `cli/`: `order-create.ts`, `swap-execute.ts`, `withdraw-dst.ts`, `withdraw-src.ts`, `status.ts`
+  - Wired Deno tasks: `order:create`, `swap:execute`, `withdraw:dst`, `withdraw:src`, `status`
+  - PoC: secrets also persisted to `data/secrets/{hashlock}.json`
 
 ### Removed - 2025-08-13
 

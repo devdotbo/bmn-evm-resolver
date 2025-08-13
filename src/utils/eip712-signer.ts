@@ -1,6 +1,5 @@
 import {
   type Address,
-  concat,
   encodeAbiParameters,
   type Hex,
   keccak256,
@@ -128,7 +127,13 @@ export async function signOrder(
   
   // Split signature into r and vs components
   const r = slice(signature, 0, 32);
-  const vs = concat([slice(signature, 64, 65), slice(signature, 32, 64)]);
+  const s = slice(signature, 32, 64);
+  const vHex = slice(signature, 64, 65) as Hex; // 1-byte v
+  const v = parseInt(vHex.slice(2), 16);
+  const sBig = BigInt(s);
+  const parity = BigInt(v - 27) & 1n;
+  const vsBig = (parity << 255n) | (sBig & ((1n << 255n) - 1n));
+  const vs = ("0x" + vsBig.toString(16).padStart(64, "0")) as Hex;
   
   return { r, vs };
 }
@@ -175,7 +180,12 @@ export function splitSignature(signature: Hex): OrderSignature {
   }
   
   const r = slice(signature, 0, 32);
-  const vs = concat([slice(signature, 64, 65), slice(signature, 32, 64)]);
+  const s = slice(signature, 32, 64);
+  const vHex = slice(signature, 64, 65) as Hex;
+  const v = parseInt(vHex.slice(2), 16);
+  const sBig = BigInt(s);
+  const parity = BigInt(v - 27) & 1n;
+  const vs = ("0x" + ((parity << 255n) | (sBig & ((1n << 255n) - 1n))).toString(16).padStart(64, "0")) as Hex;
   
   return { r, vs };
 }

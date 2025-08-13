@@ -35,24 +35,17 @@
     ]
   },
   "tasks": {
-    "test": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv",
-    "test:watch": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv --watch",
-    "test:coverage": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv --coverage=coverage",
-    "test:unit": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv tests/unit/",
-    "test:integration": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv tests/integration/",
-    "test:e2e": "deno test --allow-net --allow-env --allow-read --allow-write --unstable-kv tests/e2e/",
-    "resolver:test": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env test-resolver.ts",
-    "alice": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env alice-service-orpc.ts",
-    "bob": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env bob-resolver-service-v2.ts",
-    "resolver:test:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv test-resolver.ts",
-    "alice:docker": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv alice-service-orpc.ts",
-    "order:create": "deno run --allow-net --allow-env --allow-read --allow-write --unstable-kv --env-file=.env scripts/create-order.ts",
-    "decode:factory": "deno run --allow-net --allow-env --allow-read scripts/decode-factory-events.ts",
-    "human2abi": "deno run --allow-read scripts/human2abi.ts",
     "abis:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-abis.ts",
     "ponder:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-ponder-schema.ts",
     "wagmi:generate": "deno run -A npm:@wagmi/cli generate",
-    "wagmi:watch": "deno run -A npm:@wagmi/cli generate --watch"
+    "wagmi:watch": "deno run -A npm:@wagmi/cli generate --watch",
+    "alice": "deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts",
+    "bob": "deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts",
+    "order:create": "deno run -A --unstable-kv --env-file=.env cli/order-create.ts",
+    "swap:execute": "deno run -A --unstable-kv --env-file=.env cli/swap-execute.ts",
+    "withdraw:dst": "deno run -A --unstable-kv --env-file=.env cli/withdraw-dst.ts",
+    "withdraw:src": "deno run -A --unstable-kv --env-file=.env cli/withdraw-src.ts",
+    "status": "deno run -A --env-file=.env cli/status.ts"
   },
   "fmt": {
     "useTabs": false,

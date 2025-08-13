@@ -1,1 +1,0 @@
-read ./../../claude.md 

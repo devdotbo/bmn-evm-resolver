@@ -34,7 +34,7 @@ cp .env.example .env
 
 ```bash
 # Install dependencies
-deno cache deno.json
+deno install
 
 # Generate contract types
 deno task wagmi:generate
@@ -51,7 +51,27 @@ deno task bob
 
 # Alice service (initiator)
 deno task alice
+
+# File-based CLI (per plan.md, fresh context)
+# 1) Create order
+deno task order:create -- --src 8453 --dst 10 --srcAmount 10000000000000000 --dstAmount 10000000000000000 --resolver 0x...
+
+# 2) Execute swap (fill + create dst escrow)
+deno task swap:execute -- --file ./data/orders/pending/0xHASHLOCK.json
+
+# 3) Withdraw on destination (Alice)
+deno task withdraw:dst -- --hashlock 0xHASHLOCK
+
+# 4) Withdraw on source (Bob)
+deno task withdraw:src -- --hashlock 0xHASHLOCK
+
+# 5) Status
+deno task status -- --hashlock 0xHASHLOCK
 ```
+
+Notes:
+- For PoC, secrets are also written to `data/secrets/{hashlock}.json`.
+- On-chain simulation in `swap:execute` may revert without funded keys/allowances; wiring is in place using wagmi actions.
 
 Services:
 - Alice API: http://localhost:8001/health and http://localhost:8001/docs

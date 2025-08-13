@@ -14,12 +14,19 @@ export interface SecretRecord {
 
 export class SecretManager {
   private kv!: Deno.Kv;
+  private static readonly SECRETS_DIR = "./data/secrets";
 
   constructor(private kvPath?: string) {}
 
   async init(): Promise<void> {
     // Open KV database (uses default location if no path specified)
     this.kv = await Deno.openKv(this.kvPath);
+    // Ensure secrets directory exists for JSON persistence (PoC)
+    try {
+      await Deno.mkdir(SecretManager.SECRETS_DIR, { recursive: true });
+    } catch (_e) {
+      // ignore if exists
+    }
     console.log("✅ SecretManager initialized with Deno KV");
   }
 
@@ -51,6 +58,14 @@ export class SecretManager {
     // Store in KV
     await this.kv.set(["secrets", hashlock], record);
     await this.kv.set(["secrets_by_order", params.orderHash], hashlock);
+
+    // Also persist to JSON file for PoC
+    try {
+      const filePath = `${SecretManager.SECRETS_DIR}/${hashlock}.json`;
+      await Deno.writeTextFile(filePath, JSON.stringify(record, null, 2));
+    } catch (e) {
+      console.warn("Failed to write secret JSON file:", e);
+    }
 
     console.log(`💾 Stored secret for hashlock: ${hashlock}`);
     return record;
@@ -93,6 +108,13 @@ export class SecretManager {
     };
 
     await this.kv.set(["secrets", hashlock], updated);
+    // Update JSON file
+    try {
+      const filePath = `${SecretManager.SECRETS_DIR}/${hashlock}.json`;
+      await Deno.writeTextFile(filePath, JSON.stringify(updated, null, 2));
+    } catch (e) {
+      console.warn("Failed to update secret JSON file:", e);
+    }
     console.log(`✅ Confirmed secret for hashlock: ${hashlock}`);
   }
 
@@ -107,6 +129,13 @@ export class SecretManager {
     };
 
     await this.kv.set(["secrets", hashlock], updated);
+    // Update JSON file
+    try {
+      const filePath = `${SecretManager.SECRETS_DIR}/${hashlock}.json`;
+      await Deno.writeTextFile(filePath, JSON.stringify(updated, null, 2));
+    } catch (e) {
+      console.warn("Failed to update secret JSON file:", e);
+    }
     console.log(`❌ Marked secret as failed: ${hashlock}, error: ${error}`);
   }
 
@@ -168,7 +197,7 @@ export class SecretManager {
     }
   }
 
-  async close(): Promise<void> {
+  close(): void {
     if (this.kv) this.kv.close();
   }
 }

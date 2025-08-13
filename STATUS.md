@@ -23,13 +23,20 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 
 ## 🔴 Critical Blockers
 
-None. Previous ABI/signing issues resolved. Remaining prerequisites are operational (balances/allowances).
+None. Previous ABI/signing issues resolved. Remaining prerequisites are operational (balances/allowances). File‑based CLI implemented per plan.md.
 
 ## 📊 System State
 
-### Services
-- Alice (oRPC + OpenAPI): `deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts`
-- Bob-Resolver: `deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts`
+### Interfaces
+- Services (optional):
+  - Alice (oRPC + OpenAPI): `deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts`
+  - Bob-Resolver: `deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts`
+- File-based CLI (preferred for PoC):
+  - `deno task order:create`
+  - `deno task swap:execute`
+  - `deno task withdraw:dst`
+  - `deno task withdraw:src`
+  - `deno task status`
 - Indexer: Railway hosted (INDEXER_URL)
 
 ### Contracts (v2.3.0)
@@ -37,8 +44,11 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
 - **Protocol (OP + BASE)**: `0xe767105dcfB3034a346578afd2aFD8e583171489`
 - **BMN Token (OP + BASE)**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 
-### Test Results
-- Tests removed in latest cleanup (2025-08-13)
+### Test Results / Smoke Tests
+- CLI smoke tests:
+  - order:create → writes order, secret JSON, and status under `data/`
+  - swap:execute → compiles and runs; simulation revert expected without funded mainnet keys (PoC)
+- Formal tests removed in latest cleanup (2025-08-13)
 
 ## 📁 Repository Structure
 
@@ -64,21 +74,28 @@ bmn-evm-resolver/
 2. Ensure prod readiness: balances, allowances, health checks, logging
 3. Keep docs lean; mark archived docs as deprecated
 
-## 🚦 Quick Start
+## 🚦 Quick Start (CLI, Fresh Context)
 
 ```bash
-# 1. Environment setup
+# 1) Environment
 cp .env.example .env
 # Add: ALICE_PRIVATE_KEY, BOB_PRIVATE_KEY, ANKR_API_KEY
 
-# 2. Start services (no Docker)
-deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts &
-deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts &
+# 2) Generate wagmi types
+deno task wagmi:generate
 
-# 3. Create order
-RESOLVER=0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5 \
-AMOUNT=0.01 SRC_CHAIN=10 DST_CHAIN=8453 \
-deno task order:create
+# 3) Create order (Base→OP example)
+deno task order:create -- --src 8453 --dst 10 --srcAmount 10000000000000000 --dstAmount 10000000000000000 --resolver 0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5
+
+# 4) Execute swap (fill + create dst escrow)
+deno task swap:execute -- --file ./data/orders/pending/0xHASHLOCK.json
+
+# 5) Withdrawals
+deno task withdraw:dst -- --hashlock 0xHASHLOCK
+deno task withdraw:src -- --hashlock 0xHASHLOCK
+
+# 6) Status
+deno task status -- --hashlock 0xHASHLOCK
 ```
 
 ## 📈 Progress Metrics
@@ -96,9 +113,10 @@ deno task order:create
 
 ## 📝 For Next Agent
 
-- Prefer `alice-service-orpc.ts` and `bob-resolver-service-v2.ts` entrypoints
-- Use wagmi‑generated `src/generated/contracts.ts` and actions
-- Verify allowances and funds on Base/Optimism before e2e
+- Prefer file-based CLI for PoC runs. Services remain available.
+- Use wagmi‑generated actions from `src/generated/contracts.ts`.
+- Ensure funded keys and allowances for mainnet execution.
+- Secrets are persisted to `data/secrets/{hashlock}.json` (PoC).
 
 ---
 *Auto-generated status for agent handover. Update after significant changes.*
