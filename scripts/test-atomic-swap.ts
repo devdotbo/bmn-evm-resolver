@@ -38,8 +38,12 @@ async function main() {
   const alice = new LimitOrderAlice(alicePrivateKey);
   const secretRevealer = new SecretRevealer();
   
-  console.log(`👩 Alice: ${alice.address}`);
-  console.log(`🤖 Bob: ${Deno.env.get("BOB_ADDRESS") || "0x..."}\n`);
+  // Get addresses from wallets
+  const aliceAddress = alice.baseWallet?.account?.address || alice.optimismWallet?.account?.address;
+  const bobAddress = Deno.env.get("BOB_ADDRESS") || "0x...";
+  
+  console.log(`👩 Alice: ${aliceAddress}`);
+  console.log(`🤖 Bob: ${bobAddress}\n`);
   
   // Step 1: Alice creates order with secret
   console.log("📝 Step 1: Alice creates order with secret");
