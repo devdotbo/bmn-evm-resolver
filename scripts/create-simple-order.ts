@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-all --env-file=.env
 
 import { privateKeyToAccount } from "viem/accounts";
-import { createWalletClient, createPublicClient, http, type Hex, type Address, hashTypedData } from "viem";
+import { createWalletClient, createPublicClient, http, type Hex, type Address } from "viem";
 import { base } from "viem/chains";
 import { getContractAddresses } from "../src/config/contracts.ts";
 import { keccak256, encodeAbiParameters, parseAbiParameters } from "viem";
@@ -34,6 +34,10 @@ async function main() {
     chain: base,
     transport: http("https://erpc.up.railway.app/main/evm/8453"),
   });
+  const client = createPublicClient({
+    chain: base,
+    transport: http("https://erpc.up.railway.app/main/evm/8453"),
+  });
   
   console.log("Creating order from:", account.address);
   console.log("Protocol:", protocol);
@@ -52,6 +56,7 @@ async function main() {
   const timelocks = packTimelocks(srcCancelTime, dstWithdrawTime);
   
   // Use the proper encoding function from postinteraction-v2.ts
+  const RESOLVER = (Deno.env.get("RESOLVER") || "0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5") as Address;
   const postInteractionData = encodePostInteractionData(
     factory as Address,
     {
@@ -61,7 +66,7 @@ async function main() {
       srcImplementation: "0x0000000000000000000000000000000000000000" as Address,
       dstImplementation: "0x0000000000000000000000000000000000000000" as Address,
       srcMaker: account.address,
-      srcTaker: "0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5" as Address, // Bob/Resolver
+      srcTaker: RESOLVER, // Bob/Resolver
       srcToken: token as Address,
       dstReceiver: account.address,
       dstToken: token as Address,
@@ -116,7 +121,7 @@ async function main() {
     makerTraits,
   };
   
-  // Sign order
+  // Sign order using EIP-712 typed data - BEST PRACTICE
   const signature = await wallet.signTypedData({
     domain: {
       name: "Bridge-Me-Not Orders",
@@ -137,7 +142,33 @@ async function main() {
         { name: "makerTraits", type: "uint256" },
       ],
     },
-    message: order,
+    message: {
+      salt: order.salt,
+      maker: order.maker,
+      receiver: order.receiver,
+      makerAsset: order.makerAsset,
+      takerAsset: order.takerAsset,
+      makingAmount: order.makingAmount,
+      takingAmount: order.takingAmount,
+      makerTraits: order.makerTraits,
+    },
+  });
+  
+  // Calculate order hash for reference (optional - for logging)
+  const orderHash = await client.readContract({
+    address: protocol,
+    abi: (await import("../abis/SimpleLimitOrderProtocol.json", { with: { type: "json" } })).default.abi as any,
+    functionName: "hashOrder",
+    args: [[
+      order.salt,
+      order.maker,
+      order.receiver,
+      order.makerAsset,
+      order.takerAsset,
+      order.makingAmount,
+      order.takingAmount,
+      order.makerTraits,
+    ]],
   });
   
   console.log("Signature:", signature);
@@ -165,30 +196,7 @@ async function main() {
   await Deno.writeTextFile(filename, JSON.stringify(orderData, null, 2));
   console.log(`\n✅ Order saved to ${filename}`);
   
-  // Calculate order hash for reference
-  const orderHash = hashTypedData({
-    domain: {
-      name: "Bridge-Me-Not Orders",
-      version: "1",
-      chainId,
-      verifyingContract: protocol,
-    },
-    primaryType: "Order",
-    types: {
-      Order: [
-        { name: "salt", type: "uint256" },
-        { name: "maker", type: "address" },
-        { name: "receiver", type: "address" },
-        { name: "makerAsset", type: "address" },
-        { name: "takerAsset", type: "address" },
-        { name: "makingAmount", type: "uint256" },
-        { name: "takingAmount", type: "uint256" },
-        { name: "makerTraits", type: "uint256" },
-      ],
-    },
-    message: order,
-  });
-  console.log("Order hash:", orderHash);
+  console.log("Order hash (on-chain):", orderHash);
 }
 
 await main();

@@ -14,23 +14,8 @@ MAKING_AMOUNT="10000000000000000"
 TAKING_AMOUNT="10000000000000000"
 MAKER_TRAITS="33471150795161712739625987854991613538670879169864980536412174450159433809920"
 
-# Signature (r,vs format)
+# Signature (full bytes)
 SIGNATURE="0xe5cc9f1bf13d2d29856fec817c64d3d4aa466ad9e8b65c05b31c92a6e5eca17359e7f9587ee4939fb80a6568fb6ca2a2731e1a80476be2a3554b2ecbf8433a5d1c"
-R="0xe5cc9f1bf13d2d29856fec817c64d3d4aa466ad9e8b65c05b31c92a6e5eca173"
-
-# Extract v and s from signature
-V_HEX="${SIGNATURE:130:2}"
-S_HEX="${SIGNATURE:66:64}"
-
-# Convert to vs format: vs = (v - 27) << 255 | s
-# Since bash can't handle such large numbers, we'll use Python
-VS=$(python3 -c "
-sig = '$SIGNATURE'
-v = int(sig[130:132], 16)
-s = int(sig[66:130], 16)
-vs = ((v - 27) << 255) | s
-print(hex(vs)[2:].zfill(64))
-")
 
 # Fill amount
 FILL_AMOUNT="$MAKING_AMOUNT"
@@ -51,8 +36,7 @@ EXTENSION="0x000000b400000000000000000000000000000000000000000000000000000000B43
 
 echo "Filling order with cast..."
 echo "Protocol: $PROTOCOL"
-echo "R: $R"
-echo "VS: 0x$VS"
+echo "Signature: $SIGNATURE"
 echo "TakerTraits: $TAKER_TRAITS"
 echo ""
 
@@ -62,10 +46,9 @@ cast send \
   --rpc-url "https://erpc.up.railway.app/main/evm/8453" \
   --gas-limit 2500000 \
   "$PROTOCOL" \
-  "fillOrderArgs((uint256,address,address,address,address,uint256,uint256,uint256),bytes32,bytes32,uint256,uint256,bytes)" \
+  "fillContractOrderArgs((uint256,address,address,address,address,uint256,uint256,uint256),bytes,uint256,uint256,bytes)" \
   "($SALT,$MAKER,$RECEIVER,$MAKER_ASSET,$TAKER_ASSET,$MAKING_AMOUNT,$TAKING_AMOUNT,$MAKER_TRAITS)" \
-  "$R" \
-  "0x$VS" \
+  "$SIGNATURE" \
   "$FILL_AMOUNT" \
   "$TAKER_TRAITS" \
   "$EXTENSION"

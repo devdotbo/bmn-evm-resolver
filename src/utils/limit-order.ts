@@ -196,27 +196,43 @@ export async function fillLimitOrder(
     // ignore decode issues; factory may differ
   }
 
+  // Decide function based on maker wallet type: EOAs use fillOrderArgs (r,vs); smart wallets use fillContractOrderArgs (bytes)
+  let useContractSigPath = false;
+  try {
+    const code = await (client as any).getBytecode?.({ address: params.order.maker })
+      ?? await (client as any).getCode?.({ address: params.order.maker });
+    useContractSigPath = typeof code === "string" && code !== "0x" && code !== null;
+  } catch (_e) {
+    // If we can't determine, default to EOA path (most common)
+    useContractSigPath = false;
+  }
+
+  const functionName = useContractSigPath ? "fillContractOrderArgs" : "fillOrderArgs";
+  console.log(`🛠️ Using protocol function: ${functionName}`);
+
+  // Prepare signature args depending on path
+  const signatureArgs: any[] = useContractSigPath
+    ? [params.signature]
+    : [
+        ("0x" + params.signature.slice(2, 66)) as Hex, // r (32 bytes)
+        (() => {
+          const v = parseInt(params.signature.slice(130, 132), 16);
+          const s = BigInt("0x" + params.signature.slice(66, 130));
+          const vs = ((BigInt(v - 27) << 255n) | s);
+          return ("0x" + vs.toString(16).padStart(64, "0")) as Hex; // vs (32 bytes)
+        })(),
+      ];
+
   // Try simulate first; if provider rejects due to gas quirks, fall back to direct send with manual gas.
   let hash: Hex;
   try {
     const { request } = await client.simulateContract({
       address: protocolAddress,
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillOrderArgs",
-      args: [
-        params.order,
-        ('0x' + params.signature.slice(2, 66)) as Hex, // r (32 bytes)
-        // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
-        (() => {
-          const v = parseInt(params.signature.slice(130, 132), 16);
-          const s = BigInt('0x' + params.signature.slice(66, 130));
-          const vs = ((BigInt(v - 27) << 255n) | s);
-          return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
-        })(), // vs (32 bytes in compact format)
-        params.fillAmount,
-        takerTraits,
-        params.extensionData,
-      ],
+      functionName,
+      args: useContractSigPath
+        ? [params.order, ...signatureArgs, params.fillAmount, takerTraits, params.extensionData]
+        : [params.order, ...signatureArgs, params.fillAmount, takerTraits, params.extensionData],
       account: wallet.account,
       gas: 2_500_000n,
       ...(feeParams.maxFeePerGas
@@ -235,12 +251,12 @@ export async function fillLimitOrder(
     if (!knownGasIssue) {
       const decoded = decodeProtocolError(simulateError);
       if (decoded.errorName) {
-        console.error(`fillOrderArgs simulation reverted with ${decoded.errorName}`);
+        console.error(`${functionName} simulation reverted with ${decoded.errorName}`);
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
       } else {
-        console.error(`fillOrderArgs simulation error: ${decoded.message}`);
+        console.error(`${functionName} simulation error: ${decoded.message}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,
@@ -255,21 +271,10 @@ export async function fillLimitOrder(
         address: protocolAddress,
         chain: null,
         abi: SimpleLimitOrderProtocolAbi.abi,
-        functionName: "fillOrderArgs",
-        args: [
-          params.order,
-          ('0x' + params.signature.slice(2, 66)) as Hex, // r (32 bytes)
-          // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
-          (() => {
-            const v = parseInt(params.signature.slice(130, 132), 16);
-            const s = BigInt('0x' + params.signature.slice(66, 130));
-            const vs = ((BigInt(v - 27) << 255n) | s);
-            return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
-          })(), // vs (32 bytes in compact format)
-          params.fillAmount,
-          takerTraits,
-          params.extensionData,
-        ],
+        functionName,
+        args: useContractSigPath
+          ? [params.order, ...signatureArgs, params.fillAmount, takerTraits, params.extensionData]
+          : [params.order, ...signatureArgs, params.fillAmount, takerTraits, params.extensionData],
         gas: 2_500_000n,
         account: wallet.account!,
         ...(feeParams.maxFeePerGas
@@ -281,12 +286,12 @@ export async function fillLimitOrder(
     } catch (writeError: any) {
       const decoded = decodeProtocolError(writeError);
       if (decoded.errorName) {
-        console.error(`fillOrderArgs send reverted with ${decoded.errorName}`);
+        console.error(`${functionName} send reverted with ${decoded.errorName}`);
         if (decoded.errorArgs && decoded.errorArgs.length > 0) {
           console.error(`args: ${JSON.stringify(decoded.errorArgs)}`);
         }
       } else {
-        console.error(`fillOrderArgs send error: ${decoded.message}`);
+        console.error(`${functionName} send error: ${decoded.message}`);
       }
       const enriched: any = new Error(
         decoded.errorName ? `ProtocolRevert(${decoded.errorName})` : decoded.message,

@@ -241,39 +241,69 @@ async function main() {
     const account = (Deno.env.get("RESOLVER_ADDRESS") ||
       "0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5") as Address;
 
+    // Check if maker is EOA or smart contract
+    let isEOA = true;
+    try {
+      const code = await client.getBytecode({ address: data.order.maker as Address });
+      isEOA = !code || code === "0x";
+    } catch {
+      isEOA = true; // Default to EOA if we can't check
+    }
+    console.log(`Maker ${data.order.maker} is ${isEOA ? "EOA" : "Smart Contract"}`);
+
     // Print raw calldata for debug_traceCall
+    const functionName = isEOA ? "fillOrderArgs" : "fillContractOrderArgs";
+    const args = isEOA 
+      ? [
+          {
+            salt: BigInt(data.order.salt),
+            maker: data.order.maker,
+            receiver: data.order.receiver,
+            makerAsset: data.order.makerAsset,
+            takerAsset: data.order.takerAsset,
+            makingAmount: BigInt(data.order.makingAmount),
+            takingAmount: BigInt(data.order.takingAmount),
+            makerTraits: BigInt(data.order.makerTraits),
+          },
+          // For EOA: split signature into r and vs
+          ("0x" + (data.signature as string).slice(2, 66)) as Hex, // r
+          (() => {
+            const sig = data.signature as string;
+            const v = parseInt(sig.slice(130, 132), 16);
+            const s = BigInt("0x" + sig.slice(66, 130));
+            const vs = ((BigInt(v - 27) << 255n) | s);
+            return ("0x" + vs.toString(16).padStart(64, "0")) as Hex;
+          })(), // vs
+          BigInt(data.order.makingAmount),
+          takerTraits,
+          data.extensionData as Hex,
+        ]
+      : [
+          {
+            salt: BigInt(data.order.salt),
+            maker: data.order.maker,
+            receiver: data.order.receiver,
+            makerAsset: data.order.makerAsset,
+            takerAsset: data.order.takerAsset,
+            makingAmount: BigInt(data.order.makingAmount),
+            takingAmount: BigInt(data.order.takingAmount),
+            makerTraits: BigInt(data.order.makerTraits),
+          },
+          data.signature as Hex,
+          BigInt(data.order.makingAmount),
+          takerTraits,
+          data.extensionData as Hex,
+        ];
+    
     const calldata = encodeFunctionData({
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillOrderArgs",
-      args: [
-        {
-          salt: BigInt(data.order.salt),
-          maker: data.order.maker,
-          receiver: data.order.receiver,
-          makerAsset: data.order.makerAsset,
-          takerAsset: data.order.takerAsset,
-          makingAmount: BigInt(data.order.makingAmount),
-          takingAmount: BigInt(data.order.takingAmount),
-          makerTraits: BigInt(data.order.makerTraits),
-        },
-        ('0x' + (data.signature as Hex).slice(2, 66)) as Hex, // r (32 bytes)
-        // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
-        (() => {
-          const sig = data.signature as Hex;
-          const v = parseInt(sig.slice(130, 132), 16);
-          const s = BigInt('0x' + sig.slice(66, 130));
-          const vs = ((BigInt(v - 27) << 255n) | s);
-          return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
-        })(), // vs (32 bytes in compact format)
-        BigInt(data.order.makingAmount),
-        takerTraits,
-        data.extensionData as Hex,
-      ],
+      functionName,
+      args,
     });
     console.log("calldata:", calldata);
     // Also emit and persist a JSON payload ready for simulators (Tenderly/Anvil)
     const payload = {
-      function: "fillOrderArgs",
+      function: functionName,
       to: protocol,
       from: account,
       data: calldata,
@@ -291,31 +321,8 @@ async function main() {
     await client.simulateContract({
       address: protocol,
       abi: SimpleLimitOrderProtocolAbi.abi,
-      functionName: "fillOrderArgs",
-      args: [
-        {
-          salt: BigInt(data.order.salt),
-          maker: data.order.maker,
-          receiver: data.order.receiver,
-          makerAsset: data.order.makerAsset,
-          takerAsset: data.order.takerAsset,
-          makingAmount: BigInt(data.order.makingAmount),
-          takingAmount: BigInt(data.order.takingAmount),
-          makerTraits: BigInt(data.order.makerTraits),
-        },
-        ('0x' + (data.signature as Hex).slice(2, 66)) as Hex, // r (32 bytes)
-        // Convert v,s to compact vs format: vs = (v - 27) << 255 | s
-        (() => {
-          const sig = data.signature as Hex;
-          const v = parseInt(sig.slice(130, 132), 16);
-          const s = BigInt('0x' + sig.slice(66, 130));
-          const vs = ((BigInt(v - 27) << 255n) | s);
-          return ('0x' + vs.toString(16).padStart(64, '0')) as Hex;
-        })(), // vs (32 bytes in compact format)
-        BigInt(data.order.makingAmount),
-        takerTraits,
-        data.extensionData as Hex,
-      ],
+      functionName,
+      args,
       account,
     });
     console.log("simulate: success (no revert)");
@@ -348,7 +355,13 @@ async function main() {
         console.error(`  args: ${JSON.stringify(decoded.args)}`);
       }
     } else {
-      console.error(msg);
+      // Try to extract error data from the message
+      const errorMatch = msg.match(/data: "?(0x[0-9a-fA-F]+)"?/);
+      if (errorMatch) {
+        console.error(`  raw error data: ${errorMatch[1]}`);
+        console.error(`  (use 'cast 4byte-decode ${errorMatch[1].slice(0, 10)}' to decode)`);
+      }
+      console.error(`  full message: ${msg}`);
     }
   }
 }

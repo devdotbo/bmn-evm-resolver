@@ -1,7 +1,10 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@noble/hashes@^1.6.1": "1.8.0",
     "npm:@ponder/client@0.12.0": "0.12.0",
+    "npm:@t3-oss/env-core@~0.11.1": "0.11.1_zod@3.25.76",
+    "npm:abitype@1.0.6": "1.0.6",
     "npm:viem@2.21.21": "2.21.21_ws@8.18.0"
   },
   "npm": {
@@ -11,11 +14,14 @@
     "@noble/curves@1.6.0": {
       "integrity": "sha512-TlaHRXDehJuRNR9TfZDNQ45mMEd5dwUwmicsafcIX4SsNiqnCHKjE/1alYPd/lDRVhxdhUAlv8uEhMCI5zjIJQ==",
       "dependencies": [
-        "@noble/hashes"
+        "@noble/hashes@1.5.0"
       ]
     },
     "@noble/hashes@1.5.0": {
       "integrity": "sha512-1j6kQFb7QRru7eKN3ZDvRcP13rugwdxZqCjbiAVZfIJwgj2A65UmT4TgARXGlXgnRkORLTDTrO19ZErt7+QXgA=="
+    },
+    "@noble/hashes@1.8.0": {
+      "integrity": "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="
     },
     "@ponder/client@0.12.0": {
       "integrity": "sha512-5F8TZzNeUGaEenuL6HFIb2xymKch+XJSMDy7dUOCDVyWaEAxl/95fjkoqau78flubGdJU4oH9FdYes7bCA7qVA==",
@@ -32,15 +38,21 @@
       "integrity": "sha512-8EnFYkqEQdnkuGBVpCzKxyIwDCBLDVj3oiX0EKUFre/tOjL/Hqba1D6n/8RcmaQy4f95qQFrO2A8Sr6ybh4NRw==",
       "dependencies": [
         "@noble/curves",
-        "@noble/hashes",
+        "@noble/hashes@1.5.0",
         "@scure/base"
       ]
     },
     "@scure/bip39@1.4.0": {
       "integrity": "sha512-BEEm6p8IueV/ZTfQLp/0vhw4NPnT9oWf5+28nvmeUICjP99f4vr2d+qc7AVGDDtwRep6ifR43Yed9ERVmiITzw==",
       "dependencies": [
-        "@noble/hashes",
+        "@noble/hashes@1.5.0",
         "@scure/base"
+      ]
+    },
+    "@t3-oss/env-core@0.11.1_zod@3.25.76": {
+      "integrity": "sha512-MaxOwEoG1ntCFoKJsS7nqwgcxLW1SJw238AJwfJeaz3P/8GtkxXZsPPolsz1AdYvUTbe3XvqZ/VCdfjt+3zmKw==",
+      "dependencies": [
+        "zod"
       ]
     },
     "abitype@1.0.6": {
@@ -84,7 +96,7 @@
       "dependencies": [
         "@adraffy/ens-normalize",
         "@noble/curves",
-        "@noble/hashes",
+        "@noble/hashes@1.5.0",
         "@scure/bip32",
         "@scure/bip39",
         "abitype",
@@ -97,11 +109,14 @@
       "integrity": "sha512-EeYD+gmIT80YkSIDb2iWq0lq2zbHo1CxHlQTeJ+KkCILWpVy3zASH3ByD4bopzfk0uCwXxLqKGLqp2W4O28VFA==",
       "dependencies": [
         "@noble/curves",
-        "@noble/hashes"
+        "@noble/hashes@1.5.0"
       ]
     },
     "ws@8.18.0": {
       "integrity": "sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw=="
+    },
+    "zod@3.25.76": {
+      "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
     }
   },
   "remote": {

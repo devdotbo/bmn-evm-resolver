@@ -9,6 +9,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed - 2025-08-13 (Part 2)
+
+- Critical signature verification issues resolved
+  - Fixed EIP-712 domain parameters to match on-chain contract ("Bridge-Me-Not Orders" v1)
+  - Corrected order signing to use `walletClient.signTypedData()` instead of raw `account.sign()`
+  - Added proper EOA vs smart contract detection for correct function selection
+  - Fixed signature format conversion for EOA accounts (r,vs split format)
+  - Scripts now properly use `fillOrderArgs` for EOAs and `fillContractOrderArgs` for smart contracts
+  - All signature validation now passing correctly
+
 ### Fixed - 2025-08-13
 
 - Test stability & determinism improvements; entire suite now green
