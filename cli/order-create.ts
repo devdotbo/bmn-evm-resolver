@@ -99,7 +99,7 @@ async function main() {
   const { extension, hashlock } = rebuildExtension(secret);
 
   // makerTraits: set extension + postInteraction + random nonce bits
-  const makerTraits = MAKER_TRAITS.build({ postInteraction: true, hasExtension: true, allowMultipleFills: true });
+  const makerTraits = MAKER_TRAITS.build({ postInteraction: true, hasExtension: true, allowMultipleFills: true, allowedSender: RESOLVER });
 
   // Build order
   const order: OrderInput = {

@@ -23,7 +23,12 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 
 ## 🔴 Critical Blockers
 
-None. Previous ABI/signing issues resolved. Remaining prerequisites are operational (balances/allowances). File‑based CLI implemented per plan.md.
+- Swap execution currently reverts at fill with extension layout mismatch:
+  - After fixing EIP-712 schema and using LocalAccount for writes, BadSignature is resolved
+  - After granting allowances and adjusting offsets index, fill now reverts with: "Arithmetic operation resulted in underflow or overflow" (extension offsets)
+  - Two options to proceed:
+    1) Regenerate extension with correct 1inch offsets layout: offsets must represent cumulative lengths for all dynamic fields in order: [MakerAssetSuffix, TakerAssetSuffix, MakingAmountData, TakingAmountData, Predicate, MakerPermit, PreInteractionData, PostInteractionData]
+    2) Workaround: set takerTraits.argsExtensionLength = 0 and pass postInteraction via args interaction segment (omit extension entirely for now)
 
 ## 📊 System State
 
@@ -37,6 +42,7 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
   - `deno task withdraw:dst`
   - `deno task withdraw:src`
   - `deno task status`
+  - `deno task approve:maker` (helper to grant BMN allowance to protocol/factory)
   - Notes:
     - CLIs are now self-contained under `cli/` and use wagmi-generated actions from `src/generated/contracts.ts`
     - Addresses resolved via env (overrides) with fallbacks to generated addresses; RPC via `cli/cli-config.ts`
@@ -52,9 +58,13 @@ None. Previous ABI/signing issues resolved. Remaining prerequisites are operatio
 ### Test Results / Smoke Tests
 - Type-check: `deno check cli/*` → OK
 - CLI smoke tests:
-  - order:create → writes order, secret JSON, and status under `data/`
-  - swap:execute → uses wagmi actions; on failure logs revert selector/data and full chain
-  - withdraw:dst / withdraw:src → use generated actions, with full-trace error logging
+  - order:create → OK (hashlocks written; example: `0x75f9af97...b2200`)
+  - approve:maker → OK (BMN approvals to protocol/factory on Base)
+  - swap:execute → currently failing:
+    - Before fixes: ConnectorNotConnectedError (resolved by using LocalAccount in writes)
+    - Then: BadSignature (resolved by fixing EIP-712 typed data to use `address` fields)
+    - Now: "Arithmetic operation resulted in underflow or overflow" → extension offsets layout mismatch
+  - withdraw:dst / withdraw:src → pending successful fill
 - Formal tests removed in latest cleanup (2025-08-13)
 
 ## 📁 Repository Structure
@@ -80,6 +90,9 @@ bmn-evm-resolver/
 1. Migrate remaining manual ABI call sites to wagmi‑generated bindings/actions
 2. Ensure prod readiness: balances, allowances, health checks, logging
 3. Keep docs lean; mark archived docs as deprecated
+4. Resolve extension offsets issue to unblock `swap:execute`:
+   - Proper fix: implement full offsets encoding for all dynamic fields (cumulative lengths)
+   - Short-term workaround: zero extension and provide postInteraction via args interaction; set takerTraits.argsExtensionLength = 0
 
 ## 🚦 Quick Start (CLI, Fresh Context)
 

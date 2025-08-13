@@ -45,7 +45,8 @@
     "swap:execute": "deno run -A --unstable-kv --env-file=.env cli/swap-execute.ts",
     "withdraw:dst": "deno run -A --unstable-kv --env-file=.env cli/withdraw-dst.ts",
     "withdraw:src": "deno run -A --unstable-kv --env-file=.env cli/withdraw-src.ts",
-    "status": "deno run -A --env-file=.env cli/status.ts"
+    "status": "deno run -A --env-file=.env cli/status.ts",
+    "approve:maker": "deno run -A --env-file=.env cli/approve-maker.ts"
   },
   "fmt": {
     "useTabs": false,

@@ -1,4 +1,4 @@
-import { type Address, concat, encodeAbiParameters, getAddress, type Hex, keccak256, parseAbiParameters, toHex } from "viem";
+import { type Address, concat, encodeAbiParameters, getAddress, type Hex, parseAbiParameters, toHex } from "viem";
 
 export interface EscrowParams {
   srcImplementation: Address;
@@ -52,10 +52,12 @@ export function encodePostInteractionData(factoryAddress: Address, params: Escro
 export function encode1inchExtension(postInteractionData: Hex): Hex {
   const offsets = new Uint8Array(32);
   const postInteractionLength = (postInteractionData.length - 2) / 2;
-  offsets[0] = (postInteractionLength >> 24) & 0xff;
-  offsets[1] = (postInteractionLength >> 16) & 0xff;
-  offsets[2] = (postInteractionLength >> 8) & 0xff;
-  offsets[3] = postInteractionLength & 0xff;
+  // DynamicField index for PostInteractionData = 7 (zero-based)
+  const idx = 7 * 4;
+  offsets[idx + 0] = (postInteractionLength >> 24) & 0xff;
+  offsets[idx + 1] = (postInteractionLength >> 16) & 0xff;
+  offsets[idx + 2] = (postInteractionLength >> 8) & 0xff;
+  offsets[idx + 3] = postInteractionLength & 0xff;
   const offsetsHex = toHex(offsets) as Hex;
   return concat([offsetsHex, postInteractionData]);
 }

@@ -44,10 +44,10 @@ export function orderToStruct(order: OrderInput): OrderStruct {
 export const ORDER_TYPE_DEF = {
   Order: [
     { name: "salt", type: "uint256" },
-    { name: "maker", type: "uint256" },
-    { name: "receiver", type: "uint256" },
-    { name: "makerAsset", type: "uint256" },
-    { name: "takerAsset", type: "uint256" },
+    { name: "maker", type: "address" },
+    { name: "receiver", type: "address" },
+    { name: "makerAsset", type: "address" },
+    { name: "takerAsset", type: "address" },
     { name: "makingAmount", type: "uint256" },
     { name: "takingAmount", type: "uint256" },
     { name: "makerTraits", type: "uint256" },
@@ -60,7 +60,6 @@ export async function signOrder(
   chainId: number,
   verifyingContract: Address,
 ): Promise<OrderSignature> {
-  const s = orderToStruct(order);
   const domain = { name: "Bridge-Me-Not Orders", version: "1", chainId, verifyingContract };
   const signature = await walletClient.signTypedData({
     account: walletClient.account!,
@@ -68,14 +67,14 @@ export async function signOrder(
     types: ORDER_TYPE_DEF,
     primaryType: "Order",
     message: {
-      salt: s.salt,
-      maker: s.maker,
-      receiver: s.receiver,
-      makerAsset: s.makerAsset,
-      takerAsset: s.takerAsset,
-      makingAmount: s.makingAmount,
-      takingAmount: s.takingAmount,
-      makerTraits: s.makerTraits,
+      salt: order.salt,
+      maker: order.maker,
+      receiver: order.receiver,
+      makerAsset: order.makerAsset,
+      takerAsset: order.takerAsset,
+      makingAmount: order.makingAmount,
+      takingAmount: order.takingAmount,
+      makerTraits: order.makerTraits,
     },
   });
   const r = slice(signature, 0, 32);

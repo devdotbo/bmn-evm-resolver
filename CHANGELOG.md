@@ -9,6 +9,24 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed - 2025-08-13 (Smoke test fixes and helpers)
+
+- CLI writes now use LocalAccount for wagmi write actions to avoid ConnectorNotConnectedError
+- EIP-712 typed data schema corrected to use `address` fields (maker/receiver/assets) when signing orders
+- PostInteraction offsets encoder adjusted to place PostInteractionData length at the correct index in offsets header
+- Added `cli/approve-maker.ts` and deno task `approve:maker` to grant BMN approvals to protocol/factory
+
+### Diagnostics - 2025-08-13
+
+- `swap:execute` status progression during smoke tests:
+  - ConnectorNotConnectedError → fixed by using LocalAccount for writes
+  - BadSignature() on fill → fixed by correcting typed data (`address` fields)
+  - TransferFromMakerToTakerFailed() → resolved by granting maker approvals to protocol & factory
+  - Now failing with "Arithmetic operation resulted in underflow or overflow" indicating extension offsets layout mismatch
+- Proposed next steps (documented in STATUS.md):
+  - Proper fix: implement full 1inch offsets layout (cumulative lengths for all fields)
+  - Workaround: set argsExtensionLength = 0 and deliver postInteraction via args interaction, not extension
+
 ### Changed - 2025-08-13 (CLI uses wagmi-generated code)
 
 - CLIs now import ABIs, addresses, and actions from `src/generated/contracts.ts` (generated via wagmi CLI)

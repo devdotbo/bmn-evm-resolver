@@ -78,9 +78,9 @@ async function main() {
     args: [account.address, addrs.limitOrderProtocol],
   });
   if (currentAllowance < needed) {
-    const approveHash = await writeIerc20Approve(wagmiConfig, {
+    const approveHash = await writeIerc20Approve(wagmiConfig as any, {
       chainId: SRC,
-      account: account.address,
+      account: account as any,
       address: order.order.takerAsset as Address,
       args: [addrs.limitOrderProtocol, needed * 10n],
     });
@@ -92,9 +92,9 @@ async function main() {
     args: [account.address, addrs.escrowFactory],
   });
   if (facAllowance < needed) {
-    const approveHash = await writeIerc20Approve(wagmiConfig, {
+    const approveHash = await writeIerc20Approve(wagmiConfig as any, {
       chainId: SRC,
-      account: account.address,
+      account: account as any,
       address: order.order.takerAsset as Address,
       args: [addrs.escrowFactory, needed * 10n],
     });
@@ -131,7 +131,7 @@ async function main() {
   ] as const;
   const fillHash = await writeSimpleLimitOrderProtocolFillOrderArgs(wagmiConfig as any, {
     chainId: SRC,
-    account: account.address,
+    account: account as any,
     args: [orderTuple as any, order.signature.r, order.signature.vs, orderStruct.makingAmount, takerTraits, order.extensionData] as any,
   } as any);
   const fillReceipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: SRC, hash: fillHash as Hex });
@@ -167,7 +167,7 @@ async function main() {
   ] as any;
   const dstHash = await writeSimplifiedEscrowFactoryV2_3CreateDstEscrow(wagmiConfig as any, {
     chainId: dstChainId,
-    account: account.address,
+    account: account as any,
     args: [immutablesTuple],
   } as any);
   const receipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: dstChainId, hash: dstHash as Hex });
