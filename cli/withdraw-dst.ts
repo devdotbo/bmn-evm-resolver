@@ -104,20 +104,42 @@ async function main() {
       BigInt(dstJson.immutables.safetyDeposit),
       BigInt(dstJson.immutables.timelocks),
     ];
+
+    // Wait for withdrawal window when using stored immutables (offset-packed timelocks)
+    try {
+      const timelocksPacked = BigInt(dstJson.immutables.timelocks);
+      const deployedAt = (timelocksPacked >> 224n) & 0xFFFFFFFFn;
+      const dstWithdrawalOffset = (timelocksPacked >> 128n) & 0xFFFFFFFFn;
+      const dstCancellationOffset = (timelocksPacked >> 192n) & 0xFFFFFFFFn;
+      const dstWithdrawalAbs = deployedAt + dstWithdrawalOffset;
+      const dstCancellationAbs = deployedAt + dstCancellationOffset;
+      const originalFormat = (dstCancellationAbs << 128n) | dstWithdrawalAbs;
+
+      const { getTimelockStatus, waitUntilDstWithdrawWindow } = await import("./timelock-utils.ts");
+      const status = (getTimelockStatus as any)(originalFormat);
+      if (!status.dstWithdrawal.isOpen) {
+        console.log(`Destination withdrawal window not yet open.`);
+        console.log(`Time remaining: ${status.dstWithdrawal.formatted}`);
+        const shouldWait = Deno.args.includes("--wait");
+        if (shouldWait) {
+          await (waitUntilDstWithdrawWindow as any)(status.dstWithdrawal.timestamp);
+          console.log("Window is now open, proceeding with withdrawal");
+        } else {
+          console.log("Use --wait flag to automatically wait for the window to open");
+          Deno.exit(1);
+        }
+      }
+    } catch (e) {
+      console.warn("Timelocks wait step failed (continuing):", e);
+    }
   } else {
     // Fallback: Reconstruct immutables from order and extension data for destination escrow
-    let ext = orderJson.extensionData as Hex;
+    const ext = orderJson.extensionData as Hex;
     
     // Validate extension data exists
     if (!ext || ext === "0x") {
       console.error("Extension data missing from order");
       Deno.exit(1);
-    }
-    
-    // Skip the 4-byte offsets header if present
-    if (ext.startsWith("0x000000")) {
-      // Has offsets header, skip first 4 bytes
-      ext = ("0x" + ext.slice(10)) as Hex;
     }
     
     let parsed;

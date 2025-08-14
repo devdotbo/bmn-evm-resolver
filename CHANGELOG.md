@@ -85,6 +85,18 @@ and this project adheres to
   - PostInteraction extension data parsing with padding handling
   - Common errors and debugging techniques
   - Critical implementation notes for future developers
+  
+### Added - 2025-08-14 (Mainnet E2E success)
+
+- `docs/MAINNET_E2E_2025-08-14.md`: documented full mainnet atomic swap (Base→OP) with annotated ASCII flow chart and reference section (addresses and tx hashes)
+- `STATUS.md`: updated with links to fill/create/withdraw txs and escrow addresses
+
+### Fixed - 2025-08-14 (PostInteraction & Source Withdraw)
+
+- Corrected 1inch extension header encoding: write end7 to the high 4 bytes of the 32‑byte offsets word
+- Unified parser across CLIs: strip 32‑byte header once, then parse 20‑byte factory + payload
+- `withdraw-src.ts`: reconstructs exact source immutables using fill block.timestamp as deployedAt and contract offset scheme; supports `--address` override and factory mapping lookup
+- Removed all hardcoded gas limits; all writes rely on automatic gas estimation
 
 ### Added - 2025-08-14 (CLI: cast + escrow ops)
 

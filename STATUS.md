@@ -2,6 +2,11 @@
 
 Read me first, every session.
 
+Status file policy (read once):
+- This file is maintained chronologically like a changelog. Do not replace prior content; append new session updates with date/time headers.
+- For major milestones, include a short flow summary (ASCII) and link to a detailed doc in `docs/` with full addresses and tx hashes.
+- Keep quick-run commands and current pointers near the top, but record outcomes as new entries below.
+
 How to keep this file up-to-date (10 min checklist):
 - Verify services & versions
   - Entrypoints: `ls alice-service-orpc.ts bob-resolver-service-v2.ts`
@@ -12,10 +17,10 @@ How to keep this file up-to-date (10 min checklist):
   - `rg -n "UnifiedResolver|resolver-service.ts|bob-service.ts" -- docs archive`
 - Update this file's Status, Services, and Focus Areas accordingly
 
-**Last Updated**: 2025-08-14 (Session Update - Part 3)
+**Last Updated**: 2025-08-14 (Session Update - Part 4)
 **Branch**: `optimism-simplified`
 **Version**: v2.3.2
-**Status**: ✅ ACTIVE — E2E flow functional; linting standardized; error logging improved
+**Status**: ✅ ACTIVE — E2E mainnet atomic swap completed (Base ↔ Optimism)
 
 ## 🎯 Project Overview
 
@@ -69,7 +74,34 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
   - swap:execute → ✅ OK (fills order + creates dst escrow with correct immutables)
   - withdraw:dst → ✅ OK (with stored immutables, respects timelock windows)
   - withdraw:src → OK (after successful dst reveal)
-  - Full E2E atomic swap → ✅ WORKING
+- Full E2E atomic swap (mainnet) → ✅ WORKING
+  - Hashlock: `0x534f63afed3967d382203e351a5b068aa705c4a017ef5b85e250e5f5a2e32ad3`
+  - Base fill: https://basescan.org/tx/0x4df862bb836ed26bb2f4287b19231f13b3aa8de8025c15cf34c6433ffd5d219d
+  - OP create dst escrow: https://optimistic.etherscan.io/tx/0xc0f21f6e46cfd188c1c561b512a80ec18cfa33b3315fba2fdd4ad84c0bb1fbc7
+  - OP withdraw: https://optimistic.etherscan.io/tx/0xb725ec97e7b629b16bd6db75bd75459eac6affdee7a3d737ff368f84b5876d26
+  - Base withdraw: https://basescan.org/tx/0xe1c1e07e73908b5dab633120739d6a18f6757359a61452ef4ccd4dcc131ffa90
+  - Src escrow (Base): `0xd6AFf963b14485b1ACdE1535C7C52bfB0B2b9A18`
+  - Dst escrow (OP): `0x5925919Ddd33971AAeA953d6F8A2bac303D0BfC9`
+
+## 🧭 Session Log (Chronological)
+
+### 2025‑08‑14 – Mainnet E2E Atomic Swap
+
+```text
+BASE (8453)                                        OPTIMISM (10)
+[Alice] 0x240E...72FFFd8                          [Factory] 0xdebE...dDA9FE0A
+[Bob]   0xfdF1...C312b7B5                         [LOP]     0xe767...71489
+
+1) Fill (Base, LOP): 0x4df862...219d
+   ↳ Factory.postInteraction creates src escrow
+   ↳ Src Escrow (Base): 0xd6AFf963b14485b1ACdE1535C7C52bfB0B2b9A18
+2) Create Dst Escrow (OP): 0xc0f21f...fbc7
+   ↳ Dst Escrow (OP): 0x5925919Ddd33971AAeA953d6F8A2bac303D0BfC9
+3) Withdraw (OP): 0xb725ec...b5876d26 (secret reveal)
+4) Withdraw (Base): 0xe1c1e0...1ffa90
+```
+
+Details and full references: see `docs/MAINNET_E2E_2025-08-14.md`.
 - Successful test transactions:
   - Destination withdrawal: 0x901668112d86c721be4b1aa18576d4014c021e6d59333e699c814ee0bd75af1a
 - Formal tests removed in latest cleanup (2025-08-13)

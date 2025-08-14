@@ -72,8 +72,6 @@ async function main() {
     pk,
     "--rpc-url",
     rpc,
-    "--gas-limit",
-    "1200000",
   ];
 
   console.log(["cast", ...cmdArgs.map((a) => (a.includes(" ") ? JSON.stringify(a) : a))].join(" "));

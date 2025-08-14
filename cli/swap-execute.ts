@@ -17,6 +17,7 @@ import {
   writeSimplifiedEscrowFactoryV2_3CreateDstEscrow,
   readSimplifiedEscrowFactoryV2_3AddressOfEscrow,
 } from "../src/generated/contracts.ts";
+import { readSimplifiedEscrowFactoryV2_3Escrows } from "../src/generated/contracts.ts";
 import { parsePostInteractionData } from "../src/utils/escrow-creation.ts";
 import { logErrorWithRevert } from "./logging.ts";
 
@@ -159,7 +160,7 @@ async function main() {
   const fillHash = await writeSimpleLimitOrderProtocolFillOrderArgs(wagmiConfig as any, {
     chainId: SRC,
     account: account as any,
-    gas: 2_500_000n as any,
+    // let viem estimate gas automatically
     args: [
       orderTuple as any,
       order.signature.r,
@@ -170,6 +171,19 @@ async function main() {
     ] as any,
   } as any);
   const fillReceipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: SRC, hash: fillHash as Hex });
+
+  // Resolve src escrow created by postInteraction on SRC chain (mapping by hashlock)
+  let srcEscrowAddress: Address | null = null;
+  try {
+    const esc = await readSimplifiedEscrowFactoryV2_3Escrows(wagmiConfig as any, {
+      chainId: SRC,
+      args: [order.hashlock as Hex] as any,
+    } as any);
+    srcEscrowAddress = esc as Address;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`read escrows[hashlock] on SRC failed (non-fatal): ${msg}`);
+  }
 
   const fillsDir = `./data/fills`;
   await ensureDir(fillsDir);
@@ -182,8 +196,8 @@ async function main() {
     gasUsed: fillReceipt.gasUsed.toString(),
     extensionData: order.extensionData,  // Store extension data for withdrawal
     postInteraction: {
-      executed: false,
-      srcEscrow: null,
+      executed: !!(srcEscrowAddress && srcEscrowAddress !== ("0x0000000000000000000000000000000000000000" as Address)),
+      srcEscrow: srcEscrowAddress,
     },
     writtenAt: nowMs(),
   });
@@ -194,14 +208,7 @@ async function main() {
   const dstAddrs = getCliAddresses(dstChainId);
   
   // Parse PostInteraction data from extension to get immutables
-  // Skip the 4-byte offsets header if present
-  let extensionForParsing = order.extensionData;
-  if (extensionForParsing.startsWith("0x000000")) {
-    // Has offsets header, skip first 4 bytes
-    extensionForParsing = "0x" + extensionForParsing.slice(10) as Hex;
-  }
-  
-  const parsed = parsePostInteractionData(extensionForParsing);
+  const parsed = parsePostInteractionData(order.extensionData);
   const deposits = parsed.deposits || 0n;
   const dstSafetyDeposit = deposits >> 128n;
   const dstToken = parsed.dstToken && parsed.dstToken !== "0x0000000000000000000000000000000000000000" 

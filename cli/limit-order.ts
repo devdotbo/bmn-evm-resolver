@@ -105,7 +105,7 @@ export async function fillLimitOrder(
       functionName,
       args: [params.order, r, vs, params.fillAmount, takerTraits, params.extensionData],
       account: wallet.account!,
-      gas: 2_500_000n,
+      // let viem estimate gas automatically
     } as any);
     const hash = await wallet.writeContract(request as any);
     return { hash };

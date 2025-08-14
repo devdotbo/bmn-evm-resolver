@@ -77,16 +77,26 @@ async function main() {
   // Reconstruct immutables for destination escrow
   const parsed = parsePostInteractionData(order.extensionData);
   const dstSafetyDeposit = parsed.deposits >> 128n;
-  const timelocksPacked = parsed.timelocks;
-  // Use BMN for dst token (parsed may be zero if decode fails)
-  const dstToken = (addrs.tokens.BMN as Address) || (parsed.dstToken as Address);
+  
+  // Repack timelocks (parsed.timelocks are absolute timestamps packed as srcCancellation<<128 | dstWithdrawal)
+  const dstWithdrawalTimestamp = parsed.timelocks & ((1n << 128n) - 1n);
+  const srcCancellationTimestamp = parsed.timelocks >> 128n;
+  const deployedAt = BigInt(Math.floor(Date.now() / 1000));
+  const deployedAt32 = deployedAt & 0xFFFFFFFFn;
+  const dstWithdrawalOffset = (dstWithdrawalTimestamp > deployedAt) ? (dstWithdrawalTimestamp - deployedAt) & 0xFFFFFFFFn : 0n;
+  const dstCancellationOffset = (srcCancellationTimestamp > deployedAt) ? (srcCancellationTimestamp - deployedAt) & 0xFFFFFFFFn : 0n;
+  const timelocksPacked = (deployedAt32 << 224n) | (dstCancellationOffset << 192n) | (dstWithdrawalOffset << 128n);
+  
+  // Use parsed dstToken unless it is zero; fallback to configured BMN
+  const zeroAddress = "0x0000000000000000000000000000000000000000" as Address;
+  const dstToken = (parsed.dstToken && parsed.dstToken !== zeroAddress) ? parsed.dstToken : (addrs.tokens.BMN as Address);
   const needed = BigInt(order.order.takingAmount) + dstSafetyDeposit;
   const immutables = [
     order.orderHash as Hex,
     order.hashlock as Hex,
-    BigInt(order.order.maker),
-    BigInt(order.order.receiver),
-    BigInt(dstToken),
+    order.order.maker as Address,
+    order.order.receiver as Address,
+    dstToken as Address,
     BigInt(order.order.takingAmount),
     dstSafetyDeposit,
     timelocksPacked,

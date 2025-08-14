@@ -95,8 +95,6 @@ async function main() {
     pk,
     "--rpc-url",
     rpc,
-    "--gas-limit",
-    "8000000",
   ];
 
   const _cmd = ["cast", ...cmdArgs];

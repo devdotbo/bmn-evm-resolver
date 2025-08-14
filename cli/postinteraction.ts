@@ -57,8 +57,9 @@ export function encode1inchExtension(postInteractionData: Hex): Hex {
   // and index 7 equals postInteraction length (cumulative total so far).
   const offsets = new Uint8Array(32);
   const postLen = (postInteractionData.length - 2) >>> 1; // bytes length
-  // Place cumulative length into first uint32 (matches on-chain example behavior)
-  const idx = 0;
+  // Place cumulative length into the highest 4 bytes (index 7 lives in the high word)
+  // OffsetsLib reads ends[0] from the LOW 4 bytes and ends[7] from the HIGH 4 bytes of the 32-byte word.
+  const idx = 0; // bytes 0..3 are the highest 32 bits (ends[7])
   offsets[idx + 0] = (postLen >>> 24) & 0xff;
   offsets[idx + 1] = (postLen >>> 16) & 0xff;
   offsets[idx + 2] = (postLen >>> 8) & 0xff;

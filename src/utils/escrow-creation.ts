@@ -13,17 +13,19 @@ export function parsePostInteractionData(extensionData: Hex): {
   deposits: bigint;
   timelocks: bigint;
 } {
-  // Extension data format after offsets header removal:
-  // 28 bytes padding + 20 bytes factory + abi.encode(hashlock, dstChainId, dstToken, deposits, timelocks)
+  // Correct format:
+  // - First 32 bytes: offsets header (8 x uint32 cumulative ends)
+  // - Next 20 bytes: factory/listener address
+  // - Remainder: ABI-encoded payload (bytes32, uint256, address, uint256, uint256)
   
-  // Skip 28 bytes of padding (56 hex chars after 0x)
-  const dataAfterPadding = extensionData.slice(2 + 56); // Skip 0x + 28 bytes (56 hex chars)
+  // 1) Strip the 32-byte offsets header (64 hex chars after 0x)
+  const afterHeader = extensionData.slice(2 + 64);
   
-  // Extract factory address (next 20 bytes = 40 hex chars)
-  const factory = ('0x' + dataAfterPadding.slice(0, 40)) as Address;
+  // 2) Read 20-byte factory address (40 hex chars)
+  const factory = ('0x' + afterHeader.slice(0, 40)) as Address;
   
-  // The rest is the ABI-encoded payload
-  const payload = ('0x' + dataAfterPadding.slice(40)) as Hex;
+  // 3) Decode the ABI-encoded payload
+  const payload = ('0x' + afterHeader.slice(40)) as Hex;
   
   // Decode the 5-tuple payload
   const [hashlock, dstChainId, dstToken, deposits, timelocks] = decodeAbiParameters(
