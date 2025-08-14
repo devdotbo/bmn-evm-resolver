@@ -21,16 +21,19 @@ How to keep this file up-to-date (10 min checklist):
 
 Cross-chain atomic swap resolver enabling trustless BMN token exchanges between Base and Optimism using 1inch Limit Orders with PostInteraction callbacks and HTLC escrows.
 
-## 🔴 Critical Notes
+## 🎯 Current State
 
-- ✅ **FIXED**: Extension data now properly stored in fill files for withdrawal reconstruction
-- ✅ **FIXED**: PostInteraction data parsing handles 28-byte padding after offsets header
-- ✅ **FIXED**: Immutables construction uses correct types (Address not BigInt)
-- ✅ **FIXED**: Timelocks use offset-based packing with deployedAt timestamp
-- ✅ **FIXED**: Exact immutables stored during escrow creation for withdrawal
-- Destination withdraw is gated by timelocks → InvalidTime if called before window opens
-- **NEW**: Enhanced timelock handling with wait helpers and status checking
-- **NEW**: Improved error reporting with known revert reason mapping
+### ✅ What's Working
+- **E2E Atomic Swap Flow**: Complete flow from order creation to withdrawal
+- **Immutables Handling**: Proper storage and reconstruction
+- **Timelocks**: Offset-based packing with deployedAt (TimelocksLib compatible)
+- **PostInteraction Parsing**: Correctly handles 28-byte padding
+- **Error Reporting**: Known revert selectors mapped to human-readable errors
+
+### ⚠️ Known Issues
+- **Withdrawal Timing**: Must wait for timelock window (use `--wait` flag)
+- **Offsets Header**: Still using workaround, needs proper cumulative layout
+- **Manual ABIs**: Some files still use manual imports instead of wagmi-generated
 
 ## 📊 System State
 
@@ -88,91 +91,86 @@ bmn-evm-resolver/
 └── archive/             # Deprecated code
 ```
 
-## ✅ Recent Improvements (2025-08-14 Session)
+## 🚀 Next Tasks (Priority Order)
 
-1. **Timelock Utilities** (`cli/timelock-utils.ts`)
-   - Added comprehensive timelock window checking
-   - Wait helpers for automatic retry when window opens
-   - Human-readable time formatting
-   - Status checking for both src and dst windows
+### 🔴 Immediate (Blocking Production)
+1. **Fix Offsets Header Implementation**
+   - Current: Using workaround by skipping 4-byte header
+   - Need: Proper cumulative offsets layout for all extension fields  
+   - File: `cli/postinteraction.ts`
+   - Blocker: Required for mainnet compatibility with 1inch protocol
 
-2. **Enhanced Error Handling** (`cli/logging.ts`)
-   - Error categorization (CONTRACT_REVERT, NETWORK_ERROR, etc.)
-   - Known revert selector mapping for better error messages
-   - Structured logging with JSON output support
-   - Debug mode with stack traces via DEBUG env var
+2. **Test Source Escrow Withdrawal**
+   - Current: Only tested destination withdrawal
+   - Need: Verify Bob can withdraw from source after Alice reveals secret
+   - Test: Full bidirectional atomic swap flow
 
-3. **Test Scripts**
-   - `scripts/test-swap-flow.ts`: Complete flow testing with failure modes
-   - `scripts/generate-failure-tx.ts`: Generate intentional failures for Tenderly
+### 🟡 Important (Quality/Maintenance)
+3. **Migrate to Wagmi Bindings**
+   - Files still using manual ABIs in `cli/` and `src/`
+   - Goal: All contract calls through wagmi-generated actions
+   - Benefit: Type safety and reduced errors
 
-4. **Withdraw Improvements** (`cli/withdraw-dst.ts`)
-   - Robust immutables reconstruction with validation
-   - Automatic timelock waiting with --wait flag
-   - Better error messages for file loading failures
-   - Fallback to configured BMN token address
+4. **Production Readiness**
+   - Implement comprehensive preflight checks
+   - Add retry logic for network failures
+   - Gas estimation and optimization
+   - Monitoring and alerting
 
-## 🚨 Critical Fixes (2025-08-14 Session - Part 2)
+### 🟢 Nice to Have
+5. **Documentation Cleanup**
+   - Archive deprecated docs in `/archive`
+   - Update examples with v2.3.2 flow
+   - Add troubleshooting guide
 
-1. **Extension Data Storage Fix** (`cli/swap-execute.ts`)
-   - **Problem**: Extension data was not being stored in fill files, breaking withdrawal
-   - **Solution**: Added `extensionData` field to fill file storage
-   - **Impact**: Enables proper immutables reconstruction for withdrawals
+## 🚧 Current Blockers
 
-2. **PostInteraction Data Parsing Fix** (`src/utils/escrow-creation.ts`)
-   - **Problem**: Parser wasn't handling 28-byte padding after offsets header removal
-   - **Solution**: Skip 56 hex chars (28 bytes) of padding before parsing factory address
-   - **Impact**: Correctly extracts factory, hashlock, tokens, and timelocks
+1. **Offsets Header Format** (CRITICAL)
+   - Missing exact 1inch extension format documentation
+   - Current workaround: Skip 4-byte header (0x000000b4)
+   - Impact: May fail with different extension layouts
 
-3. **Immutables Type Fix** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
-   - **Problem**: Addresses were incorrectly converted to BigInt, causing InvalidCaller errors
-   - **Solution**: Keep addresses as Address type, only convert amounts to BigInt
-   - **Impact**: Escrow validation passes, enabling withdrawals
+2. **Timelock Window UX**
+   - Users must wait for window or use `--wait` flag
+   - No automatic retry mechanism
+   - Consider adding exponential backoff
 
-4. **Timelocks Implementation** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
-   - **Problem**: Absolute timestamps used instead of offsets, causing InvalidTime errors
-   - **Solution**: Implement TimelocksLib-compatible packing with deployedAt base timestamp
-   - **Impact**: Proper timelock validation in escrow contracts
+## 🔧 Where We Are
 
-5. **Immutables Storage** (`cli/swap-execute.ts`)
-   - **Problem**: Different deployedAt timestamps between creation and withdrawal
-   - **Solution**: Store exact immutables used during escrow creation
-   - **Impact**: Consistent immutables for withdrawal, preventing InvalidImmutables errors
+- **Just Fixed**: Critical immutables/timelocks bugs preventing withdrawals
+- **Current Achievement**: Full E2E atomic swap working (order → fill → dst escrow → withdraw)
+- **Tested**: Successful destination withdrawal with proper immutables (tx: 0x901668...)
+- **Not Yet Tested**: Source escrow withdrawal after secret reveal
+- **Ready For**: Development testing, NOT production (offsets header issue)
 
-6. **New Utilities Created**
-   - `scripts/ensure-all-approvals.ts`: Comprehensive token approval management
-   - `cli/check-balances.ts`: BMN token balance checking across chains
-   - Fixes to `getBMNToken()` function usage across all CLI files
-
-## 🔧 Remaining Focus Areas
-
-1. Migrate remaining manual ABI call sites to wagmi‑generated bindings/actions
-2. Ensure prod readiness: balances, allowances, health checks
-3. Clean up deprecated documentation and mark archived docs
-4. Finalize offsets header (full cumulative layout)
-
-## 🚦 Quick Start (CLI, Fresh Context)
+## 🚦 Quick Start (Test the Working Flow)
 
 ```bash
-# 1) Environment
+# Setup
 cp .env.example .env
 # Add: ALICE_PRIVATE_KEY, BOB_PRIVATE_KEY, ANKR_API_KEY
 
-# 2) Generate wagmi types (required by CLIs)
-deno task wagmi:generate
+# Quick E2E Test (Automated)
+deno run -A --unstable-kv --env-file=.env scripts/test-swap-flow.ts
 
-# 3) Create order (Base→OP example)
-deno task order:create -- --src 8453 --dst 10 --srcAmount 10000000000000000 --dstAmount 10000000000000000 --resolver 0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5
+# Or Manual Steps:
+# 1) Ensure approvals
+deno run -A --unstable-kv --env-file=.env scripts/ensure-all-approvals.ts
 
-# 4) Execute swap (fill + create dst escrow)
+# 2) Check balances
+deno task check:balances
+
+# 3) Create order
+deno task order:create -- --src 8453 --dst 10 --srcAmount 10000000000000000
+
+# 4) Execute swap (auto-stores immutables)
 deno task swap:execute -- --file ./data/orders/pending/0xHASHLOCK.json
 
-# 5) Withdrawals
-deno task withdraw:dst -- --hashlock 0xHASHLOCK
-deno task withdraw:src -- --hashlock 0xHASHLOCK
+# 5) Withdraw from destination (uses stored immutables)
+deno task withdraw:dst -- --hashlock 0xHASHLOCK --wait
 
-# 6) Status
-deno task status -- --hashlock 0xHASHLOCK
+# 6) Withdraw from source (after secret revealed)
+deno task withdraw:src -- --hashlock 0xHASHLOCK
 ```
 
 ## 📈 Progress Metrics
@@ -191,10 +189,26 @@ deno task status -- --hashlock 0xHASHLOCK
 
 ## 📝 For Next Agent
 
-- Prefer file-based CLI for PoC runs. Services remain available.
-- Use wagmi‑generated actions from `src/generated/contracts.ts`.
-- Ensure funded keys and allowances for mainnet execution.
-- Secrets are persisted to `data/secrets/{hashlock}.json` (PoC).
+### Start Here:
+1. Run `scripts/test-swap-flow.ts` to verify E2E flow works
+2. Check `## 🚀 Next Tasks` section above for priorities
+3. Main blocker: Offsets header implementation in `cli/postinteraction.ts`
+
+### Key Files to Know:
+- `cli/swap-execute.ts` - Contains immutables storage logic (working)
+- `cli/withdraw-dst.ts` - Uses stored immutables (working)
+- `src/utils/escrow-creation.ts` - PostInteraction parser with 28-byte padding fix
+- `docs/IMMUTABLES_AND_TIMELOCKS.md` - Critical architecture guide
+
+### Testing Commands:
+```bash
+# Quick test
+deno run -A --unstable-kv --env-file=.env scripts/test-swap-flow.ts
+
+# Check what's broken
+deno task check:balances
+deno run -A --unstable-kv --env-file=.env scripts/ensure-all-approvals.ts
+```
 
 ---
 *Auto-generated status for agent handover. Update after significant changes.*
