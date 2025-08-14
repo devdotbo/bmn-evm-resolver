@@ -29,6 +29,10 @@ const dstArg = getArg("dst");
 const srcAmountArg = getArg("srcAmount");
 const dstAmountArg = getArg("dstAmount");
 const resolverArg = getArg("resolver");
+const srcCancelSecArg = getArg("srcCancelSec");
+const dstWithdrawSecArg = getArg("dstWithdrawSec");
+const noExtension = Deno.args.includes("--noExtension") || Deno.args.includes("--argsOnly");
+const makePublic = Deno.args.includes("--public");
 
 if (!srcArg || !dstArg || !srcAmountArg || !dstAmountArg || !resolverArg) usage();
 
@@ -59,8 +63,11 @@ const BMN_DST = addressesDst.tokens.BMN;
 const LOP = addressesSrc.limitOrderProtocol;
 const FACTORY = addressesSrc.escrowFactory;
 
-// Timelocks: 3600s cancel window on src, 300s dst withdraw window
-const timelocks = packTimelocks(3600, 300);
+// Timelocks: configurable; default 3600s src cancel window, 300s dst withdraw window
+const timelocks = packTimelocks(
+  srcCancelSecArg ? Number(srcCancelSecArg) : 3600,
+  dstWithdrawSecArg ? Number(dstWithdrawSecArg) : 300,
+);
 const nonce = generateNonce();
 
 // placeholder example removed (recomputed when secret exists)
@@ -98,12 +105,14 @@ async function main() {
   const secret = randomSecret();
   const { extension, hashlock } = rebuildExtension(secret);
 
-  // makerTraits: set extension + postInteraction + random nonce bits
-  const makerTraits = MAKER_TRAITS.build({ postInteraction: true, hasExtension: true, allowMultipleFills: true, allowedSender: RESOLVER });
+  // makerTraits: optionally disable extension and pass via args only (workaround)
+  const makerTraits = MAKER_TRAITS.build({ postInteraction: true, hasExtension: !noExtension, allowMultipleFills: true, allowedSender: makePublic ? undefined : RESOLVER });
 
   // Build order
+  const saltWithExt = (BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) << 160n) | (BigInt(keccak256(extension)) & ((1n << 160n) - 1n));
+  const saltArgsOnly = (BigInt(Date.now()) << 96n) | BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
   const order: OrderInput = {
-    salt: (BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) << 160n) | (BigInt(keccak256(extension)) & ((1n << 160n) - 1n)),
+    salt: noExtension ? saltArgsOnly : saltWithExt,
     maker: account.address,
     receiver: account.address,
     makerAsset: BMN_SRC,
@@ -118,10 +127,10 @@ const orderHash = await readSimpleLimitOrderProtocolHashOrder(wagmiConfig as any
   chainId: SRC,
   args: [[
     order.salt,
-    BigInt(order.maker),
-    BigInt(order.receiver),
-    BigInt(order.makerAsset),
-    BigInt(order.takerAsset),
+    order.maker,
+    order.receiver,
+    order.makerAsset,
+    order.takerAsset,
     order.makingAmount,
     order.takingAmount,
     order.makerTraits,

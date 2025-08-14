@@ -9,6 +9,41 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added - 2025-08-14 (CLI: cast + escrow ops)
+
+- `cli/cast-fill.ts` and task `cast:fill` to submit `fillOrderArgs` via Foundry cast
+  - Converts address fields to uint256 for cast tuple
+  - Auto-approves maker allowances to protocol/factory when needed
+  - Skips refills if `remainingInvalidatorForOrder` returns 0
+- `cli/create-dst-escrow.ts` and task `create:dst` to create destination escrow from order file
+  - Reconstructs immutables from PostInteraction extension
+  - Ensures resolver allowance to factory for destination token
+  - Fallback to configured BMN token on decode anomalies
+- `cli/cast-withdraw-dst.ts` and task `cast:withdraw:dst` to transmit destination `withdraw` via cast (no simulation)
+  - Useful to produce on-chain failing txs for Tenderly debugging
+
+### Changed - 2025-08-14 (Timelocks and withdraw flow)
+
+- `cli/order-create.ts`: supports `--srcCancelSec` and `--dstWithdrawSec` for custom time windows
+- `cli/withdraw-dst.ts`: reconstructs full immutables from order + extension to satisfy `onlyValidImmutables`
+- `cli/postinteraction.ts`: offsets header placement aligned with working fills
+- `cli/cast-fill.ts`: robust allowance parsing; LocalAccount writes; improved logging & artifacts
+
+### Diagnostics - 2025-08-14
+
+- Successful fills (Base):
+  - 0xc254831ad1cbb01def05fff8ef25d1d74163818c9da5d7b09df75a5d458e0134
+  - 0x6b77031938cec09eb6885d17f0afcda35a0ce5205d02f0eb532c720a3f9097d9
+- Destination escrow creates:
+  - 0x05A1BACBcfAc0939E9578Ebbc0Cac8Fd72C1A9d1 (addr derived/logged)
+  - 0x5d40e8dCCCe86E621Aec9ecc372A5dBF571eb4A7
+- Withdraw (cast, for debugging):
+  - 0x9eb5836fb888fdd911415716b4fd06b89d69c4ff14c1bf09a85d1b30472397d3 (failed as intended)
+- Common revert root causes and fixes:
+  - SafeTransferFromFailed on `createDstEscrow` → ensure resolver approves factory for dst token (auto-approved)
+  - InvalidTime on `withdraw` → pass real packed timelocks from extension; wait until dst window opens
+  - 0x…0A “dead address” decode → fallback to configured BMN token address
+
 ### Changed - 2025-08-13 (Smoke test fixes and helpers)
 
 - CLI writes now use LocalAccount for wagmi write actions to avoid ConnectorNotConnectedError

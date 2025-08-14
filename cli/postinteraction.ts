@@ -50,14 +50,19 @@ export function encodePostInteractionData(factoryAddress: Address, params: Escro
 }
 
 export function encode1inchExtension(postInteractionData: Hex): Hex {
+  // Offsets header is 8 x uint32 big-endian cumulative lengths of dynamic fields:
+  // [MakerAssetSuffix, TakerAssetSuffix, MakingAmountData, TakingAmountData,
+  //  Predicate, MakerPermit, PreInteractionData, PostInteractionData]
+  // We only include PostInteractionData, so cumulative lengths for indices 0..6 are 0,
+  // and index 7 equals postInteraction length (cumulative total so far).
   const offsets = new Uint8Array(32);
-  const postInteractionLength = (postInteractionData.length - 2) / 2;
-  // DynamicField index for PostInteractionData = 7 (zero-based)
-  const idx = 7 * 4;
-  offsets[idx + 0] = (postInteractionLength >> 24) & 0xff;
-  offsets[idx + 1] = (postInteractionLength >> 16) & 0xff;
-  offsets[idx + 2] = (postInteractionLength >> 8) & 0xff;
-  offsets[idx + 3] = postInteractionLength & 0xff;
+  const postLen = (postInteractionData.length - 2) >>> 1; // bytes length
+  // Place cumulative length into first uint32 (matches on-chain example behavior)
+  const idx = 0;
+  offsets[idx + 0] = (postLen >>> 24) & 0xff;
+  offsets[idx + 1] = (postLen >>> 16) & 0xff;
+  offsets[idx + 2] = (postLen >>> 8) & 0xff;
+  offsets[idx + 3] = postLen & 0xff;
   const offsetsHex = toHex(offsets) as Hex;
   return concat([offsetsHex, postInteractionData]);
 }

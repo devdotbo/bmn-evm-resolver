@@ -12,23 +12,20 @@ How to keep this file up-to-date (10 min checklist):
   - `rg -n "UnifiedResolver|resolver-service.ts|bob-service.ts" -- docs archive`
 - Update this file's Status, Services, and Focus Areas accordingly
 
-**Last Updated**: 2025-08-13
+**Last Updated**: 2025-08-14
 **Branch**: `optimism-simplified`
 **Version**: v2.3.0
-**Status**: ✅ ACTIVE — Core flow unblocked
+**Status**: ✅ ACTIVE — Core flow executing; dst withdraw depends on timelocks
 
 ## 🎯 Project Overview
 
 Cross-chain atomic swap resolver enabling trustless BMN token exchanges between Base and Optimism using 1inch Limit Orders with PostInteraction callbacks and HTLC escrows.
 
-## 🔴 Critical Blockers
+## 🔴 Critical Notes
 
-- Swap execution currently reverts at fill with extension layout mismatch:
-  - After fixing EIP-712 schema and using LocalAccount for writes, BadSignature is resolved
-  - After granting allowances and adjusting offsets index, fill now reverts with: "Arithmetic operation resulted in underflow or overflow" (extension offsets)
-  - Two options to proceed:
-    1) Regenerate extension with correct 1inch offsets layout: offsets must represent cumulative lengths for all dynamic fields in order: [MakerAssetSuffix, TakerAssetSuffix, MakingAmountData, TakingAmountData, Predicate, MakerPermit, PreInteractionData, PostInteractionData]
-    2) Workaround: set takerTraits.argsExtensionLength = 0 and pass postInteraction via args interaction segment (omit extension entirely for now)
+- Fill path is working with cast and wagmi actions; approvals handled automatically
+- Destination escrow creation requires resolver allowance → now auto-approved
+- Destination withdraw is gated by timelocks → InvalidTime if called before window opens
 
 ## 📊 System State
 
@@ -45,9 +42,10 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
   - `deno task approve:maker` (helper to grant BMN allowance to protocol/factory)
   - Notes:
     - CLIs are now self-contained under `cli/` and use wagmi-generated actions from `src/generated/contracts.ts`
-    - Addresses resolved via env (overrides) with fallbacks to generated addresses; RPC via `cli/cli-config.ts`
+    - Addresses resolved via env (overrides) with fallbacks to generated addresses; RPC via `cli/cli-config.ts` (uses `ANKR_API_KEY`)
     - ABIs re-exported from generated sources in `cli/abis.ts`
     - Unified error logging: `cli/logging.ts` logs full error chain and revert selector/data
+    - Writes use LocalAccount for `writeContract` actions (prevents ConnectorNotConnectedError)
 - Indexer: Railway hosted (INDEXER_URL)
 
 ### Contracts (v2.3.0)
@@ -57,14 +55,12 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 
 ### Test Results / Smoke Tests
 - Type-check: `deno check cli/*` → OK
-- CLI smoke tests:
-  - order:create → OK (hashlocks written; example: `0x75f9af97...b2200`)
-  - approve:maker → OK (BMN approvals to protocol/factory on Base)
-  - swap:execute → currently failing:
-    - Before fixes: ConnectorNotConnectedError (resolved by using LocalAccount in writes)
-    - Then: BadSignature (resolved by fixing EIP-712 typed data to use `address` fields)
-    - Now: "Arithmetic operation resulted in underflow or overflow" → extension offsets layout mismatch
-  - withdraw:dst / withdraw:src → pending successful fill
+- CLI flow (latest):
+  - order:create → OK (supports --srcCancelSec/--dstWithdrawSec)
+  - cast:fill → OK (auto-approvals, tuple types corrected)
+  - create:dst → OK (immutables reconstructed; resolver allowance ensured)
+  - withdraw:dst → InvalidTime until dst window opens; can force a failing on-chain tx via cast:withdraw:dst for Tenderly
+  - withdraw:src → after successful dst reveal
 - Formal tests removed in latest cleanup (2025-08-13)
 
 ## 📁 Repository Structure
@@ -90,9 +86,9 @@ bmn-evm-resolver/
 1. Migrate remaining manual ABI call sites to wagmi‑generated bindings/actions
 2. Ensure prod readiness: balances, allowances, health checks, logging
 3. Keep docs lean; mark archived docs as deprecated
-4. Resolve extension offsets issue to unblock `swap:execute`:
-   - Proper fix: implement full offsets encoding for all dynamic fields (cumulative lengths)
-   - Short-term workaround: zero extension and provide postInteraction via args interaction; set takerTraits.argsExtensionLength = 0
+4. Finalize offsets header (full cumulative layout) and migrate remaining CLI call sites to generated structs
+5. Harden withdraw-dst immutables reconstruction (strict decode, no fallbacks) and add a wait-until helper for timelocks
+6. Add scripts to emit both success and intentional failure transactions (for Tenderly reproduction)
 
 ## 🚦 Quick Start (CLI, Fresh Context)
 

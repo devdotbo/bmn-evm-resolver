@@ -10,6 +10,7 @@ import { getPrivateKey, type SupportedChainId } from "./cli-config.ts";
 import { createWagmiConfig } from "./wagmi-config.ts";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { simulateEscrowDstV2Withdraw, writeEscrowDstV2Withdraw } from "../src/generated/contracts.ts";
+import { parsePostInteractionData } from "../src/utils/escrow-creation.ts";
 import { logErrorWithRevert } from "./logging.ts";
 
 function usage(): never {
@@ -32,6 +33,11 @@ async function main() {
   const secretJson = await readJson<{ secret: Hex }>(secretFile);
   const dstJson = await readJson<{ dstChainId: number; escrowAddress: Address }>(dstFile);
   const statusJson = await readJson<{ orderHash: Hex }>(`./data/swaps/${hashlock}/status.json`);
+  // Load order for immutables reconstruction
+  let orderJson: any;
+  try { orderJson = await readJson<any>(`./data/orders/pending/${hashlock}.json`); } catch (_) {
+    orderJson = await readJson<any>(`./data/orders/completed/${hashlock}.json`);
+  }
 
   const ALICE_PK = (getPrivateKey("ALICE_PRIVATE_KEY") || "") as `0x${string}`;
   if (!ALICE_PK) {
@@ -44,16 +50,21 @@ async function main() {
   const _chain = dstChainId === base.id ? base : optimism;
   const wagmiConfig = createWagmiConfig();
 
-  // Build minimal immutables tuple; values other than orderHash/hashlock are not used onchain for validation in this path
+  // Reconstruct immutables from order and extension data for destination escrow
+  const ext = orderJson.extensionData as Hex;
+  const parsed = parsePostInteractionData(ext);
+  const deposits = parsed.deposits;
+  const dstSafetyDeposit = deposits >> 128n;
+  const timelocksPacked = parsed.timelocks; // already packed srcCancellation<<128 | dstWithdrawal
   const immutables = [
     statusJson.orderHash as Hex,
     hashlock as Hex,
-    0n,
-    0n,
-    0n,
-    0n,
-    0n,
-    0n,
+    BigInt(orderJson.order.maker),
+    BigInt(orderJson.order.receiver),
+    BigInt(parsed.dstToken),
+    BigInt(orderJson.order.takingAmount),
+    dstSafetyDeposit,
+    timelocksPacked,
   ] as any;
 
   // Use withdraw(secret, immutables)

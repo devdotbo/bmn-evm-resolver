@@ -43,8 +43,11 @@
     "bob": "deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts",
     "order:create": "deno run -A --unstable-kv --env-file=.env cli/order-create.ts",
     "swap:execute": "deno run -A --unstable-kv --env-file=.env cli/swap-execute.ts",
+    "cast:fill": "deno run -A --env-file=.env cli/cast-fill.ts",
     "withdraw:dst": "deno run -A --unstable-kv --env-file=.env cli/withdraw-dst.ts",
     "withdraw:src": "deno run -A --unstable-kv --env-file=.env cli/withdraw-src.ts",
+    "cast:withdraw:dst": "deno run -A --env-file=.env cli/cast-withdraw-dst.ts",
+    "create:dst": "deno run -A --env-file=.env cli/create-dst-escrow.ts",
     "status": "deno run -A --env-file=.env cli/status.ts",
     "approve:maker": "deno run -A --env-file=.env cli/approve-maker.ts"
   },

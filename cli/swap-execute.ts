@@ -59,18 +59,39 @@ async function main() {
   const order: OrderFile = await readJson<OrderFile>(fileArg!);
 
   const SRC = order.srcChainId as SupportedChainId;
-  const BOB_PK = (getPrivateKey("BOB_PRIVATE_KEY") || getPrivateKey("RESOLVER_PRIVATE_KEY") || "") as `0x${string}`;
-  if (!BOB_PK) {
+  // Choose signer that matches makerTraits.allowedSender (low 80 bits) when present
+  const pkBob = getPrivateKey("BOB_PRIVATE_KEY");
+  const pkResolver = getPrivateKey("RESOLVER_PRIVATE_KEY");
+  if (!pkBob && !pkResolver) {
     console.error("BOB_PRIVATE_KEY or RESOLVER_PRIVATE_KEY missing");
     Deno.exit(1);
   }
-  const account = privateKeyToAccount(BOB_PK, { nonceManager });
   const _chain = SRC === base.id ? base : optimism;
   const wagmiConfig = createWagmiConfig();
 
   const addrs = getCliAddresses(SRC);
 
-  // Ensure approvals (Bob for protocol + factory) using wagmi actions
+  // Choose signer now (before approvals) based on allowedSender low 80 bits
+  const allowedSenderMaskPre = (1n << 80n) - 1n;
+  const allowedSenderLow80Pre = BigInt(order.order.makerTraits) & allowedSenderMaskPre;
+  let account = pkBob ? privateKeyToAccount(pkBob, { nonceManager }) : undefined;
+  let resolverAccount = pkResolver ? privateKeyToAccount(pkResolver, { nonceManager }) : undefined;
+  const toLow80Pre = (addr: string) => (BigInt(addr) & allowedSenderMaskPre);
+  if (allowedSenderLow80Pre !== 0n) {
+    const bobMatches = account && toLow80Pre(account.address) === allowedSenderLow80Pre;
+    const resolverMatches = resolverAccount && toLow80Pre(resolverAccount.address) === allowedSenderLow80Pre;
+    if (resolverMatches && !bobMatches) account = resolverAccount!;
+    if (!bobMatches && !resolverMatches && resolverAccount) account = resolverAccount;
+  } else {
+    if (resolverAccount) account = resolverAccount;
+  }
+  if (!account) account = (pkBob || pkResolver) ? privateKeyToAccount((pkBob || pkResolver)!, { nonceManager }) : undefined as any;
+  if (!account) {
+    console.error("No usable signer account");
+    Deno.exit(1);
+  }
+
+  // Ensure approvals (Bob/Resolver for protocol + factory) using wagmi actions
   const needed = BigInt(order.order.takingAmount);
   const currentAllowance = await readIerc20Allowance(wagmiConfig, {
     chainId: SRC,
@@ -111,20 +132,25 @@ async function main() {
     takingAmount: BigInt(order.order.takingAmount),
     makerTraits: BigInt(order.order.makerTraits),
   });
+  // account already selected earlier before approvals
 
-  // Compute takerTraits based on extension length and threshold
+  // Compute takerTraits based on maker-declared extension and threshold
   const computedArgsExtLenBytes = BigInt((order.extensionData.length - 2) / 2);
   const makerAmountFlag = 1n << 255n;
   const threshold = orderStruct.takingAmount & ((1n << 185n) - 1n);
-  const takerTraits = makerAmountFlag | (computedArgsExtLenBytes << 224n) | threshold;
+  const HAS_EXTENSION_BIT = 1n << 249n;
+  const makerDeclaredExtension = (orderStruct.makerTraits & HAS_EXTENSION_BIT) !== 0n;
+  const argsExtLen = makerDeclaredExtension ? computedArgsExtLenBytes : 0n;
+  const takerTraits = makerAmountFlag | (argsExtLen << 224n) | threshold;
 
   // Fill using wagmi action with r/vs directly
+  // Order tuple should use EIP-712 message types: address fields remain addresses
   const orderTuple = [
     orderStruct.salt,
-    orderStruct.maker,
-    orderStruct.receiver,
-    orderStruct.makerAsset,
-    orderStruct.takerAsset,
+    order.order.maker,
+    order.order.receiver,
+    order.order.makerAsset,
+    order.order.takerAsset,
     orderStruct.makingAmount,
     orderStruct.takingAmount,
     orderStruct.makerTraits,
@@ -132,7 +158,15 @@ async function main() {
   const fillHash = await writeSimpleLimitOrderProtocolFillOrderArgs(wagmiConfig as any, {
     chainId: SRC,
     account: account as any,
-    args: [orderTuple as any, order.signature.r, order.signature.vs, orderStruct.makingAmount, takerTraits, order.extensionData] as any,
+    gas: 2_500_000n as any,
+    args: [
+      orderTuple as any,
+      order.signature.r,
+      order.signature.vs,
+      orderStruct.makingAmount,
+      takerTraits,
+      makerDeclaredExtension ? order.extensionData : ("0x" as Hex),
+    ] as any,
   } as any);
   const fillReceipt = await waitForTransactionReceipt(wagmiConfig as any, { chainId: SRC, hash: fillHash as Hex });
 
