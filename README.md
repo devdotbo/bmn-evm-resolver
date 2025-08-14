@@ -46,11 +46,8 @@ deno task wagmi:watch
 ## Usage
 
 ```bash
-# Bob‑Resolver (taker/coordinator)
-deno task bob
-
-# Alice service (initiator)
-deno task alice
+# File-based CLI (preferred)
+# - Services are optional and not wired as tasks; use CLIs below
 
 # File-based CLI (per plan.md, fresh context)
 # 1) Create order
@@ -73,6 +70,7 @@ Notes:
 - For PoC, secrets are also written to `data/secrets/{hashlock}.json`.
 - CLIs use wagmi-generated actions from `src/generated/contracts.ts` and RPCs derived from `ANKR_API_KEY` via `cli/cli-config.ts`.
 - On errors, CLIs log full error chains and revert selector/data via `cli/logging.ts`. Catch handlers print full errors.
+- PostInteraction parsing: strip a 32-byte offsets header, then read 20-byte factory + ABI payload.
 
 ## Linting & Formatting
 

@@ -10,14 +10,14 @@ Read this first each session. Humans use `README.md`. Agents use this and `STATU
 
 ## Quick health
 ```bash
-curl -s localhost:8001/health | jq .status
-curl -s localhost:8002/health | jq .status
+# Services are optional; use CLI artifacts for status instead
+deno task status
 ```
 
 ## Contracts sanity
 ```bash
-rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" src/config/contracts.ts wagmi.config.ts
-rg -n "fillContractOrderArgs|fillOrderArgs" abis/SimpleLimitOrderProtocol.json
+rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" wagmi.config.ts
+rg -n "writeSimpleLimitOrderProtocolFillOrderArgs|readSimplifiedEscrowFactoryV2_3AddressOfEscrow" src/generated/contracts.ts
 ```
 
 ## Tests
@@ -26,15 +26,15 @@ rg -n "fillContractOrderArgs|fillOrderArgs" abis/SimpleLimitOrderProtocol.json
 ```
 
 ## Entrypoints
-- Alice: `alice-service-orpc.ts`
-- Bob-Resolver: `bob-resolver-service-v2.ts`
+- File-based CLIs under `cli/` are the primary interface
 
 ## Common actions
 ```bash
 deno task wagmi:generate
-deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts &
-deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts &
-deno run -A --unstable-kv --env-file=.env scripts/create-test-order.ts
+deno task order:create -- --src 8453 --dst 10 --srcAmount 10000000000000000 --dstAmount 10000000000000000 --resolver 0x...
+deno task swap:execute -- --file ./data/orders/pending/0xHASHLOCK.json
+deno task withdraw:dst -- --hashlock 0xHASHLOCK --wait
+deno task withdraw:src -- --hashlock 0xHASHLOCK
 ```
 
 ## Edit policy
@@ -65,11 +65,10 @@ deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts &
 
 The BMN resolver system uses a two-party architecture:
 
-### Core Services
+### Core Interfaces
 
-- **alice**: Swap initiator service (port 8001)
-- **bob**: Unified Bob-Resolver service - acts as both coordinator and
-  counterparty (port 8002)
+- **File-based CLI**: Preferred PoC interface
+- Optional long-running services are not wired in tasks; use CLIs above
 
 ## Data Persistence
 
@@ -103,9 +102,7 @@ cp .env.example .env
 
 ## Monitoring
 
-- **Service Health**:
-  - Alice: http://localhost:8001/health
-  - Bob-Resolver: http://localhost:8002/health
+- Use CLI outputs and `./data/**` artifacts for status
 
 ---
 
@@ -176,19 +173,8 @@ This command is useful for:
 
 # 🔄 POSTINTERACTION INTEGRATION STATUS
 
-**Critical Issue**: SimplifiedEscrowFactory on mainnet lacks IPostInteraction
-interface **Solution**: Contract has been updated in bmn-evm-contracts
-repository with postInteraction method **Status**: Ready for deployment
-
-Key changes made:
-
-1. SimplifiedEscrowFactory now implements IPostInteraction interface
-2. postInteraction method added to handle escrow creation after order fills
-3. Token flow fixed: transfers from resolver to escrow after protocol execution
-
-See `LIMIT_ORDER_POSTINTERACTION_ISSUE.md` for technical details. See
-`../bmn-evm-contracts/POSTINTERACTION_INTEGRATION_PLAN.md` for implementation
-guide.
+- Extension parsing: remove a 32-byte offsets header; then 20-byte factory + ABI payload
+- Encoder: write cumulative ends as per `OffsetsLib` (ends[7] = postInteraction length)
 
 # 🔒 CRITICAL SECURITY GUIDELINES - PREVENT SECRET EXPOSURE
 

@@ -19,8 +19,7 @@ and this project adheres to
   - Enables proper immutables reconstruction during withdrawal phase
 
 - **PostInteraction Data Parsing** (`src/utils/escrow-creation.ts`)
-  - Fixed parser to handle 28-byte padding after offsets header removal
-  - Correctly skips 56 hex chars (28 bytes) of padding before extracting factory address
+  - Unified parser: remove a 32-byte offsets header once, then read 20-byte factory + ABI payload
   - Properly decodes 5-tuple payload: hashlock, dstChainId, dstToken, deposits, timelocks
 
 - **Immutables Type Handling** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
@@ -80,11 +79,8 @@ and this project adheres to
 ### Documentation - 2025-08-14
 
 - **Immutables and Timelocks Architecture** (`docs/IMMUTABLES_AND_TIMELOCKS.md`)
-  - Comprehensive guide explaining immutables structure and validation
-  - Detailed TimelocksLib packing format and offset-based storage
-  - PostInteraction extension data parsing with padding handling
-  - Common errors and debugging techniques
-  - Critical implementation notes for future developers
+  - Updated to reflect 32-byte header removal (no 4-byte/28-byte padding heuristic)
+  - Comprehensive guide on TimelocksLib offset-based packing and common errors
   
 ### Added - 2025-08-14 (Mainnet E2E success)
 
@@ -375,33 +371,7 @@ and this project adheres to
   - Plan for future e2e: use Anvil with viem Test Client & Test Actions for deterministic chain control
     - References: `https://viem.sh/docs/clients/test`, `https://viem.sh/docs/actions/test/introduction`
 
-### Added - 2025-08-14
-
-- **Comprehensive Test Suite** - Complete testing infrastructure for atomic swap system
-  - `tests/setup.ts` - Core test utilities, mocks, and helpers
-  - `tests/mocks/viem-mock.ts` - Viem client mocking infrastructure
-  - `tests/fixtures/index.ts` - Reusable test data and fixtures
-  - `tests/unit/services/event-monitor.test.ts` - EventMonitorService unit tests (16 test cases)
-  - `tests/unit/state/swap-state-manager.test.ts` - SwapStateManager unit tests (68 test cases)
-  - `tests/unit/state/secret-manager.test.ts` - SecretManager unit tests (63 test cases)
-  - `tests/unit/utils/escrow-withdraw.test.ts` - EscrowWithdrawManager unit tests (30+ test cases)
-  - `tests/unit/utils/limit-order.test.ts` - Limit order utilities unit tests (13 test cases)
-  - `tests/unit/utils/escrow-creation.test.ts` - Escrow creation unit tests (16 test cases)
-  - `tests/integration/atomic-swap-flow.test.ts` - Full atomic swap integration tests (10 scenarios)
-  - `docs/TESTING.md` - Comprehensive testing documentation
-
-- **Test Infrastructure Features**
-  - Mock event emitters for event-driven testing
-  - Mock KV store for state management testing
-  - Test logger for capturing and asserting logs
-  - Performance benchmarking utilities
-  - Test data generators for unique test data
-  - Comprehensive viem blockchain mocks
-
-- **Test Configuration**
-  - Updated `deno.json` with test tasks and imports
-  - Added test:unit, test:integration, test:e2e, test:coverage, test:watch tasks
-  - Configured test runners with proper sanitizers and parallel execution
+<!-- Tests were removed on 2025-08-13; references to a comprehensive test suite on 2025-08-14 were pruned to reflect current repository state. -->
 
 ### Added - 2025-08-13
 

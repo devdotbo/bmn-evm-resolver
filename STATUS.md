@@ -8,8 +8,8 @@ Status file policy (read once):
 - Keep quick-run commands and current pointers near the top, but record outcomes as new entries below.
 
 How to keep this file up-to-date (10 min checklist):
-- Verify services & versions
-  - Entrypoints: `ls alice-service-orpc.ts bob-resolver-service-v2.ts`
+- Verify CLI entrypoints & versions
+  - Entrypoints: `ls cli/*.ts src/generated/contracts.ts`
 - Confirm addresses and ABIs
   - Protocol/factory: `rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" src/config/contracts.ts wagmi.config.ts`
   - Generated actions present: `rg -n "writeSimpleLimitOrderProtocolFillOrderArgs|readSimplifiedEscrowFactoryV2_3AddressOfEscrow" src/generated/contracts.ts`
@@ -32,20 +32,17 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 - **E2E Atomic Swap Flow**: Complete flow from order creation to withdrawal
 - **Immutables Handling**: Proper storage and reconstruction
 - **Timelocks**: Offset-based packing with deployedAt (TimelocksLib compatible)
-- **PostInteraction Parsing**: Correctly handles 28-byte padding
+- **PostInteraction Parsing**: Unified 32-byte header removal; then 20-byte factory + ABI payload
 - **Error Reporting**: Known revert selectors mapped to human-readable errors
 
 ### ⚠️ Known Issues
 - **Withdrawal Timing**: Must wait for timelock window (use `--wait` flag)
-- **Offsets Header**: Still using workaround, needs proper cumulative layout
 - **Manual ABIs**: Some files still use manual imports instead of wagmi-generated
 
 ## 📊 System State
 
 ### Interfaces
-- Services (optional):
-  - Alice (oRPC + OpenAPI): `deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts`
-  - Bob-Resolver: `deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts`
+- Services (optional): not wired by default; use CLIs below
 - File-based CLI (preferred for PoC):
   - `deno task order:create`
   - `deno task swap:execute`
@@ -127,11 +124,10 @@ bmn-evm-resolver/
 ## 🚀 Next Tasks (Priority Order)
 
 ### 🔴 Immediate (Blocking Production)
-1. **Fix Offsets Header Implementation**
-   - Current: Using workaround by skipping 4-byte header
-   - Need: Proper cumulative offsets layout for all extension fields  
+1. **Validate Offsets Header Encoding**
+   - Current: Parser uses correct 32-byte header removal; ensure encoder mirrors OffsetsLib cumulative ends
    - File: `cli/postinteraction.ts`
-   - Blocker: Required for mainnet compatibility with 1inch protocol
+   - Goal: Strict compliance with 1inch offsets layout
 
 2. **Test Source Escrow Withdrawal**
    - Current: Only tested destination withdrawal
@@ -159,10 +155,9 @@ bmn-evm-resolver/
 
 ## 🚧 Current Blockers
 
-1. **Offsets Header Format** (CRITICAL)
-   - Missing exact 1inch extension format documentation
-   - Current workaround: Skip 4-byte header (0x000000b4)
-   - Impact: May fail with different extension layouts
+1. **Offsets Header Encoding Validation** (CRITICAL)
+   - Ensure cumulative ends encoding matches `OffsetsLib` exactly
+   - Impact: Incorrect header will cause protocol parsing mismatches
 
 2. **Timelock Window UX**
    - Users must wait for window or use `--wait` flag
@@ -232,7 +227,7 @@ deno task withdraw:src -- --hashlock 0xHASHLOCK
 ### Key Files to Know:
 - `cli/swap-execute.ts` - Contains immutables storage logic (working)
 - `cli/withdraw-dst.ts` - Uses stored immutables (working)
-- `src/utils/escrow-creation.ts` - PostInteraction parser with 28-byte padding fix
+- `src/utils/escrow-creation.ts` - PostInteraction parser with 32-byte header removal
 - `docs/IMMUTABLES_AND_TIMELOCKS.md` - Critical architecture guide
 
 ### Testing Commands:

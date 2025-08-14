@@ -257,32 +257,31 @@ This ensures withdrawals can only occur within the designated time window.
 
 ### Extension Data Structure
 
-After removing the 4-byte offsets header (`0x000000b4`):
+After removing the 32-byte offsets header:
 
 ```
-Bytes 0-27:   Padding (28 bytes)
-Bytes 28-47:  Factory address (20 bytes)
-Bytes 48+:    ABI-encoded payload
+Bytes 0-19:  Factory address (20 bytes)
+Bytes 20+:   ABI-encoded payload
 ```
 
 ### Parsing PostInteraction Data
 
 ```typescript
 function parsePostInteractionData(extensionData: Hex) {
-  // Skip 28 bytes of padding (56 hex chars)
-  const dataAfterPadding = extensionData.slice(2 + 56);
-  
-  // Extract factory (next 20 bytes = 40 hex chars)
-  const factory = '0x' + dataAfterPadding.slice(0, 40);
-  
+  // Strip the 32-byte offsets header (64 hex chars after 0x)
+  const afterHeader = extensionData.slice(2 + 64);
+
+  // Extract factory (first 20 bytes = 40 hex chars)
+  const factory = ('0x' + afterHeader.slice(0, 40)) as Address;
+
   // Decode ABI payload
-  const payload = '0x' + dataAfterPadding.slice(40);
-  const [hashlock, dstChainId, dstToken, deposits, timelocks] = 
+  const payload = ('0x' + afterHeader.slice(40)) as Hex;
+  const [hashlock, dstChainId, dstToken, deposits, timelocks] =
     decodeAbiParameters(
       parseAbiParameters('bytes32, uint256, address, uint256, uint256'),
-      payload
+      payload,
     );
-  
+
   return { factory, hashlock, dstChainId, dstToken, deposits, timelocks };
 }
 ```
@@ -581,7 +580,7 @@ if (!timelockStatus.dstWithdrawal.isOpen) {
 2. **Timelocks use offsets**: Not absolute timestamps, but offsets from deployedAt
 3. **Store creation data**: Always store exact immutables during escrow creation
 4. **Type consistency**: Keep addresses as Address type, not BigInt
-5. **Extension data padding**: Remember to skip 28-byte padding after offsets header
+5. **Extension data parsing**: Strip the 32-byte offsets header once, then read 20-byte factory + ABI payload
 6. **DeployedAt reconstruction is impossible**: You cannot reconstruct the original deployedAt timestamp, so always store the exact immutables
 7. **Two timelock formats exist**: User-facing (absolute timestamps) vs Contract (offset-based)
 8. **Consistent extension data handling**: Always check for and strip the `0x000000` offsets header

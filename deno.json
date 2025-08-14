@@ -50,8 +50,6 @@
     "ponder:sync": "deno run --allow-read --allow-env --allow-write scripts/sync-ponder-schema.ts",
     "wagmi:generate": "deno run -A npm:@wagmi/cli generate",
     "wagmi:watch": "deno run -A npm:@wagmi/cli generate --watch",
-    "alice": "deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts",
-    "bob": "deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts",
     "order:create": "deno run -A --unstable-kv --env-file=.env cli/order-create.ts",
     "swap:execute": "deno run -A --unstable-kv --env-file=.env cli/swap-execute.ts",
     "cast:fill": "deno run -A --env-file=.env cli/cast-fill.ts",
@@ -60,7 +58,9 @@
     "cast:withdraw:dst": "deno run -A --env-file=.env cli/cast-withdraw-dst.ts",
     "create:dst": "deno run -A --env-file=.env cli/create-dst-escrow.ts",
     "status": "deno run -A --env-file=.env cli/status.ts",
-    "approve:maker": "deno run -A --env-file=.env cli/approve-maker.ts"
+    "approve:maker": "deno run -A --env-file=.env cli/approve-maker.ts",
+    "check:balances": "deno run -A --env-file=.env cli/check-balances.ts",
+    "approvals:ensure": "deno run -A --env-file=.env scripts/ensure-all-approvals.ts"
   },
   "fmt": {
     "useTabs": false,
