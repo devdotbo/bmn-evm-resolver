@@ -1,33 +1,80 @@
-# 🐳 DOCKER INFRASTRUCTURE
+# 🧭 Agent Runbook (BMN Resolver)
+
+Read this first each session. Humans use `README.md`. Agents use this and `STATUS.md`.
+
+## Sources of truth
+- STATUS: `STATUS.md` (live status, checklist, grep commands)
+- Changelog: `CHANGELOG.md`
+- Human docs: `README.md`
+- Extended docs: `docs/`
+
+## Quick health
+```bash
+curl -s localhost:8001/health | jq .status
+curl -s localhost:8002/health | jq .status
+```
+
+## Contracts sanity
+```bash
+rg -n "LIMIT_ORDER_PROTOCOL|ESCROW_FACTORY" src/config/contracts.ts wagmi.config.ts
+rg -n "fillContractOrderArgs|fillOrderArgs" abis/SimpleLimitOrderProtocol.json
+```
+
+## Tests
+```bash
+# Tests removed in cleanup (2025-08-13)
+```
+
+## Entrypoints
+- Alice: `alice-service-orpc.ts`
+- Bob-Resolver: `bob-resolver-service-v2.ts`
+
+## Common actions
+```bash
+deno task wagmi:generate
+deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts &
+deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts &
+deno run -A --unstable-kv --env-file=.env scripts/create-test-order.ts
+```
+
+## Edit policy
+- Keep `STATUS.md` current (runbook header + status sections)
+- Prefer wagmi-generated bindings over manual ABIs
+- Update addresses/ABIs → regenerate types and update `STATUS.md`
+- Keep `deno lint` / `deno check` green; do not use silent catches. Always log full errors.
+
+## Links
+- STATUS: ./STATUS.md
+- README: ./README.md
+- CHANGELOG: ./CHANGELOG.md
+- Docs: ./docs/
 
 ## Quick Start
 
 ```bash
 # First-time setup
-./init-docker.sh
+cp .env.example .env
+# Edit .env with your keys
 
-# Start all services (ALWAYS rebuild and show logs without following)
-docker-compose up -d --build && docker-compose logs
-
-# Stop all services
-docker-compose down
+# Start all services
+deno run -A --unstable-kv --env-file=.env alice-service-orpc.ts &
+deno run -A --unstable-kv --env-file=.env bob-resolver-service-v2.ts &
 ```
 
 ## Architecture
 
-The BMN resolver system uses Docker Compose for orchestration with the following services:
+The BMN resolver system uses a two-party architecture:
 
 ### Core Services
-- **resolver**: Main coordination service (port 8000)
-- **alice**: Swap initiator service (port 8001)
-- **bob**: Swap acceptor/taker service (port 8002)
 
-### Supporting Services
-- None (monitoring stack removed; use service health endpoints).
+- **alice**: Swap initiator service (port 8001)
+- **bob**: Unified Bob-Resolver service - acts as both coordinator and
+  counterparty (port 8002)
 
 ## Data Persistence
 
 All services share a `./data` directory for persistent storage:
+
 ```
 data/
 ├── secrets/      # Secret storage (encrypted keys, credentials)
@@ -37,37 +84,11 @@ data/
 └── kv/           # Deno KV databases
 ```
 
-## Docker Commands
-
-```bash
-# Build and start services (STANDARD COMMAND - ALWAYS USE THIS)
-docker-compose up -d --build && docker-compose logs
-
-# Build images (with cache - default)
-docker-compose build
-
-# Start services without rebuild
-docker-compose up -d
-
-# View logs (without following)
-docker-compose logs [service-name]
-
-# Restart specific service
-docker-compose restart resolver
-
-# Execute command in container
-docker-compose exec resolver deno task test
-
-# View service status
-docker-compose ps
-
-# Clean everything
-docker-compose down -v && rm -rf data/
-```
 
 ## Environment Configuration
 
 Create `.env` from `.env.example`:
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
@@ -76,50 +97,24 @@ cp .env.example .env
 ## Development Workflow
 
 1. **Local Development**: Edit code locally
-2. **Rebuild & Start**: `docker-compose up -d --build && docker-compose logs`
-3. **Check Service Logs**: `docker-compose logs [service]`
-4. **Restart Specific Service**: `docker-compose restart [service]`
+2. **Restart Services**: Kill and restart the affected service
+3. **Check Service Logs**: View console output directly
+4. Run `deno lint` and `deno check` locally before committing
 
 ## Monitoring
 
 - **Service Health**:
-  - Resolver: http://localhost:8000/health
   - Alice: http://localhost:8001/health
-  - Bob: http://localhost:8002/health
-
-## Docker Build Optimization
-
-All Dockerfiles use multi-stage builds for:
-- Efficient caching (dependencies cached separately)
-- Smaller final images (only runtime requirements)
-- Security (non-root user execution)
-- Signal handling (tini for proper shutdown)
-
-**IMPORTANT**: Never use `--no-cache` in builds unless absolutely necessary. Cache usage is critical for fast rebuilds.
-
-## Troubleshooting
-
-```bash
-# Check container health
-docker-compose ps
-
-# View detailed logs
-docker-compose logs --tail=100 resolver
-
-# Access container shell
-docker-compose exec resolver sh
-
-# Reset everything
-docker-compose down -v
-rm -rf data/
-./init-docker.sh
-```
+  - Bob-Resolver: http://localhost:8002/health
 
 ---
 
 # 📝 CHANGELOG MAINTENANCE
 
-**IMPORTANT**: Always update CHANGELOG.md when making significant changes to the codebase. Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format. Document all notable changes under the [Unreleased] section including:
+**IMPORTANT**: Always update CHANGELOG.md when making significant changes to the
+codebase. Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+format. Document all notable changes under the [Unreleased] section including:
+
 - Added (new features)
 - Changed (changes in existing functionality)
 - Deprecated (soon-to-be removed features)
@@ -129,7 +124,8 @@ rm -rf data/
 
 # 🔧 ABI INSPECTION TOOL
 
-**Use `abi2human` to efficiently read Ethereum ABIs without consuming excessive tokens:**
+**Use `abi2human` to efficiently read Ethereum ABIs without consuming excessive
+tokens:**
 
 ```bash
 # Quick ABI inspection (human-readable)
@@ -149,6 +145,7 @@ abi2human ./abis/ -d ./readable/
 ```
 
 This tool is essential when you need to:
+
 - Verify ABI functions match what you're calling
 - Check if specific functions exist (like whitelist, pause, etc.)
 - Compare different ABI versions
@@ -171,6 +168,7 @@ make -C ../bmn-evm-contracts-indexer check-events
 ```
 
 This command is useful for:
+
 - Monitoring BMN token activity across chains
 - Tracking limit order status
 - Verifying indexer is capturing events correctly
@@ -178,17 +176,19 @@ This command is useful for:
 
 # 🔄 POSTINTERACTION INTEGRATION STATUS
 
-**Critical Issue**: SimplifiedEscrowFactory on mainnet lacks IPostInteraction interface
-**Solution**: Contract has been updated in bmn-evm-contracts repository with postInteraction method
-**Status**: Ready for deployment
+**Critical Issue**: SimplifiedEscrowFactory on mainnet lacks IPostInteraction
+interface **Solution**: Contract has been updated in bmn-evm-contracts
+repository with postInteraction method **Status**: Ready for deployment
 
 Key changes made:
+
 1. SimplifiedEscrowFactory now implements IPostInteraction interface
 2. postInteraction method added to handle escrow creation after order fills
 3. Token flow fixed: transfers from resolver to escrow after protocol execution
 
-See `LIMIT_ORDER_POSTINTERACTION_ISSUE.md` for technical details.
-See `../bmn-evm-contracts/POSTINTERACTION_INTEGRATION_PLAN.md` for implementation guide.
+See `LIMIT_ORDER_POSTINTERACTION_ISSUE.md` for technical details. See
+`../bmn-evm-contracts/POSTINTERACTION_INTEGRATION_PLAN.md` for implementation
+guide.
 
 # 🔒 CRITICAL SECURITY GUIDELINES - PREVENT SECRET EXPOSURE
 
@@ -221,6 +221,7 @@ See `../bmn-evm-contracts/POSTINTERACTION_INTEGRATION_PLAN.md` for implementatio
 ## 🚨 SECRET PATTERNS TO DETECT
 
 ### High Priority Patterns (NEVER commit these):
+
 ```regex
 # Ethereum Private Keys
 0x[a-fA-F0-9]{64}
@@ -242,7 +243,9 @@ gh[psr]_[0-9a-zA-Z]{36,}
 ```
 
 ### Safe Patterns (OK to commit):
-- Anvil/Hardhat test keys: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+
+- Anvil/Hardhat test keys:
+  `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 - Zero addresses: `0x0000000000000000000000000000000000000000`
 - Contract addresses (40 hex chars): `0x[a-fA-F0-9]{40}`
 - Placeholders: `your_*_here`, `YOUR_*_HERE`, empty strings
@@ -262,7 +265,7 @@ Before EVERY commit, verify:
    ```bash
    # Ensure .env is NOT being committed
    git diff --cached --name-only | grep "^\.env$" && echo "❌ STOP! .env file staged!" || echo "✅ .env not staged"
-   
+
    # Check .env.example only has placeholders
    git diff --cached -- .env.example | grep -E "=[a-fA-F0-9]{32,}" && echo "⚠️ Check .env.example for real values"
    ```
@@ -286,6 +289,7 @@ Before EVERY commit, verify:
 Run these commands weekly or before major commits:
 
 ### Full Repository Scan
+
 ```bash
 # Complete security audit
 echo "=== Starting Full Security Audit ==="
@@ -307,9 +311,11 @@ grep -E "\.env|\.key|\.pem|secret|private" .gitignore || echo "⚠️ Update .gi
 ## 🛡️ PREVENTIVE MEASURES
 
 ### 1. Environment Variable Best Practices
+
 ```typescript
 // ❌ NEVER DO THIS
-const apiKey = "c24c691d7aaa31977e3454a97a599f261ad7e9b0a4fd750503167ab6db1293e9";
+const apiKey =
+  "c24c691d7aaa31977e3454a97a599f261ad7e9b0a4fd750503167ab6db1293e9";
 
 // ✅ ALWAYS DO THIS
 const apiKey = Deno.env.get("ANKR_API_KEY");
@@ -317,6 +323,7 @@ if (!apiKey) throw new Error("ANKR_API_KEY not set");
 ```
 
 ### 2. Required .gitignore Entries
+
 ```gitignore
 # Environment files
 .env
@@ -343,6 +350,7 @@ credentials/
 ```
 
 ### 3. Pre-commit Hook Installation
+
 ```bash
 # Install pre-commit hook
 cat > .git/hooks/pre-commit << 'EOF'
@@ -372,6 +380,7 @@ chmod +x .git/hooks/pre-commit
 If you accidentally commit secrets:
 
 ### 1. Immediate Actions
+
 ```bash
 # DO NOT PUSH! If already pushed, consider the key compromised
 
@@ -383,6 +392,7 @@ git reset HEAD <file-with-secret>
 ```
 
 ### 2. Clean Git History (if pushed)
+
 ```bash
 # Install BFG Repo-Cleaner
 brew install bfg
@@ -400,6 +410,7 @@ git push --force
 ```
 
 ### 3. Rotate All Exposed Credentials
+
 - Generate new API keys immediately
 - Update all services using the old keys
 - Monitor for unauthorized usage
@@ -407,6 +418,7 @@ git push --force
 ## 📊 AUTOMATED SCANNING SCRIPT
 
 Create `scripts/security-check.sh`:
+
 ```bash
 #!/bin/bash
 set -e
@@ -468,5 +480,5 @@ git log --all -p | grep -E "secret|private|token|key|password"
 6. **ROTATE** any accidentally exposed credentials immediately
 
 ---
-Last Security Audit: 2025-01-06
-Next Scheduled Audit: Weekly
+
+Last Security Audit: 2025-01-06 Next Scheduled Audit: Weekly

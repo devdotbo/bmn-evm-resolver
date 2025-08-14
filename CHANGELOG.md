@@ -1,58 +1,744 @@
 # Changelog
 
-All notable changes to the BMN EVM Resolver project will be documented in this file.
+All notable changes to the BMN EVM Resolver project will be documented in this
+file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.2] - 2025-08-14
+
+### Fixed - 2025-08-14 (Critical E2E Flow Fixes - Part 2)
+
+- **Extension Data Storage** (`cli/swap-execute.ts`)
+  - Fixed missing extension data storage in fill files that prevented withdrawal reconstruction
+  - Added `extensionData` field to fill file JSON structure
+  - Enables proper immutables reconstruction during withdrawal phase
+
+- **PostInteraction Data Parsing** (`src/utils/escrow-creation.ts`)
+  - Fixed parser to handle 28-byte padding after offsets header removal
+  - Correctly skips 56 hex chars (28 bytes) of padding before extracting factory address
+  - Properly decodes 5-tuple payload: hashlock, dstChainId, dstToken, deposits, timelocks
+
+- **Immutables Type Handling** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+  - Fixed addresses being incorrectly converted to BigInt causing InvalidCaller errors
+  - Addresses now kept as Address type, only amounts converted to BigInt
+  - Resolved InvalidCaller() error during withdrawal attempts
+
+- **Timelocks Implementation** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+  - Implemented proper TimelocksLib-compatible offset-based packing
+  - Added deployedAt timestamp (bits 224-255) as base for offset calculations
+  - Fixed DstWithdrawal (bits 128-159) and DstCancellation (bits 192-223) positioning
+  - Resolved InvalidTime() errors during withdrawal window checks
+
+- **Immutables Consistency** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+  - Added storage of exact immutables during escrow creation
+  - Withdrawal now uses stored immutables to prevent InvalidImmutables() errors
+  - Fallback reconstruction logic retained for backward compatibility
+
+- **BMN Token Address References**
+  - Fixed BMN_TOKEN_ADDRESS export issues across multiple CLI files
+  - Updated all references to use `getBMNToken()` function
+  - Resolved import errors in check-balances.ts, check-allowances.ts, preflight-checks.ts
+
+### Added - 2025-08-14 (New Utilities and Scripts)
+
+- **Approval Management** (`scripts/ensure-all-approvals.ts`)
+  - Comprehensive script to ensure all required token approvals
+  - Handles approvals for Alice and Bob on both Base and Optimism chains
+  - Automatically sets infinite approvals for protocol and factory contracts
+
+- **Balance Checking** (`cli/check-balances.ts`)
+  - BMN token balance checking utility for Alice and Bob across chains
+  - JSON output support with --json flag
+  - Detailed balance report with recommendations
+
+- **E2E Test Script Improvements** (`scripts/test-swap-flow.ts`)
+  - Enhanced with proper immutables handling
+  - Added automatic approval management
+  - Improved error reporting and status tracking
+
+### Changed - 2025-08-14 (Linting & Error Handling)
+
+- **Adopted Deno Linting**
+  - Configured `deno.json` to include authored code (`cli/`, `scripts/`, `src/`) and exclude generated/external files (`src/generated/`, `ponder.schema.ts`, `abis/`, data/log folders)
+  - Project now runs clean with `deno lint` and `deno check`
+  - Reference: Deno configuration and formatting docs: [Deno Configuration → Formatting](https://docs.deno.com/runtime/fundamentals/configuration/#formatting)
+
+- **Error Handling Policy**
+  - Removed silent catch blocks across CLIs/scripts; all catch handlers now log the full error object
+  - Upgraded warnings/errors to include both a concise reason and the raw error for debugging
+  - Files touched: `cli/cast-fill.ts`, `cli/cast-withdraw-dst.ts`, `cli/create-dst-escrow.ts`, `cli/status.ts`, `cli/withdraw-dst.ts`, `scripts/test-swap-flow.ts`, `cli/_fs.ts`, `scripts/sync-abis.ts`, `cli/swap-execute.ts`
+
+- **Repository Cleanup**
+  - Removed deprecated service and utility files to focus on file-based CLI
+  - See `git status` for the list of deletions in this release window
+
+### Documentation - 2025-08-14
+
+- **Immutables and Timelocks Architecture** (`docs/IMMUTABLES_AND_TIMELOCKS.md`)
+  - Comprehensive guide explaining immutables structure and validation
+  - Detailed TimelocksLib packing format and offset-based storage
+  - PostInteraction extension data parsing with padding handling
+  - Common errors and debugging techniques
+  - Critical implementation notes for future developers
+  
+### Added - 2025-08-14 (Mainnet E2E success)
+
+- `docs/MAINNET_E2E_2025-08-14.md`: documented full mainnet atomic swap (Base→OP) with annotated ASCII flow chart and reference section (addresses and tx hashes)
+- `STATUS.md`: updated with links to fill/create/withdraw txs and escrow addresses
+
+### Fixed - 2025-08-14 (PostInteraction & Source Withdraw)
+
+- Corrected 1inch extension header encoding: write end7 to the high 4 bytes of the 32‑byte offsets word
+- Unified parser across CLIs: strip 32‑byte header once, then parse 20‑byte factory + payload
+- `withdraw-src.ts`: reconstructs exact source immutables using fill block.timestamp as deployedAt and contract offset scheme; supports `--address` override and factory mapping lookup
+- Removed all hardcoded gas limits; all writes rely on automatic gas estimation
+
+### Added - 2025-08-14 (CLI: cast + escrow ops)
+
+- `cli/cast-fill.ts` and task `cast:fill` to submit `fillOrderArgs` via Foundry cast
+  - Converts address fields to uint256 for cast tuple
+  - Auto-approves maker allowances to protocol/factory when needed
+  - Skips refills if `remainingInvalidatorForOrder` returns 0
+- `cli/create-dst-escrow.ts` and task `create:dst` to create destination escrow from order file
+  - Reconstructs immutables from PostInteraction extension
+  - Ensures resolver allowance to factory for destination token
+  - Fallback to configured BMN token on decode anomalies
+- `cli/cast-withdraw-dst.ts` and task `cast:withdraw:dst` to transmit destination `withdraw` via cast (no simulation)
+  - Useful to produce on-chain failing txs for Tenderly debugging
+
+### Changed - 2025-08-14 (Timelocks and withdraw flow)
+
+- `cli/order-create.ts`: supports `--srcCancelSec` and `--dstWithdrawSec` for custom time windows
+- `cli/withdraw-dst.ts`: reconstructs full immutables from order + extension to satisfy `onlyValidImmutables`
+- `cli/postinteraction.ts`: offsets header placement aligned with working fills
+- `cli/cast-fill.ts`: robust allowance parsing; LocalAccount writes; improved logging & artifacts
+
+### Diagnostics - 2025-08-14
+
+- Successful fills (Base):
+  - 0xc254831ad1cbb01def05fff8ef25d1d74163818c9da5d7b09df75a5d458e0134
+  - 0x6b77031938cec09eb6885d17f0afcda35a0ce5205d02f0eb532c720a3f9097d9
+- Destination escrow creates:
+  - 0x05A1BACBcfAc0939E9578Ebbc0Cac8Fd72C1A9d1 (addr derived/logged)
+  - 0x5d40e8dCCCe86E621Aec9ecc372A5dBF571eb4A7
+- Withdraw (cast, for debugging):
+  - 0x9eb5836fb888fdd911415716b4fd06b89d69c4ff14c1bf09a85d1b30472397d3 (failed as intended)
+- Common revert root causes and fixes:
+  - SafeTransferFromFailed on `createDstEscrow` → ensure resolver approves factory for dst token (auto-approved)
+  - InvalidTime on `withdraw` → pass real packed timelocks from extension; wait until dst window opens
+  - 0x…0A “dead address” decode → fallback to configured BMN token address
+
+### Changed - 2025-08-13 (Smoke test fixes and helpers)
+
+- CLI writes now use LocalAccount for wagmi write actions to avoid ConnectorNotConnectedError
+- EIP-712 typed data schema corrected to use `address` fields (maker/receiver/assets) when signing orders
+- PostInteraction offsets encoder adjusted to place PostInteractionData length at the correct index in offsets header
+- Added `cli/approve-maker.ts` and deno task `approve:maker` to grant BMN approvals to protocol/factory
+
+### Diagnostics - 2025-08-13
+
+- `swap:execute` status progression during smoke tests:
+  - ConnectorNotConnectedError → fixed by using LocalAccount for writes
+  - BadSignature() on fill → fixed by correcting typed data (`address` fields)
+  - TransferFromMakerToTakerFailed() → resolved by granting maker approvals to protocol & factory
+  - Now failing with "Arithmetic operation resulted in underflow or overflow" indicating extension offsets layout mismatch
+- Proposed next steps (documented in STATUS.md):
+  - Proper fix: implement full 1inch offsets layout (cumulative lengths for all fields)
+  - Workaround: set argsExtensionLength = 0 and deliver postInteraction via args interaction, not extension
+
+### Changed - 2025-08-13 (CLI uses wagmi-generated code)
+
+- CLIs now import ABIs, addresses, and actions from `src/generated/contracts.ts` (generated via wagmi CLI)
+- `cli/abis.ts` re-exports generated ABIs to keep CLI code minimal and consistent
+- Address resolution: `cli/cli-config.ts` uses env overrides with fallbacks to generated addresses
+- RPC selection: via `ANKR_API_KEY` in `cli/cli-config.ts`
+- Unified error logging for CLIs: `cli/logging.ts` logs full error chain and `revert_selector`/`revert_data`
+
+### Added - 2025-08-13 (CLI modules)
+
+- `cli/cli-config.ts`: chain RPC and address resolution from env
+- `cli/abis.ts`: centralized ABIs for CLIs (SimpleLimitOrderProtocol, EscrowSrcV2, EscrowDstV2, SimplifiedEscrowFactoryV2_3, IERC20)
+- `cli/eip712.ts`: EIP-712 order types, signing, and order hash helpers
+- `cli/postinteraction.ts`: postInteraction data encoder, offsets, timelock/nonce utilities
+- `cli/limit-order.ts`: approval helper, fill logic, and revert-data decoder
+
+### Diagnostics - 2025-08-13
+
+- Revert reproduced on fill; CLIs now log selector/data for decoding. Example captured:
+  - selector: `0x1b39b146`
+  - data: `0x1b39b146a18293dd679d5034acb3ee96ee214418bea10608e86588747ef1d8d905`
+  - later runs show `BadSignature()` from the LOP when simulating `fillOrderArgs`
+
+### Changed - 2025-08-13
+
+- Updated factory address references to v2.3:
+  - Now using `0xdebE6F4bC7BaAD2266603Ba7AfEB3BB6dDA9FE0A` on Base (8453) and Optimism (10)
+  - Removed deprecated `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+  - Removed non-existent `0xfBdCb5Ac0c1381A64Ef1243BCeA0A1d899b0Ca31`
+- Deprecated old scripts in `scripts/` in favor of file-based CLI flow (see `plan.md`)
+  - Added CLI under `cli/`: `order-create.ts`, `swap-execute.ts`, `withdraw-dst.ts`, `withdraw-src.ts`, `status.ts`
+  - Wired Deno tasks: `order:create`, `swap:execute`, `withdraw:dst`, `withdraw:src`, `status`
+  - PoC: secrets also persisted to `data/secrets/{hashlock}.json`
+
+### Removed - 2025-08-13
+
+- **Major Cleanup - Removed Tests and Docker Infrastructure**
+  - Deleted all test files and test infrastructure:
+    - `tests/` directory completely removed including unit and integration tests
+    - Test fixtures, mocks, and setup utilities removed
+  - Removed Docker infrastructure:
+    - All Dockerfiles (main, alice, bob) deleted
+    - `docker-compose.yml` removed
+    - Docker initialization scripts removed
+  - Removed deprecated service versions:
+    - `alice-service.ts`, `alice-service-v2.ts`, `alice-service-v3.ts` deleted
+    - `bob-resolver-service.ts` (v1) deleted
+  - Removed example files:
+    - `src/examples/using-wagmi-actions.ts` deleted
+  - Updated `deno.json` to remove test-related tasks
+  - Project now focuses on core resolver functionality without containerization
+
+### Changed - 2025-08-13 (Scripts and tasks alignment)
+
+- Pruned legacy/experimental scripts; repository now only contains current utilities under `scripts/`.
+- Deno tasks updated to current entrypoints:
+  - `alice` and `alice:docker` now run `alice-service-orpc.ts`
+  - `bob` continues to run `bob-resolver-service-v2.ts`
+
+### Added - 2025-08-13 (Part 7)
+
+- **Wagmi Actions Plugin Integration**
+  - Added `@wagmi/cli/plugins/actions` to wagmi.config.ts for generating action functions
+  - Generated 50+ type-safe action functions (27 read, 23 write) for all contract methods
+  - Created example usage file at `src/examples/using-wagmi-actions.ts`
+  - Action functions provide cleaner API without needing to specify `functionName` or `abi`
+  - Examples of generated actions:
+    - `readSimpleLimitOrderProtocolHashOrder()` - Get order hash
+    - `readSimpleLimitOrderProtocolRemaining()` - Check remaining amount
+    - `writeSimpleLimitOrderProtocolFillOrderArgs()` - Fill an order
+    - `writeSimpleLimitOrderProtocolCancelOrder()` - Cancel an order
+  - Updated documentation to show both traditional and action-based approaches
+  - Configured actions to use `@wagmi/core` package for non-React environments
+
+### Added - 2025-08-13 (Part 6)
+
+- **Wagmi CLI Integration for Type-Safe Contract Interactions**
+  - Added `@wagmi/core@^2.19.0` and `@wagmi/cli@^2.4.0` dependencies to deno.json
+  - Created `wagmi.config.ts` for automatic TypeScript generation from contract ABIs
+  - Generated `src/generated/contracts.ts` with type-safe contract bindings for:
+    - SimpleLimitOrderProtocol with chain-specific addresses
+    - SimplifiedEscrowFactory (v2.3 and base versions)
+    - Escrow contracts (EscrowSrcV2, EscrowDstV2, EscrowDst)
+    - IERC20 token interface
+  - Added wagmi tasks: `wagmi:generate` and `wagmi:watch` for code generation
+  - Created `src/utils/wagmi-contracts.ts` with example usage of @wagmi/core
+  - Added comprehensive migration guide in `docs/WAGMI_MIGRATION_GUIDE.md`
+  - Updated README with wagmi setup instructions and development guide
+  - Set `nodeModulesDir: "auto"` for npm package compatibility
+
+### Fixed - 2025-08-13 (Part 5)
+
+- **Service File Version Issues**
+  - Updated deno.json tasks to use correct service versions (alice-service-v3.ts and bob-resolver-service-v2.ts)
+  - Fixed tendency to keep old versions of source files instead of replacing them
+  
+- **Error Logging Enhancement**
+  - Enhanced error logging throughout Bob service with full stack traces
+  - Added comprehensive error details including error.message, error.stack, error.cause, and error.data
+  - Improved debugging visibility for all try-catch blocks
+  
+- **Bob Order Processing**
+  - Fixed Bob's order processing to properly extract destination chain and token from extension data
+  - Added parsePostInteractionData import and usage for correct parameter extraction
+  - Removed incorrect order expiry validation that was blocking valid orders
+  
+- **Atomic Swap Progress**
+  - Successfully tested atomic swap flow with Bob filling orders (tx: 0x5dcb2fc3c9b6302108e634f6df78bd6ef09c90ba648aab7343cadfa3ea3924dc)
+  - Bob now correctly creates source escrows (e.g., 0xf1DB3FEe0a17f4D41b8d6d6aBFbaF7412d690485)
+  - Fixed swap state tracking with proper destination parameters
+
+### Added - 2025-08-13 (Part 3)
+
+- **oRPC Type-Safe API Framework** - Complete migration from manual HTTP APIs to oRPC
+  - `alice-service-orpc.ts` - Main oRPC service implementation with type-safe procedures
+  - `src/api/contracts/alice.contract.ts` - Zod-based API contract definitions
+  - `src/utils/alice-orpc-server.ts` - oRPC server with CORS and routing
+  - `src/utils/alice-api-server.ts` - Bridge HTTP API server (for migration)
+  - `scripts/trigger-atomic-swap-orpc.ts` - oRPC-based atomic swap trigger
+  - `scripts/monitor-swap.ts` - Real-time swap monitoring utility
+  - `ORPC_IMPLEMENTATION.md` - Complete oRPC implementation guide
+  - `ATOMIC_SWAP_GUIDE.md` - Step-by-step atomic swap execution guide
+
+- **Comprehensive Test Coverage** - TDD approach with unit and integration tests
+  - `tests/unit/alice-service-orpc.test.ts` - Core service unit tests (16 steps)
+  - `tests/unit/alice-service-orpc-bugs.test.ts` - Bug identification tests
+  - `tests/unit/alice-service-orpc-integration.test.ts` - Integration scenarios
+  - `tests/integration/orpc-endpoints.test.ts` - Full endpoint testing (949 lines)
+  - `TEST_SUMMARY_REPORT.md` - Complete test results and issue tracking
+  - 47 unit test suites passing, documenting and fixing initialization bugs
+
+### Changed - 2025-08-13 (Part 3)
+
+- **API Architecture** - Migrated from manual HTTP to type-safe oRPC
+  - Updated Dockerfile to support both alice-service-v3 and alice-service-orpc
+  - Modified deno.json with new test patterns and oRPC dependencies
+  - Enhanced atomic swap flow with proper event monitoring and state management
+
+### Fixed - 2025-08-13 (Part 4)
+
+- **oRPC Implementation Issues Resolved**
+  - Fixed type casting for Hex/Address types in alice-orpc-server.ts
+  - Corrected SecretManager method call from `getSecret()` to `getSecretByHashlock()`
+  - Fixed CORS configuration from `origins` to `origin`
+  - Updated test validation error messages to match oRPC framework format
+  - Fixed test data isolation with `clearAll()` methods for state managers
+  - Corrected hashlock calculation to use keccak256 of secret
+  - Fixed server shutdown to properly clean up resources
+  - All 41 integration test steps now passing
+
+### Fixed - 2025-08-13 (Part 5)
+
+- **TypeScript and Test Improvements**
+  - Removed unnecessary `@ts-expect-error` directives from commented test code
+  - Fixed CORS plugin configuration to only use supported `origin` property
+  - Tests now run with full type checking enabled (`deno check`)
+  - Added `--unstable-kv` flag to test runs for Deno KV support
+  - All tests passing with strict TypeScript checking
+
+### Changed - 2025-08-13 (Part 6)
+
+- **Docker Integration with oRPC**
+  - Docker configuration already uses `alice-service-orpc.ts` implementation
+  - Verified Dockerfile caches dependencies for both alice-service-orpc.ts and bob-resolver-service-v2.ts
+  - Tested successful Docker builds with no-cache to ensure clean builds work
+  - Both Alice and Bob-Resolver services start successfully with oRPC endpoints
+  - Health endpoints confirmed working at http://localhost:8001/health and http://localhost:8002/health
+  - oRPC API endpoints accessible and functional at /api/alice/*
+  - Docker Compose orchestration working with proper service dependencies
+
+### Added - 2025-08-13 (Part 7)
+
+- **OpenAPI/Scalar Documentation Support**
+  - Integrated OpenAPI specification generation for all oRPC endpoints
+  - Added Scalar UI for interactive API documentation at `/docs`
+  - Migrated dependencies from npm to JSR for better Deno compatibility:
+    - `viem` now uses `jsr:@wevm/viem` instead of npm version
+    - `zod` now uses `jsr:@zod/zod` for type-safe validation
+  - Created `alice-orpc-server-simple-openapi.ts` with simplified OpenAPI generation
+  - OpenAPI specification available at `/openapi.json` endpoint
+  - API documentation features:
+    - Interactive endpoint testing through Scalar UI
+    - Automatic request/response schema documentation
+    - Type-safe API contracts with Zod validation
+    - Full CORS support for cross-origin requests
+  - Service endpoints documented:
+    - `GET /health` - Health check endpoint
+    - `POST /api/alice/createOrder` - Create atomic swap order
+    - `POST /api/alice/getSwapStatus` - Get swap status by hashlock
+    - `POST /api/alice/getPendingOrders` - List all pending orders
+    - `POST /api/alice/revealSecret` - Reveal secret for completed swap
+
+### Fixed - 2025-08-13 (Part 2)
+
+- Critical signature verification issues resolved
+  - Fixed EIP-712 domain parameters to match on-chain contract ("Bridge-Me-Not Orders" v1)
+  - Corrected order signing to use `walletClient.signTypedData()` instead of raw `account.sign()`
+  - Added proper EOA vs smart contract detection for correct function selection
+  - Fixed signature format conversion for EOA accounts (r,vs split format)
+  - Scripts now properly use `fillOrderArgs` for EOAs and `fillContractOrderArgs` for smart contracts
+  - All signature validation now passing correctly
+  - Fixed LimitOrderAlice to use EIP-712 typed data signing instead of raw signing
+  - Fixed bob-resolver-service-v2.ts broken fillLimitOrder call with correct parameters
+  - Verified all order creation scripts use correct domain and signing method
+
+### Fixed - 2025-08-13
+
+- Test stability & determinism improvements; entire suite now green
+  - Eliminated double-stubbing in viem mocks by exposing plain functions (tests can safely `stub()` without "already spying" errors)
+  - Added `AbortSignal` support to `EscrowWithdrawManager.monitorAndWithdraw` and updated tests to abort loops to avoid timer leaks/flakiness
+  - Tweaked polling assertions to tolerate scheduler jitter (assert at-least instead of exact call counts where appropriate)
+  - Fixed `MockKVStore` to key by stringified keys for reliable get/set/list behavior
+  - Reduced internal waits in mocks to speed up tests
+  - Adjusted integration tests:
+    - Network Failure Recovery: added local retry loops for deposit/funding to match scenario intent
+    - Service Restart Mid-Swap: persisted secret across simulated restart so the flow can complete
+
+### Changed - 2025-08-13
+
+- Testing best practices adoption (Deno + viem)
+  - Prepared code for deterministic time by injecting sleep/now into long-running or retry code paths (start with monitor); tests can use FakeTime
+  - Plan for future e2e: use Anvil with viem Test Client & Test Actions for deterministic chain control
+    - References: `https://viem.sh/docs/clients/test`, `https://viem.sh/docs/actions/test/introduction`
+
+### Added - 2025-08-14
+
+- **Comprehensive Test Suite** - Complete testing infrastructure for atomic swap system
+  - `tests/setup.ts` - Core test utilities, mocks, and helpers
+  - `tests/mocks/viem-mock.ts` - Viem client mocking infrastructure
+  - `tests/fixtures/index.ts` - Reusable test data and fixtures
+  - `tests/unit/services/event-monitor.test.ts` - EventMonitorService unit tests (16 test cases)
+  - `tests/unit/state/swap-state-manager.test.ts` - SwapStateManager unit tests (68 test cases)
+  - `tests/unit/state/secret-manager.test.ts` - SecretManager unit tests (63 test cases)
+  - `tests/unit/utils/escrow-withdraw.test.ts` - EscrowWithdrawManager unit tests (30+ test cases)
+  - `tests/unit/utils/limit-order.test.ts` - Limit order utilities unit tests (13 test cases)
+  - `tests/unit/utils/escrow-creation.test.ts` - Escrow creation unit tests (16 test cases)
+  - `tests/integration/atomic-swap-flow.test.ts` - Full atomic swap integration tests (10 scenarios)
+  - `docs/TESTING.md` - Comprehensive testing documentation
+
+- **Test Infrastructure Features**
+  - Mock event emitters for event-driven testing
+  - Mock KV store for state management testing
+  - Test logger for capturing and asserting logs
+  - Performance benchmarking utilities
+  - Test data generators for unique test data
+  - Comprehensive viem blockchain mocks
+
+- **Test Configuration**
+  - Updated `deno.json` with test tasks and imports
+  - Added test:unit, test:integration, test:e2e, test:coverage, test:watch tasks
+  - Configured test runners with proper sanitizers and parallel execution
+
+### Added - 2025-08-13
+
+- `ATOMIC_SWAP_STATUS.md` - Comprehensive status document for atomic swap implementation progress
+- `scripts/create-simple-order.ts` - Script to create properly formatted limit orders with correct salt encoding
+- `src/utils/escrow-creation.ts` - Utility for creating destination escrows with proper immutables structure
+- `src/utils/secret-reveal.ts` - Secret management and reveal functionality for atomic swaps
+- `scripts/monitor-escrow-creation.ts` - Monitor script for detecting source escrows and creating destination escrows
+- `alice-service-v2.ts` - Enhanced Alice service with automatic secret reveal capability
+
+### Fixed - 2025-08-14
+
+- **TypeScript Type Checking** - Comprehensive fixes to enable type checking in test suite
+  - Fixed viem client type incompatibilities by adding proper type casts to PublicClient/WalletClient creation
+  - Fixed missing Hash type imports across test files
+  - Added override modifiers to mock class methods for proper inheritance
+  - Fixed Transaction data vs input property naming in viem-mock.ts
+  - Fixed Log.args property access issues using type assertions
+  - Fixed SecretRecord property usage (changed from isRevealed/isConfirmed to status)
+  - Added missing chain and account properties to writeContract calls
+  - Fixed SwapStateManager uninitialized kv property with definite assignment assertion
+  - Added proper type assertions for captured events in test assertions
+  - Removed outdated postinteraction-v2.2.test.ts file
+  - All tests now run with TypeScript type checking enabled (no --no-check flag needed)
+
+### Fixed - 2025-08-13
+
+- Signature format conversion from standard (v,r,s) to compact (r,vs) format for `fillOrderArgs`
+- Use `fillOrderArgs` for EOA accounts instead of `fillContractOrderArgs` (fixes BadSignature error)
+- Salt must include extension hash in lower 160 bits when using extensions (fixes InvalidExtensionHash)
+- Docker volume mounting to share pending-orders directory directly between host and containers
+- MakerTraits flags properly set for PostInteraction extensions (bits 249, 251, 254)
+- Bob's destination escrow creation - now properly creates matching escrow on opposite chain
+- Alice's secret reveal - monitors destination escrows and reveals secrets to claim tokens
+
+### Changed - 2025-08-13
+
+- `docker-compose.yml` - Mount pending-orders directly instead of through data directory
+- `scripts/simulate-fill.ts` - Fixed function name in calldata output from fillContractOrderArgs to fillOrderArgs
+- `src/utils/limit-order.ts` - Proper signature format conversion for EOA accounts
+
+### Changed - 2025-08-12
+
+- Contracts v2.3 integration:
+  - Synced real ABIs from contracts/out via new task `abis:sync` (copies EscrowSrc, EscrowDst, SimplifiedEscrowFactoryV2_3).
+  - Switched resolver imports to `SimplifiedEscrowFactoryV2_3.json` and updated whitelist check to `isWhitelistedResolver`.
+  - Implemented EIP-712 resolver-signed public withdraw for destination escrows (uses domain name "BMN-Escrow", version "2.3").
+- Ponder schema source of truth:
+  - Added `ponder:sync` task to copy the canonical schema from `../bmn-evm-contracts-indexer/ponder.schema.ts` into this repo root as `ponder.schema.ts`.
+  - Can override source via `INDEXER_PONDER_SCHEMA` env var.
+
+### Added - 2025-08-10
+
+- NEXT_AGENT.md: concise handover doc for next agent including current runtime
+  status, latest actions, and next steps.
+- scripts:
+  - scripts/create-order.ts: helper to create signed limit orders (uses
+    --env-file=.env).
+  - scripts/read-bmn-balance.ts: helper to read BMN balance for an address.
+
+### Changed - 2025-08-10
+
+- Cursor rules and AGENTS updated: mandate `--env-file=.env` for all local Deno
+  commands; Docker Compose continues to inject `.env` via `env_file`.
+- .gitignore: ignore `pending-orders/`, `completed-orders/`, and local
+  `/tmp/*.log`.
+
+### Changed - 2025-08-10
+
+- docker-compose: use bind mount `./data:/app/data` instead of named volume
+  `bmn-data`
+- deno tasks: point to actual entrypoints
+  - resolver → `src/resolver/resolver.ts`
+  - alice → `alice-service.ts`
+  - added `bob` → `bob-resolver-service.ts`
+- bob-resolver-service: fixed approval + fill flow to use protocol and factory
+  per chain; include `extensionData`
+- escrow-withdraw: implemented `withdraw()` with proper chain client selection
+  and key usage
+
+### Fixed - 2025-08-10
+
+- SQL over HTTP standardized on official client
+  ([Ponder SQL over HTTP](https://ponder.sh/docs/query/sql-over-http#sql-over-http))
+  - `ponder-client.ts` now uses `@ponder/client` with parameterized `sql`
+    queries
+  - `test-ponder-sql.ts` uses untyped `client.db.execute(sql\`...\`)` and passes
+    against Railway
+  - Removed confusion from raw curl 404s; clients work as intended with Hono
+    middleware
+
+### Changed - 2025-08-10
+
+- Unified Dockerfile with multi-stage targets `alice` and `bob`; compose now
+  builds from a single Dockerfile
+- Pruned monitoring/Redis artifacts (Prometheus, Grafana, Redis) from init and
+  compose docs
+
+### Changed - 2025-08-10
+
+- **Major refactoring: Consolidated PonderClient and cleaned up deprecated
+  files**
+  - Removed 10 deprecated files including old service wrappers and duplicate
+    implementations
+  - Deleted old PonderClient implementation that used raw HTTP POST requests
+  - Renamed PonderClientV2 to PonderClient as the single implementation
+  - Updated all imports across the codebase to use the consolidated PonderClient
+  - Added AtomicSwap type export to PonderClient for type safety
+  - Cleaned up duplicate alice files (removed mainnet-alice.ts)
+  - Removed unused service files: alice.ts, resolver.ts, bob-service.ts,
+    resolver-service.ts
+  - Active services now: alice-service.ts and bob-resolver-service.ts (used by
+    Docker)
+  - All services now use @ponder/client library for SQL over HTTP
+- **Optimized Docker builds following Deno best practices**
+  - Added production environment variables: `DENO_NO_UPDATE_CHECK=1` and
+    `DENO_NO_PROMPT=1`
+  - Unified single Dockerfile with `alice` and `bob` targets
+  - Fixed npm module version conflicts by using `deno.json` import map
+  - Services build successfully with proper dependency caching
+
+### Fixed - 2025-08-10
+
+- **Consolidated on @ponder/client for SQL over HTTP**
+  - Official client handles SQL endpoint and middleware correctly
+  - `test-ponder-sql.ts` uses `createClient` and untyped `db.execute`
+  - Default `INDEXER_URL` updated to Railway deployment in compose
+
+### Fixed - 2025-08-10
+
+- Removed legacy notes about custom HTTP client and `/sql/db`; project uses
+  `@ponder/client` exclusively
+
+### Added - 2025-08-10
+
+- **Added test-ponder-sql.ts: SQL endpoint verification script**
+  - Verifies SQL-over-HTTP via `@ponder/client` against Railway
+  - Includes automatic 10-second timeout
+  - Run with: `deno run --allow-net --allow-env test-ponder-sql.ts`
+
+### Added - 2025-08-10
+
+- **Added missing indexer integration methods**
+  - Implemented `getActiveSwaps()` method in PonderClient for finding swap
+    opportunities
+  - Added `getWithdrawableEscrows()` method in EscrowWithdrawManager
+  - Added generic `withdraw()` method for processing escrow withdrawals
+  - Enhanced error handling for pending-orders directory creation
+
+### Changed - 2025-08-10
+
+- **Docker compose defaults**: `INDEXER_URL` points to
+  `https://index-bmn.up.railway.app`
+
+### Changed - 2025-08-10
+
+- **Updated Docker infrastructure for two-party atomic swap architecture**
+  - Removed separate Resolver service and Dockerfile.resolver
+  - Updated docker-compose.yml to reflect unified Bob-Resolver service
+  - Bob-Resolver service now runs on port 8002 as main coordinator and
+    counterparty
+  - Alice service depends on Bob-Resolver instead of separate Resolver
+  - Updated all health check endpoints and monitoring configuration
+  - Simplified service architecture from three services to two
+
+### Changed - 2025-08-10
+
+- **Merged Bob and Resolver services into unified Bob-Resolver service**
+  - Combined taker (Bob) and coordinator (Resolver) functionalities into single
+    service
+  - Created new `bob-resolver-service.ts` with explicit dual-mode capabilities
+  - Enhanced `bob-service.ts` to include resolver functionality
+  - Service runs on port 8002 with unified HTTP endpoints
+  - Added endpoints: `/health`, `/fill-order`, `/withdraw`, `/stats`
+  - Supports both filling Alice's limit orders and creating destination escrows
+  - Manages keys, secrets, and order processing in single service
+  - Monitors pending orders from indexer and local filesystem
+  - Processes withdrawals when secrets are revealed
+  - Simplified deployment by reducing service count
+
+### Added - 2025-08-10
+
+- **Implemented escrow withdrawal with contract calls** - Created comprehensive
+  withdrawal system for atomic swaps
+  - New `escrow-withdraw.ts` utility module with `EscrowWithdrawManager` class
+  - Proper handling of escrow immutables structure for both v2 contracts
+  - `withdrawFromDestination` for Alice withdrawing from Bob's escrow with
+    secret reveal
+  - `withdrawFromSource` for Resolver withdrawing after learning the secret
+  - Retry logic with exponential backoff for failed withdrawals
+  - Automatic monitoring and withdrawal when secrets are revealed
+  - Full integration with SecretManager for tracking withdrawal status
+  - Updated all Alice implementations and Resolver to use new withdrawal manager
+
+### Added - 2025-08-10
+
+- **Created limit-order.ts utility module** - Centralized
+  SimpleLimitOrderProtocol interaction logic
+  - `fillLimitOrder` function for atomic order filling with PostInteraction
+    support
+  - `ensureLimitOrderApprovals` for managing token approvals for both protocol
+    and factory
+  - `calculateOrderHash` for EIP-712 order hashing
+  - Integrated error handling and retry logic
+  - Full PostInteraction event monitoring
+
+### Changed - 2025-08-10
+
+- **Refactored resolver to use SimpleLimitOrderProtocol utility**
+  - Replaced inline fillOrderArgs calls with centralized `fillLimitOrder`
+    function
+  - Simplified approval management using `ensureLimitOrderApprovals`
+  - Improved code maintainability and reusability
+  - Ensured proper POST_INTERACTION_CALL_FLAG is set in order flags
+
+### Added
+
+- **Indexer helpers** in `PonderClient` for atomic swap queries
+  - Implemented `getActiveSwaps()`, `getPendingAtomicSwaps()`,
+    `getRecentWithdrawals()`
+  - Retry logic and polling-based subscription support
+
+### Fixed
+
+- **Fixed environment variable access in indexer config** - Replaced
+  `process.env` with `Deno.env.get()` in PRODUCTION_INDEXER_CONFIG_TEMPLATE to
+  ensure compatibility with Deno runtime
+
+### Changed - 2025-08-10
+
+- **Inlined import map into deno.json** to support `deno install` command
+  - Removed separate `import_map.json` file
+  - Migrated all imports to `deno.json` under `"imports"` field
+  - Updated all Dockerfiles to remove `--import-map` flag references
+  - This fixes the error: "`deno install` is not supported when configuration
+    file contains an 'importMap' field"
+
+### Added - 2025-08-10
+
+- **@ponder/client dependency** for enhanced Ponder indexer integration
+- **.cursorrules file** for Cursor IDE configuration
+
+### Changed - 2025-08-08
+
+- **Improved type safety** in indexer client by replacing `any` types with
+  proper TypeScript interfaces
+  - Added `ChainStatistics` interface for chain metrics
+  - Added `PonderSQLClient` type for Ponder SQL client
+  - Fixed async/await issues in `getRevealedSecrets` method
+- **Enhanced error handling** in service shutdown routines
+  - Added descriptive comments to empty catch blocks in `resolver-service.ts`
+  - Improved cleanup error handling during service shutdown
+
+### Fixed - 2025-08-08
+
+- **Resolved linting violations** in core modules
+  - Removed unused imports (`createPublicClient`, `createWalletClient`) from
+    `token-approvals.ts`
+  - Eliminated unnecessary `any` type casts in wallet transaction calls
+  - Fixed unused variable warnings in test files
+- **Fixed Ponder client schema alignment** with database
+  - Updated `AtomicSwap` interface to match actual DB schema
+  - Added missing `hashlock` field, corrected chain ID types
+  - Improved withdrawal correlation with proper JOIN operations
+
+### Changed - 2025-08-07 (Container env and tasks)
+
+- Docker entrypoints no longer pass `--env-file=.env`; Docker Compose now
+  supplies env vars
+- `make test` uses container-friendly task `resolver:test:docker`
+- Added dedicated in-container Deno tasks: `resolver:docker`,
+  `resolver:test:docker`, `alice:docker`
+- Ignore local `.crush/` working directory
+
+### Added - 2025-08-07
+
+- `src/types/contracts.ts`: typed contract address mapping for factories,
+  protocols, and tokens
+
 ### Fixed - 2025-08-07 (Complete Docker Success)
+
 - **Alice service now runs continuously** instead of exiting after showing help
   - Created `alice-service.ts` with monitoring loop and health server
   - Alice monitors orders and auto-withdraws when destination escrows are ready
 - **Health check endpoints implemented** for all services (resolver, alice, bob)
-  - Created service wrappers with integrated health servers on ports 8000, 8001, 8002
+  - Created service wrappers with integrated health servers on ports 8000, 8001,
+    8002
   - All services now report healthy status to Docker
 - **Prometheus configuration mounting fixed** for macOS Docker Desktop
   - Created custom Dockerfiles embedding configurations
   - Prometheus successfully scraping metrics from all services
-- **Grafana provisioning working** with auto-configured datasources and dashboards
+- **Grafana provisioning working** with auto-configured datasources and
+  dashboards
   - BMN Services Overview dashboard available at /d/bmn-overview
 
 ### Added - 2025-08-07 (Service Infrastructure)
+
 - `alice-service.ts` - Alice service wrapper with health monitoring
-- `resolver-service.ts` - Resolver service wrapper with health monitoring  
+- `resolver-service.ts` - Resolver service wrapper with health monitoring
 - `bob-service.ts` - Bob service wrapper with health monitoring
 - `Dockerfile.prometheus` - Custom Prometheus image with embedded config
 - `Dockerfile.grafana` - Custom Grafana image with provisioning
 - `grafana-provisioning/` - Grafana datasources and dashboard configurations
 - Complete monitoring stack with Prometheus metrics and Grafana dashboards
 
-### Fixed - 2025-01-08
-- Docker build failures due to Deno version mismatch (upgraded from 2.1.4 to 2.4.3)
+### Fixed - 2025-08-08
+
+- Docker build failures due to Deno version mismatch (upgraded from 2.1.4 to
+  2.4.3)
 - Dockerfile permission issues with deno user and cache directories
 - Docker volume mounting issues on macOS by switching to named volumes
 - Import map validation errors by removing unsupported nodeModulesDir field
 - Container networking issues with indexer connection using host.docker.internal
 
-### Changed - 2025-01-08
+### Changed - 2025-08-08
+
 - Simplified docker-compose.yml configuration with named volumes
 - Updated all Dockerfiles to use Deno 2.4.3 and proper cache permissions
 - Removed deprecated version field from docker-compose.yml
-- Updated INDEXER_URL environment variable to use host.docker.internal
+- Updated INDEXER_URL environment variable to use host.docker.internal (later
+  changed to Railway URL by default)
 
-### Added - 2025-01-08
+### Added - 2025-08-08
+
 - prometheus.yml configuration file for metrics collection
 - Grafana provisioning directory structure
 - Named volumes for better data persistence (bmn-data, redis-data)
 
-### Known Issues - 2025-01-08
-- Alice service exits immediately (needs to be converted to long-running service)
+### Known Issues - 2025-08-08
+
+- Alice service exits immediately (needs to be converted to long-running
+  service)
 - Health check endpoints not implemented for resolver and bob services
 - Prometheus service fails to start due to configuration mounting issues
 
 ### Added - 2025-08-07 (Docker Infrastructure)
+
 - Comprehensive Docker-based infrastructure for all services
 - Multi-stage Dockerfiles for optimized builds:
   - `Dockerfile.resolver`: Main resolver service
@@ -71,11 +757,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker workflow documentation in CLAUDE.md
 
 ### Changed - 2025-08-07 (Docker Infrastructure)
+
 - Updated docker-compose.yml with complete service orchestration
 - Enhanced CLAUDE.md with comprehensive Docker workflow instructions
 - All Docker builds use caching by default (never --no-cache)
 
 ### Added - 2025-08-07 (v2.2.0 Integration)
+
 - PostInteraction v2.2.0 support with SimplifiedEscrowFactory
 - New utility modules:
   - `postinteraction-v2.ts`: Extension data encoder for v2.2.0 format
@@ -85,89 +773,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory approval logic (resolver must approve factory for token transfers)
 - PostInteractionExecuted event monitoring and parsing
 - Automatic retry logic for recoverable PostInteraction failures
-- Coordination documentation for indexer team (`INDEXER_RESOLVER_COORDINATION_V2.2.md`)
+- Coordination documentation for indexer team
+  (`INDEXER_RESOLVER_COORDINATION_V2.2.md`)
 
-### Changed - 2025-08-07 (v2.2.0 Integration)  
-- Updated factory address to v2.2.0: `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
+### Changed - 2025-08-07 (v2.2.0 Integration)
+
+- Updated factory address to v2.2.0:
+  `0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68`
 - Refactored extension data encoding for new PostInteraction parameters
 - Enhanced alice implementations with proper v2.2.0 escrow parameters
 - Improved error handling with specific recovery strategies
 - Added dual approval system (both protocol and factory need approvals)
 
 ### Fixed - 2025-08-07
+
 - Resolved PrivateOrder error by setting makerTraits to 0 for public orders
-- Fixed MakingAmountTooLow error with correct takerTraits configuration  
+- Fixed MakingAmountTooLow error with correct takerTraits configuration
 - Added automatic token approval in resolver before filling orders
-- Identified root cause: SimplifiedEscrowFactory lacks IPostInteraction interface
+- Identified root cause: SimplifiedEscrowFactory lacks IPostInteraction
+  interface
 - Created comprehensive plan for contract fixes in bmn-evm-contracts
 
 ### Added - 2025-08-07
+
 - Automatic token approval logic in resolver (checks allowance first)
 - `LIMIT_ORDER_POSTINTERACTION_ISSUE.md` documenting the integration problem
 - Archive folder for historical documentation
 - Integration plan in bmn-evm-contracts repository
 
 ### Changed - 2025-08-07
+
 - Simplified makerTraits to 0n for public order filling
 - Reorganized documentation structure (archived 7 old docs)
 - Updated CLAUDE.md with postInteraction integration status
 
 ### Fixed - 2025-08-05
-- **CRITICAL ARCHITECTURE FIX IMPLEMENTED**: Completely refactored system to use correct architecture
-  - **Root Cause**: System was trying to call `createSrcEscrow` which doesn't exist on deployed CrossChainEscrowFactory
-  - **Solution**: Implemented proper limit order flow with postInteraction mechanism
+
+- **CRITICAL ARCHITECTURE FIX IMPLEMENTED**: Completely refactored system to use
+  correct architecture
+  - **Root Cause**: System was trying to call `createSrcEscrow` which doesn't
+    exist on deployed CrossChainEscrowFactory
+  - **Solution**: Implemented proper limit order flow with postInteraction
+    mechanism
   - **Files Updated**:
-    - `limit-order-alice.ts`: Now creates proper limit orders with postInteraction extension data
+    - `limit-order-alice.ts`: Now creates proper limit orders with
+      postInteraction extension data
     - `mainnet-alice.ts`: Updated to use same correct limit order approach
-    - `resolver.ts`: Fixed to fill orders via SimpleLimitOrderProtocol, not direct factory calls
+    - `resolver.ts`: Fixed to fill orders via SimpleLimitOrderProtocol, not
+      direct factory calls
   - **Key Changes**:
-    - Alice now creates EIP-712 signed limit orders with postInteraction extension
-    - Extension data includes factory address and ExtraDataArgs for escrow creation
-    - Resolver fills orders through protocol, which triggers factory.postInteraction
+    - Alice now creates EIP-712 signed limit orders with postInteraction
+      extension
+    - Extension data includes factory address and ExtraDataArgs for escrow
+      creation
+    - Resolver fills orders through protocol, which triggers
+      factory.postInteraction
     - Factory creates escrows via postInteraction, not direct calls
   - **Removed**: SimplifiedEscrowFactory.json ABI (wrong contract, not deployed)
 
 ### Critical Architecture Discovery - 2025-08-04
+
 - **CRITICAL ISSUE FOUND**: The entire system architecture is misaligned
-  - The deployed CrossChainEscrowFactory at `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` does NOT have `createSrcEscrow`
-  - Previous "fix" was incorrect - `createSrcEscrow` only exists in SimplifiedEscrowFactory (not deployed)
-  - System should use limit order protocol's `postInteraction` flow, not direct factory calls
+  - The deployed CrossChainEscrowFactory at
+    `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A` does NOT have `createSrcEscrow`
+  - Previous "fix" was incorrect - `createSrcEscrow` only exists in
+    SimplifiedEscrowFactory (not deployed)
+  - System should use limit order protocol's `postInteraction` flow, not direct
+    factory calls
   - Created `CRITICAL_ARCHITECTURE_FIX.md` documenting the correct approach
-  - Both Alice and Bob implementations need complete refactoring to use limit orders properly
+  - Both Alice and Bob implementations need complete refactoring to use limit
+    orders properly
 
 ### Fixed
+
 - **Critical ABI Update**: Fixed function name mismatch in Alice implementations
-  - ~~Replaced non-existent `postSourceEscrow` with correct `createSrcEscrow` function~~ (INCORRECT - see above)
-  - ~~Updated both `limit-order-alice.ts` and `mainnet-alice.ts` to use SimplifiedEscrowFactory~~ (WRONG APPROACH)
+  - ~~Replaced non-existent `postSourceEscrow` with correct `createSrcEscrow`
+    function~~ (INCORRECT - see above)
+  - ~~Updated both `limit-order-alice.ts` and `mainnet-alice.ts` to use
+    SimplifiedEscrowFactory~~ (WRONG APPROACH)
   - Copied latest ABIs from contract directories to ensure compatibility
-  - ~~Changed from CrossChainEscrowFactory to SimplifiedEscrowFactory for direct escrow creation~~ (INCORRECT)
+  - ~~Changed from CrossChainEscrowFactory to SimplifiedEscrowFactory for direct
+    escrow creation~~ (INCORRECT)
 
 ### Changed
+
 - **Updated ABIs from latest contract builds**
-  - `SimplifiedEscrowFactory.json` - Now using correct factory ABI with `createSrcEscrow`
+  - `SimplifiedEscrowFactory.json` - Now using correct factory ABI with
+    `createSrcEscrow`
   - `SimpleLimitOrderProtocol.json` - Updated from limit order contracts
   - `CrossChainEscrowFactory.json` - Refreshed from main contracts
   - `EscrowSrc.json` and `EscrowDst.json` - Updated escrow contract ABIs
 
 ### Known Issues
-- **createSrcEscrow Transaction Reverting**: Currently facing transaction reversion when calling `createSrcEscrow`
+
+- **createSrcEscrow Transaction Reverting**: Currently facing transaction
+  reversion when calling `createSrcEscrow`
   - Factory address: `0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A`
   - Possible causes:
-    - Maker address (`0x240E2588e35FB9D3D60B283B45108a49972FFFd8`) may need whitelisting
-    - Resolver address (`0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5`) may need whitelisting
+    - Maker address (`0x240E2588e35FB9D3D60B283B45108a49972FFFd8`) may need
+      whitelisting
+    - Resolver address (`0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5`) may need
+      whitelisting
     - Factory contract might be paused or have additional security restrictions
-    - Immutables structure format may need adjustment for the specific factory implementation
-  - Next steps: Check factory contract state, whitelist requirements, and parameter formats
+    - Immutables structure format may need adjustment for the specific factory
+      implementation
+  - Next steps: Check factory contract state, whitelist requirements, and
+    parameter formats
 
 ### Major Architectural Changes
 
 #### 1. **Unified Resolver Architecture**
+
 - Created single `UnifiedResolver` class combining all resolver functionality
-- Removed `demo-resolver.ts`, `base-resolver.ts`, `simple-resolver.ts` in favor of unified implementation
+- Removed `demo-resolver.ts`, `base-resolver.ts`, `simple-resolver.ts` in favor
+  of unified implementation
 - Full integration with SimpleLimitOrderProtocol for order filling
-- Uses factory v2.1.0 at 0xBc9A20A9FCb7571B2593e85D2533E10e3e9dC61A
+- Uses factory v2.2.0 at 0xB436dBBee1615dd80ff036Af81D8478c1FF1Eb68 (CREATE3;
+  same on Base/Optimism)
 
 #### 2. **Limit Order Protocol Integration**
+
 - Created `LimitOrderAlice` for EIP-712 signed order creation
 - Orders include postInteraction to trigger factory escrow creation
 - Removed `simple-alice.ts` in favor of limit order implementation
@@ -176,23 +901,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optimism: 0x44716439C19c2E8BD6E1bCB5556ed4C31dA8cDc7
 
 #### 3. **Documentation**
+
 - Created comprehensive ARCHITECTURE.md documenting complete system flow
 - Added UNIFIED_RESOLVER.md with usage instructions
 - Created CLEANUP_LOG.md tracking architectural improvements
 - Added LIMIT_ORDER_INTEGRATION.md for protocol integration details
 
 #### 4. **Testing Infrastructure**
+
 - Added `test-indexer-query.ts` for SQL/HTTP connectivity testing
 - Created `test-resolver.ts` for configuration verification
 - Added `test-limit-order.ts` for dry-run order testing
 - Added `test-manual-order.ts` for manual order processing
 
 #### 5. **Ready for Mainnet**
+
 - Resolver whitelisted at 0xfdF1dDeB176BEA06c7430166e67E615bC312b7B5
 - All contracts deployed and verified on Base and Optimism mainnet
 - Complete flow: Alice → LimitOrder → Indexer → Resolver → Atomic Swap
 
 ### Added
+
 - Created deployment configuration files for local testing
   - `deployments/chainA.json` - Local chain A configuration (port 8545)
   - `deployments/chainB.json` - Local chain B configuration (port 8546)
@@ -208,9 +937,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `demo-complete-flow.ts` - End-to-end flow demonstration
 
 ### Changed
-- Modified default profit requirement from 0.5% (50 bps) to 0% (0 bps)
-  - Updated `run-resolver.ts` line 22 and 33
-  - Allows resolver to fill orders at break-even for testing
+
+<!-- Removed outdated note about modifying default profit bps in non-existent `run-resolver.ts`. Current default is 50 bps in `src/resolver/resolver.ts`. -->
 
 - Migrated from GraphQL to SQL over HTTP architecture
   - Resolver now uses SQL over HTTP via Ponder indexer
@@ -218,44 +946,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Queries atomic swap data using PonderClient
 
 ### Security
-- Factory v2.1.0 with enhanced security features
+
+- Factory v2.2.0 with enhanced security features
   - Resolver whitelist implementation
   - Emergency pause functionality
   - Signature verification improvements
 
 ### Technical Details
+
 - Uses Deno KV for local secret management
 - EIP-712 typed data signing for limit orders
 - PostInteraction hooks for factory escrow creation
 - Atomic swap execution through SimpleLimitOrderProtocol
 
-## [0.3.0] - 2025-01-07 (Previous context)
+## [0.3.0] - 2025-08-07 (Previous context)
 
 ### Added
+
 - Unified Resolver implementation (`src/resolver/resolver.ts`)
 - PonderClient for SQL over HTTP indexer queries
 - Integration with SimpleLimitOrderProtocol
 - SecretManager for local state management
 
 ### Changed
+
 - Migrated from GraphQL to SQL over HTTP
 - Removed circular dependencies between modules
 - Simplified resolver architecture
 
-## [0.2.0] - 2025-01-06 (Previous context)
+## [0.2.0] - 2025-08-06 (Previous context)
 
 ### Added
+
 - Factory V2 migration with security features
 - Resolver whitelist implementation
 - Emergency pause functionality
 
 ### Security
+
 - Added comprehensive security checks in CLAUDE.md
 - Implemented pre-commit security scanning
 
-## [0.1.0] - 2025-01-05 (Initial)
+## [0.1.0] - 2025-08-05 (Initial)
 
 ### Added
+
 - Initial project setup
 - Basic atomic swap resolver
 - Cross-chain escrow integration
