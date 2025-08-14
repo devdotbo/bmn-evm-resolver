@@ -383,6 +383,198 @@ const windowOpen = now >= deployedAt + dstWithdrawalOffset &&
 console.log('Window open?', windowOpen);
 ```
 
+## TypeScript Implementation Insights
+
+### Critical Discovery: DeployedAt Mismatch Issue
+
+⚠️ **CRITICAL BUG RISK**: The TypeScript implementation reveals a fundamental issue with immutables reconstruction:
+
+**Location: `cli/withdraw-dst.ts:144-146`**
+```typescript
+// WARNING: This uses current timestamp, NOT original deployedAt!
+const deployedAt = BigInt(Math.floor(Date.now() / 1000));
+const deployedAt32 = deployedAt & 0xFFFFFFFFn;
+```
+
+This reconstruction will **NEVER** match the original immutables because:
+1. The escrow was created at time T1 with `deployedAt = T1`
+2. Withdrawal attempt at time T2 uses `deployedAt = T2`
+3. The immutables hash will differ, causing `InvalidImmutables()` error
+
+**Solution Implemented**: `cli/swap-execute.ts:267-283`
+```typescript
+// Store exact immutables during escrow creation
+await atomicWriteJson(`${dstDir}/${order.hashlock}.json`, {
+  immutables: {
+    orderHash: order.orderHash,
+    hashlock: order.hashlock,
+    maker: order.order.maker,
+    receiver: order.order.receiver,
+    token: dstToken,
+    amount: order.order.takingAmount,
+    safetyDeposit: dstSafetyDeposit.toString(),
+    timelocks: dstTimelocks.toString(),  // Store EXACT timelocks with correct deployedAt
+  }
+});
+```
+
+### Timelock Format Duality
+
+The TypeScript implementation uses **two different timelock formats** for different purposes:
+
+#### 1. User-Facing Format (Absolute Timestamps)
+**Location: `cli/timelock-utils.ts:10-17`**
+```typescript
+export function parseTimelocks(timelocksPacked: bigint): {
+  srcCancellation: bigint;
+  dstWithdrawal: bigint;
+} {
+  const dstWithdrawal = timelocksPacked & ((1n << 128n) - 1n);
+  const srcCancellation = timelocksPacked >> 128n;
+  return { srcCancellation, dstWithdrawal };
+}
+```
+- Used for checking if windows are open
+- Contains absolute Unix timestamps
+- Format: `srcCancellation << 128 | dstWithdrawal`
+
+#### 2. Contract Format (Offset-Based)
+**Location: `cli/swap-execute.ts:224-235`**
+```typescript
+// Calculate offsets from deployedAt
+const dstWithdrawalOffset = (dstWithdrawalTimestamp > deployedAt) 
+  ? (dstWithdrawalTimestamp - deployedAt) & 0xFFFFFFFFn 
+  : 0n;
+const dstCancellationOffset = (srcCancellationTimestamp > deployedAt) 
+  ? (srcCancellationTimestamp - deployedAt) & 0xFFFFFFFFn 
+  : 0n;
+
+// Pack with deployedAt and offsets for contract
+const dstTimelocks = (deployedAt32 << 224n) | 
+                     (dstCancellationOffset << 192n) | 
+                     (dstWithdrawalOffset << 128n);
+```
+
+### Extension Data Processing Pattern
+
+Consistent pattern across all CLI files for handling extension data:
+
+**Location: `cli/swap-execute.ts:198-202`**
+```typescript
+let extensionForParsing = order.extensionData;
+if (extensionForParsing.startsWith("0x000000")) {
+  // Has offsets header, skip first 4 bytes
+  extensionForParsing = "0x" + extensionForParsing.slice(10) as Hex;
+}
+```
+
+This pattern appears in:
+- `cli/swap-execute.ts:198-202`
+- `cli/withdraw-dst.ts:117-121`
+- `src/utils/escrow-creation.ts:52-54` (implicitly via slice operations)
+
+### Timelock Utility Functions
+
+**Location: `cli/timelock-utils.ts`**
+
+The CLI provides comprehensive utility functions for timelock management:
+
+1. **Window Status Checking** (lines 24-37):
+   ```typescript
+   export function isDstWithdrawWindowOpen(dstWithdrawal: bigint): boolean {
+     const now = BigInt(Math.floor(Date.now() / 1000));
+     return now >= dstWithdrawal;
+   }
+   ```
+
+2. **Automatic Waiting** (lines 89-110):
+   ```typescript
+   export async function waitUntilDstWithdrawWindow(
+     dstWithdrawal: bigint,
+     checkInterval = 10000,  // 10 seconds default
+     maxWait = 3600          // 1 hour max wait
+   ): Promise<void>
+   ```
+
+3. **Human-Readable Formatting** (lines 66-80):
+   ```typescript
+   export function formatTimeRemaining(seconds: bigint): string {
+     // Returns "5m 30s", "1h 20m", or "ready"
+   }
+   ```
+
+### PostInteraction Data Encoding
+
+**Location: `cli/postinteraction.ts`**
+
+Helper functions for creating PostInteraction data:
+
+1. **Timelock Packing** (lines 70-75):
+   ```typescript
+   export function packTimelocks(srcCancellationDelay: number, dstWithdrawalDelay: number): bigint {
+     const now = Math.floor(Date.now() / 1000);
+     const srcCancellationTimestamp = BigInt(now + srcCancellationDelay);
+     const dstWithdrawalTimestamp = BigInt(now + dstWithdrawalDelay);
+     return (srcCancellationTimestamp << 128n) | dstWithdrawalTimestamp;
+   }
+   ```
+
+2. **Deposit Packing** (lines 77-79):
+   ```typescript
+   export function packDeposits(srcSafetyDeposit: bigint, dstSafetyDeposit: bigint): bigint {
+     return (dstSafetyDeposit << 128n) | srcSafetyDeposit;
+   }
+   ```
+
+3. **Extension Encoding** (lines 52-68):
+   ```typescript
+   export function encode1inchExtension(postInteractionData: Hex): Hex {
+     // Creates the 32-byte offsets header
+     const offsets = new Uint8Array(32);
+     const postLen = (postInteractionData.length - 2) >>> 1;
+     // ... packs cumulative lengths
+     return concat([offsetsHex, postInteractionData]);
+   }
+   ```
+
+### Type Safety Pattern
+
+Consistent type handling across all CLI files:
+
+**Location: `cli/swap-execute.ts:237-246`**
+```typescript
+const immutablesTuple = [
+  order.orderHash as Hex,           // Hex type for bytes32
+  order.hashlock as Hex,            // Hex type for bytes32
+  order.order.maker as Address,     // Address type, NOT BigInt
+  order.order.receiver as Address,  // Address type, NOT BigInt
+  dstToken as Address,              // Address type, NOT BigInt
+  BigInt(order.order.takingAmount), // BigInt for amounts
+  dstSafetyDeposit,                 // BigInt for amounts
+  dstTimelocks,                     // BigInt for packed timelocks
+];
+```
+
+### Withdrawal Safety Check Pattern
+
+**Location: `cli/withdraw-dst.ts:168-185`**
+```typescript
+const timelockStatus = getTimelockStatus(originalTimelocks);
+
+if (!timelockStatus.dstWithdrawal.isOpen) {
+  console.log(`Time remaining: ${timelockStatus.dstWithdrawal.formatted}`);
+  
+  const shouldWait = Deno.args.includes("--wait");
+  if (shouldWait) {
+    await waitUntilDstWithdrawWindow(timelockStatus.dstWithdrawal.timestamp);
+    console.log("Window is now open, proceeding with withdrawal");
+  } else {
+    console.log("Use --wait flag to automatically wait for the window to open");
+    Deno.exit(1);
+  }
+}
+```
+
 ## Key Takeaways
 
 1. **Immutables must be exact**: Any difference in immutables causes validation failure
@@ -390,6 +582,9 @@ console.log('Window open?', windowOpen);
 3. **Store creation data**: Always store exact immutables during escrow creation
 4. **Type consistency**: Keep addresses as Address type, not BigInt
 5. **Extension data padding**: Remember to skip 28-byte padding after offsets header
+6. **DeployedAt reconstruction is impossible**: You cannot reconstruct the original deployedAt timestamp, so always store the exact immutables
+7. **Two timelock formats exist**: User-facing (absolute timestamps) vs Contract (offset-based)
+8. **Consistent extension data handling**: Always check for and strip the `0x000000` offsets header
 
 ## References
 
