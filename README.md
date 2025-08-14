@@ -4,7 +4,7 @@ Cross-chain atomic swap resolver for BMN token exchanges between Base and Optimi
 
 ## 📊 Status
 
-**✅ ACTIVE** — Core flow unblocked. See updated [STATUS.md](STATUS.md) and [CHANGELOG.md](CHANGELOG.md).
+**✅ ACTIVE** — Core flow unblocked. Lint/type-check gates enabled. See updated [STATUS.md](STATUS.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## 🚀 Features
 
@@ -72,7 +72,13 @@ deno task status -- --hashlock 0xHASHLOCK
 Notes:
 - For PoC, secrets are also written to `data/secrets/{hashlock}.json`.
 - CLIs use wagmi-generated actions from `src/generated/contracts.ts` and RPCs derived from `ANKR_API_KEY` via `cli/cli-config.ts`.
-- On errors, CLIs log full error chains and revert selector/data via `cli/logging.ts`.
+- On errors, CLIs log full error chains and revert selector/data via `cli/logging.ts`. Catch handlers print full errors.
+
+## Linting & Formatting
+
+- We use `deno lint` and `deno fmt` per Deno best practices.
+- Authored code is linted; generated/indexer artifacts are excluded via `deno.json`.
+- See Deno docs for configuration and formatting: [Deno Configuration → Formatting](https://docs.deno.com/runtime/fundamentals/configuration/#formatting).
 
 Services:
 - Alice API: http://localhost:8001/health and http://localhost:8001/docs

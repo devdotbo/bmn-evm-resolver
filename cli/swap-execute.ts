@@ -76,7 +76,7 @@ async function main() {
   const allowedSenderMaskPre = (1n << 80n) - 1n;
   const allowedSenderLow80Pre = BigInt(order.order.makerTraits) & allowedSenderMaskPre;
   let account = pkBob ? privateKeyToAccount(pkBob, { nonceManager }) : undefined;
-  let resolverAccount = pkResolver ? privateKeyToAccount(pkResolver, { nonceManager }) : undefined;
+  const resolverAccount = pkResolver ? privateKeyToAccount(pkResolver, { nonceManager }) : undefined;
   const toLow80Pre = (addr: string) => (BigInt(addr) & allowedSenderMaskPre);
   if (allowedSenderLow80Pre !== 0n) {
     const bobMatches = account && toLow80Pre(account.address) === allowedSenderLow80Pre;
@@ -258,8 +258,9 @@ async function main() {
       args: [immutablesTuple, false],
     } as any);
     escrowAddress = res as Address;
-  } catch (_e) {
-    // ignore; will rely on recorded events or later status checks
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`read addressOfEscrow failed (will rely on events/status): ${msg}`);
   }
 
   const dstDir = `./data/escrows/dst`;

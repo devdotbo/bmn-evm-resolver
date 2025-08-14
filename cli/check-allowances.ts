@@ -60,7 +60,7 @@ async function checkAllowances() {
   }
 
   const wagmiConfig = createWagmiConfig();
-  const chains = [
+  const _chains = [
     { chain: base, name: "Base", id: 8453 },
     { chain: optimism, name: "Optimism", id: 10 },
   ];

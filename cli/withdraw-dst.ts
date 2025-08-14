@@ -14,10 +14,7 @@ import { parsePostInteractionData } from "../src/utils/escrow-creation.ts";
 import { logErrorWithRevert } from "./logging.ts";
 import { 
   getTimelockStatus, 
-  waitUntilDstWithdrawWindow, 
-  isDstWithdrawWindowOpen,
-  formatTimeRemaining,
-  secondsUntilDstWithdraw 
+  waitUntilDstWithdrawWindow
 } from "./timelock-utils.ts";
 
 function usage(): never {
@@ -68,12 +65,15 @@ async function main() {
   // Load order for immutables reconstruction
   try {
     orderJson = await readJson<any>(`./data/orders/pending/${hashlock}.json`);
-  } catch (_) {
+  } catch (e1) {
+    const msg1 = e1 instanceof Error ? e1.message : String(e1);
+    console.warn(`Pending order not found or unreadable at ./data/orders/pending/${hashlock}.json. Reason: ${msg1}`);
     try {
       orderJson = await readJson<any>(`./data/orders/completed/${hashlock}.json`);
-    } catch (e) {
-      console.error(`Failed to read order file for hashlock: ${hashlock}`);
-      throw e;
+    } catch (e2) {
+      const msg2 = e2 instanceof Error ? e2.message : String(e2);
+      console.error(`Failed to read order file for hashlock: ${hashlock}. Reason: ${msg2}`);
+      throw e2;
     }
   }
 

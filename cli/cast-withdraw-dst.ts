@@ -21,7 +21,12 @@ if (!hashlock) usage();
 async function readOrderByHashlock(h: string): Promise<any> {
   const pending = `./data/orders/pending/${h}.json`;
   const completed = `./data/orders/completed/${h}.json`;
-  try { return await readJson<any>(pending); } catch (_) {}
+  try {
+    return await readJson<any>(pending);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`Pending order not found or unreadable at ${pending}. Falling back to completed. Reason: ${msg}`, e);
+  }
   return await readJson<any>(completed);
 }
 

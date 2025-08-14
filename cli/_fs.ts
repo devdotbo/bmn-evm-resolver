@@ -2,8 +2,12 @@
 export async function ensureDir(path: string): Promise<void> {
   try {
     await Deno.mkdir(path, { recursive: true });
-  } catch (_e) {
-    // ignore
+  } catch (e) {
+    // Ignore if already exists; rethrow others
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!msg.toLowerCase().includes("already exists")) {
+      console.warn(`ensureDir warning for ${path}: ${msg}`);
+    }
   }
 }
 

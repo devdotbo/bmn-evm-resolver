@@ -25,8 +25,9 @@ async function all() {
     for await (const entry of Deno.readDir("./data/swaps")) {
       if (entry.isDirectory) await statusFor(entry.name);
     }
-  } catch (_e) {
-    console.log("No swaps yet");
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.log(`No swaps yet or failed to read ./data/swaps: ${msg}`, e);
   }
 }
 

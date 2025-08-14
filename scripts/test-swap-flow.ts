@@ -58,7 +58,10 @@ async function runCommand(cmd: string): Promise<{ stdout: string; success: boole
       return { stdout: result.stdout, success: true };
     }
   } catch (e) {
-    return { stdout: e.stdout || e.message, success: false };
+    const unknownError = e as unknown as { stdout?: string; message?: string };
+    const message = unknownError.stdout || unknownError.message || String(e);
+    console.warn(`Command failed: ${cmd}\nReason: ${message}`, e);
+    return { stdout: message, success: false };
   }
 }
 

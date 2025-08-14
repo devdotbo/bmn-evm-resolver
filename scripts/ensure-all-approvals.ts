@@ -45,11 +45,11 @@ async function ensureApproval(
   });
 
   if (currentAllowance >= INFINITE_APPROVAL / 2n) {
-    logSuccess(`${spec.description}: Already approved (${currentAllowance})`);
+    logSuccess("ensure-all-approvals", `${spec.description}: Already approved (${currentAllowance})`);
     return true;
   }
 
-  logWarning(`${spec.description}: Needs approval (current: ${currentAllowance})`);
+  logWarning("ensure-all-approvals", `${spec.description}: Needs approval (current: ${currentAllowance})`);
   
   const account = privateKeyToAccount(privateKey, { nonceManager });
   
@@ -62,7 +62,7 @@ async function ensureApproval(
     });
     
     await waitForTransactionReceipt(config, { chainId: spec.chainId, hash });
-    logSuccess(`${spec.description}: Approved successfully`);
+    logSuccess("ensure-all-approvals", `${spec.description}: Approved successfully`);
     return true;
   } catch (e) {
     console.error(`Failed to approve ${spec.description}:`, e);
@@ -146,7 +146,7 @@ async function main() {
   
   console.log("\n=== Summary ===");
   if (allSuccessful) {
-    logSuccess("All approvals are in place!");
+    logSuccess("ensure-all-approvals", "All approvals are in place!");
   } else {
     console.error("Some approvals failed. Please check the errors above.");
     Deno.exit(1);

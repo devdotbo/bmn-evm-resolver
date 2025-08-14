@@ -13,7 +13,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { getPrivateKey, getBMNToken } from "./cli-config.ts";
 import { createWagmiConfig } from "./wagmi-config.ts";
 import { readIerc20BalanceOf } from "../src/generated/contracts.ts";
-import { logErrorWithRevert, logSuccess, logWarning } from "./logging.ts";
+import { logErrorWithRevert } from "./logging.ts";
 
 const outputJson = Deno.args.includes("--json");
 

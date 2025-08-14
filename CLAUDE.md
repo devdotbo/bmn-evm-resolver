@@ -41,6 +41,7 @@ deno run -A --unstable-kv --env-file=.env scripts/create-test-order.ts
 - Keep `STATUS.md` current (runbook header + status sections)
 - Prefer wagmi-generated bindings over manual ABIs
 - Update addresses/ABIs → regenerate types and update `STATUS.md`
+- Keep `deno lint` / `deno check` green; do not use silent catches. Always log full errors.
 
 ## Links
 - STATUS: ./STATUS.md
@@ -98,6 +99,7 @@ cp .env.example .env
 1. **Local Development**: Edit code locally
 2. **Restart Services**: Kill and restart the affected service
 3. **Check Service Logs**: View console output directly
+4. Run `deno lint` and `deno check` locally before committing
 
 ## Monitoring
 

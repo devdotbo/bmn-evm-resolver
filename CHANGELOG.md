@@ -61,6 +61,22 @@ and this project adheres to
   - Added automatic approval management
   - Improved error reporting and status tracking
 
+### Changed - 2025-08-14 (Linting & Error Handling)
+
+- **Adopted Deno Linting**
+  - Configured `deno.json` to include authored code (`cli/`, `scripts/`, `src/`) and exclude generated/external files (`src/generated/`, `ponder.schema.ts`, `abis/`, data/log folders)
+  - Project now runs clean with `deno lint` and `deno check`
+  - Reference: Deno configuration and formatting docs: [Deno Configuration → Formatting](https://docs.deno.com/runtime/fundamentals/configuration/#formatting)
+
+- **Error Handling Policy**
+  - Removed silent catch blocks across CLIs/scripts; all catch handlers now log the full error object
+  - Upgraded warnings/errors to include both a concise reason and the raw error for debugging
+  - Files touched: `cli/cast-fill.ts`, `cli/cast-withdraw-dst.ts`, `cli/create-dst-escrow.ts`, `cli/status.ts`, `cli/withdraw-dst.ts`, `scripts/test-swap-flow.ts`, `cli/_fs.ts`, `scripts/sync-abis.ts`, `cli/swap-execute.ts`
+
+- **Repository Cleanup**
+  - Removed deprecated service and utility files to focus on file-based CLI
+  - See `git status` for the list of deletions in this release window
+
 ### Documentation - 2025-08-14
 
 - **Immutables and Timelocks Architecture** (`docs/IMMUTABLES_AND_TIMELOCKS.md`)

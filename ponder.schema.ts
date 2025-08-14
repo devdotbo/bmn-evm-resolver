@@ -1,7 +1,7 @@
-import { onchainTable } from "ponder";
+import { onchainTable, type ColumnBuilderCallback } from "ponder";
 
 // Factory events tracking
-export const srcEscrow = onchainTable("src_escrow", (t) => ({
+export const srcEscrow = onchainTable("src_escrow", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-escrowAddress
   chainId: t.integer().notNull(),
   escrowAddress: t.text().notNull(),
@@ -24,7 +24,7 @@ export const srcEscrow = onchainTable("src_escrow", (t) => ({
   status: t.text().notNull(), // "created", "withdrawn", "cancelled"
 }));
 
-export const dstEscrow = onchainTable("dst_escrow", (t) => ({
+export const dstEscrow = onchainTable("dst_escrow", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-escrowAddress
   chainId: t.integer().notNull(),
   escrowAddress: t.text().notNull(),
@@ -38,7 +38,7 @@ export const dstEscrow = onchainTable("dst_escrow", (t) => ({
 }));
 
 // Escrow events tracking
-export const escrowWithdrawal = onchainTable("escrow_withdrawal", (t) => ({
+export const escrowWithdrawal = onchainTable("escrow_withdrawal", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-escrowAddress-transactionHash
   chainId: t.integer().notNull(),
   escrowAddress: t.text().notNull(),
@@ -48,7 +48,7 @@ export const escrowWithdrawal = onchainTable("escrow_withdrawal", (t) => ({
   transactionHash: t.hex().notNull(),
 }));
 
-export const escrowCancellation = onchainTable("escrow_cancellation", (t) => ({
+export const escrowCancellation = onchainTable("escrow_cancellation", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-escrowAddress-transactionHash
   chainId: t.integer().notNull(),
   escrowAddress: t.text().notNull(),
@@ -57,7 +57,7 @@ export const escrowCancellation = onchainTable("escrow_cancellation", (t) => ({
   transactionHash: t.hex().notNull(),
 }));
 
-export const fundsRescued = onchainTable("funds_rescued", (t) => ({
+export const fundsRescued = onchainTable("funds_rescued", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-escrowAddress-transactionHash-logIndex
   chainId: t.integer().notNull(),
   escrowAddress: t.text().notNull(),
@@ -70,7 +70,7 @@ export const fundsRescued = onchainTable("funds_rescued", (t) => ({
 }));
 
 // Cross-chain atomic swap tracking
-export const atomicSwap = onchainTable("atomic_swap", (t) => ({
+export const atomicSwap = onchainTable("atomic_swap", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // orderHash
   orderHash: t.hex().notNull(),
   hashlock: t.hex().notNull(),
@@ -99,7 +99,7 @@ export const atomicSwap = onchainTable("atomic_swap", (t) => ({
 }));
 
 // Statistics and aggregations
-export const chainStatistics = onchainTable("chain_statistics", (t) => ({
+export const chainStatistics = onchainTable("chain_statistics", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId
   chainId: t.integer().notNull(),
   totalSrcEscrows: t.bigint().notNull(),
@@ -112,7 +112,7 @@ export const chainStatistics = onchainTable("chain_statistics", (t) => ({
 }));
 
 // BMN Token Tables
-export const bmnTransfer = onchainTable("bmn_transfer", (t) => ({
+export const bmnTransfer = onchainTable("bmn_transfer", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-transactionHash-logIndex
   chainId: t.integer().notNull(),
   from: t.text().notNull(),
@@ -124,7 +124,7 @@ export const bmnTransfer = onchainTable("bmn_transfer", (t) => ({
   logIndex: t.integer().notNull(),
 }));
 
-export const bmnApproval = onchainTable("bmn_approval", (t) => ({
+export const bmnApproval = onchainTable("bmn_approval", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-owner-spender
   chainId: t.integer().notNull(),
   owner: t.text().notNull(),
@@ -135,7 +135,7 @@ export const bmnApproval = onchainTable("bmn_approval", (t) => ({
   transactionHash: t.hex().notNull(),
 }));
 
-export const bmnTokenHolder = onchainTable("bmn_token_holder", (t) => ({
+export const bmnTokenHolder = onchainTable("bmn_token_holder", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-address
   chainId: t.integer().notNull(),
   address: t.text().notNull(),
@@ -146,7 +146,7 @@ export const bmnTokenHolder = onchainTable("bmn_token_holder", (t) => ({
 }));
 
 // Limit Order Protocol Tables
-export const limitOrder = onchainTable("limit_order", (t) => ({
+export const limitOrder = onchainTable("limit_order", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-orderHash
   chainId: t.integer().notNull(),
   orderHash: t.hex().notNull(),
@@ -163,7 +163,7 @@ export const limitOrder = onchainTable("limit_order", (t) => ({
   transactionHash: t.hex().notNull(),
 }));
 
-export const orderFilled = onchainTable("order_filled", (t) => ({
+export const orderFilled = onchainTable("order_filled", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-transactionHash-logIndex
   chainId: t.integer().notNull(),
   orderHash: t.hex().notNull(),
@@ -175,7 +175,7 @@ export const orderFilled = onchainTable("order_filled", (t) => ({
   logIndex: t.integer().notNull(),
 }));
 
-export const orderCancelled = onchainTable("order_cancelled", (t) => ({
+export const orderCancelled = onchainTable("order_cancelled", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-orderHash
   chainId: t.integer().notNull(),
   orderHash: t.hex().notNull(),
@@ -185,7 +185,7 @@ export const orderCancelled = onchainTable("order_cancelled", (t) => ({
   transactionHash: t.hex().notNull(),
 }));
 
-export const bitInvalidatorUpdated = onchainTable("bit_invalidator_updated", (t) => ({
+export const bitInvalidatorUpdated = onchainTable("bit_invalidator_updated", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-maker-slotIndex
   chainId: t.integer().notNull(),
   maker: t.text().notNull(),
@@ -196,7 +196,7 @@ export const bitInvalidatorUpdated = onchainTable("bit_invalidator_updated", (t)
   transactionHash: t.hex().notNull(),
 }));
 
-export const epochIncreased = onchainTable("epoch_increased", (t) => ({
+export const epochIncreased = onchainTable("epoch_increased", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-maker-series
   chainId: t.integer().notNull(),
   maker: t.text().notNull(),
@@ -208,7 +208,7 @@ export const epochIncreased = onchainTable("epoch_increased", (t) => ({
 }));
 
 // Protocol statistics
-export const limitOrderStatistics = onchainTable("limit_order_statistics", (t) => ({
+export const limitOrderStatistics = onchainTable("limit_order_statistics", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId
   chainId: t.integer().notNull(),
   totalOrders: t.bigint().notNull(),
@@ -221,7 +221,7 @@ export const limitOrderStatistics = onchainTable("limit_order_statistics", (t) =
 }));
 
 // V2.1.0 Factory Events - Resolver Management
-export const resolverWhitelist = onchainTable("resolver_whitelist", (t) => ({
+export const resolverWhitelist = onchainTable("resolver_whitelist", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-resolver
   chainId: t.integer().notNull(),
   resolver: t.text().notNull(),
@@ -237,7 +237,7 @@ export const resolverWhitelist = onchainTable("resolver_whitelist", (t) => ({
   transactionHash: t.hex().notNull(),
 }));
 
-export const resolverSuspension = onchainTable("resolver_suspension", (t) => ({
+export const resolverSuspension = onchainTable("resolver_suspension", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-resolver-blockNumber
   chainId: t.integer().notNull(),
   resolver: t.text().notNull(),
@@ -249,7 +249,7 @@ export const resolverSuspension = onchainTable("resolver_suspension", (t) => ({
 }));
 
 // V2.1.0 Factory Events - Admin Management
-export const factoryAdmin = onchainTable("factory_admin", (t) => ({
+export const factoryAdmin = onchainTable("factory_admin", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-admin
   chainId: t.integer().notNull(),
   admin: t.text().notNull(),
@@ -261,7 +261,7 @@ export const factoryAdmin = onchainTable("factory_admin", (t) => ({
 }));
 
 // V2.1.0 Factory Events - Emergency Pause
-export const emergencyPause = onchainTable("emergency_pause", (t) => ({
+export const emergencyPause = onchainTable("emergency_pause", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-blockNumber
   chainId: t.integer().notNull(),
   isPaused: t.boolean().notNull(),
@@ -271,7 +271,7 @@ export const emergencyPause = onchainTable("emergency_pause", (t) => ({
 }));
 
 // V2.1.0 Factory Events - Swap Metrics
-export const swapMetrics = onchainTable("swap_metrics", (t) => ({
+export const swapMetrics = onchainTable("swap_metrics", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-orderHash
   chainId: t.integer().notNull(),
   orderHash: t.hex(),
@@ -290,7 +290,7 @@ export const swapMetrics = onchainTable("swap_metrics", (t) => ({
 }));
 
 // V2.1.0 Factory Events - Interaction Tracking
-export const interactionTracking = onchainTable("interaction_tracking", (t) => ({
+export const interactionTracking = onchainTable("interaction_tracking", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-interactionHash
   chainId: t.integer().notNull(),
   orderMaker: t.text().notNull(),
@@ -304,7 +304,7 @@ export const interactionTracking = onchainTable("interaction_tracking", (t) => (
 }));
 
 // V2.1.0 Factory Events - Global Metrics
-export const factoryMetrics = onchainTable("factory_metrics", (t) => ({
+export const factoryMetrics = onchainTable("factory_metrics", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // chainId-blockNumber
   chainId: t.integer().notNull(),
   totalVolume: t.bigint().notNull(),
@@ -319,7 +319,7 @@ export const factoryMetrics = onchainTable("factory_metrics", (t) => ({
 }));
 
 // V2.2.0 PostInteraction Support - 1inch Order Tracking
-export const postInteractionOrder = onchainTable("post_interaction_order", (t) => ({
+export const postInteractionOrder = onchainTable("post_interaction_order", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // orderHash
   orderHash: t.hex().notNull(), // Note: Using orderHash as id makes it effectively unique
   maker: t.hex().notNull(),
@@ -339,7 +339,7 @@ export const postInteractionOrder = onchainTable("post_interaction_order", (t) =
 }));
 
 // V2.2.0 PostInteraction Support - Resolver Whitelist for PostInteraction
-export const postInteractionResolverWhitelist = onchainTable("post_interaction_resolver_whitelist", (t) => ({
+export const postInteractionResolverWhitelist = onchainTable("post_interaction_resolver_whitelist", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // resolver-chainId
   resolver: t.hex().notNull(),
   chainId: t.integer().notNull(),
@@ -351,7 +351,7 @@ export const postInteractionResolverWhitelist = onchainTable("post_interaction_r
 }));
 
 // V2.2.0 PostInteraction Support - Maker Whitelist
-export const makerWhitelist = onchainTable("maker_whitelist", (t) => ({
+export const makerWhitelist = onchainTable("maker_whitelist", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // maker-chainId
   maker: t.hex().notNull(),
   chainId: t.integer().notNull(),
@@ -363,7 +363,7 @@ export const makerWhitelist = onchainTable("maker_whitelist", (t) => ({
 }));
 
 // V2.2.0 PostInteraction Support - Link PostInteraction to Escrows
-export const postInteractionEscrow = onchainTable("post_interaction_escrow", (t) => ({
+export const postInteractionEscrow = onchainTable("post_interaction_escrow", (t: Parameters<ColumnBuilderCallback>[0]) => ({
   id: t.text().primaryKey(), // orderHash-escrowType
   orderHash: t.hex().notNull(),
   escrowAddress: t.hex().notNull(),

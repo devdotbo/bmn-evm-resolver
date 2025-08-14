@@ -14,10 +14,10 @@
  * - invalid-escrow: Try to withdraw from non-existent escrow
  */
 
-import { base, optimism } from "viem/chains";
+import { base as _base, optimism as _optimism } from "viem/chains";
 import { type Address, type Hex, keccak256 } from "viem";
-import { privateKeyToAccount, nonceManager } from "viem/accounts";
-import { createWalletClient, http } from "viem";
+import { privateKeyToAccount, nonceManager as _nonceManager } from "viem/accounts";
+import { createWalletClient as _createWalletClient, http as _http } from "viem";
 
 const failureType = Deno.args.includes("--type") 
   ? Deno.args[Deno.args.indexOf("--type") + 1]
@@ -35,7 +35,7 @@ console.log("==========================================");
 
 // Get private keys from environment
 const ALICE_PK = Deno.env.get("ALICE_PRIVATE_KEY") as `0x${string}`;
-const BOB_PK = Deno.env.get("BOB_PRIVATE_KEY") || Deno.env.get("RESOLVER_PRIVATE_KEY") as `0x${string}`;
+const BOB_PK = (Deno.env.get("BOB_PRIVATE_KEY") || Deno.env.get("RESOLVER_PRIVATE_KEY")) as `0x${string}`;
 const ANKR_API_KEY = Deno.env.get("ANKR_API_KEY") || "";
 
 if (!ALICE_PK || !BOB_PK) {
@@ -43,11 +43,11 @@ if (!ALICE_PK || !BOB_PK) {
   Deno.exit(1);
 }
 
-const baseRpc = ANKR_API_KEY 
+const _baseRpc = ANKR_API_KEY 
   ? `https://rpc.ankr.com/base/${ANKR_API_KEY}`
   : "https://mainnet.base.org";
 
-const optimismRpc = ANKR_API_KEY
+const _optimismRpc = ANKR_API_KEY
   ? `https://rpc.ankr.com/optimism/${ANKR_API_KEY}`
   : "https://mainnet.optimism.io";
 
@@ -209,7 +209,7 @@ async function generateWrongImmutablesFailure() {
   console.log("\nThis would cause an InvalidImmutables error when attempting withdrawal.");
 }
 
-async function generateZeroAmountFailure() {
+function generateZeroAmountFailure() {
   console.log("\nGenerating zero-amount failure...");
   console.log("This will attempt to fill an order with zero amount.");
   

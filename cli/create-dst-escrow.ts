@@ -52,7 +52,12 @@ interface OrderFile {
 async function readOrderByHashlock(h: string): Promise<OrderFile> {
   const pending = `./data/orders/pending/${h}.json`;
   const completed = `./data/orders/completed/${h}.json`;
-  try { return await readJson<OrderFile>(pending); } catch (_) {}
+  try {
+    return await readJson<OrderFile>(pending);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`Pending order not found or unreadable at ${pending}. Falling back to completed. Reason: ${msg}`, e);
+  }
   return await readJson<OrderFile>(completed);
 }
 
@@ -104,7 +109,10 @@ async function main() {
     try {
       const { waitForTransactionReceipt } = await import("@wagmi/core");
       await waitForTransactionReceipt(wagmi as any, { chainId: dstChainId, hash: txApprove as Hex });
-    } catch (_) {}
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`waitForTransactionReceipt failed (non-fatal), continuing. Reason: ${msg}`, e);
+    }
   }
 
   const txHash = await writeSimplifiedEscrowFactoryV2_3CreateDstEscrow(wagmi as any, {
@@ -121,8 +129,9 @@ async function main() {
       args: [immutables, false],
     } as any);
     escrowAddress = addr as Address;
-  } catch (_) {
-    // ignore
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`read addressOfEscrow failed (will rely on events/status): ${msg}`, e);
   }
 
   await ensureDir("./data/escrows/dst");

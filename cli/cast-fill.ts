@@ -99,7 +99,7 @@ async function main() {
     "8000000",
   ];
 
-  const cmd = ["cast", ...cmdArgs];
+  const _cmd = ["cast", ...cmdArgs];
   console.log(["cast", ...cmdArgs.map((a) => (a.includes(" ") ? JSON.stringify(a) : a))].join(" "));
 
   if (isDryRun) return;
@@ -123,12 +123,13 @@ async function main() {
       if (remaining === 0n) {
         console.log("Order already invalidated/filled (remaining=0). Skipping send.");
         await ensureDir("./data/orders/completed");
-        try { await Deno.rename(fileArg!, `./data/orders/completed/${order.hashlock}.json`); } catch (_) {}
+        try { await Deno.rename(fileArg!, `./data/orders/completed/${order.hashlock}.json`); } catch (e) { const msg = e instanceof Error ? e.message : String(e); console.warn(`Failed to move order file to completed (non-fatal): ${msg}`); }
         return;
       }
     }
-  } catch (_) {
-    // ignore and attempt send
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`Pre-check remainingInvalidatorForOrder failed, proceeding to send anyway. Reason: ${msg}`, e);
   }
 
   // Ensure maker allowance for protocol (maker -> protocol for makerAsset)
@@ -198,7 +199,7 @@ async function main() {
     // On success, persist fill artifact and move order file out of pending to avoid refilling invalidated orders
     const statusLine = stdout.split("\n").find((l) => l.includes("status"));
     const txHashLine = stdout.split("\n").find((l) => l.toLowerCase().includes("transactionhash"));
-    const ok = statusLine?.includes("1 (success)");
+    const ok = !!statusLine && statusLine.includes("1 (success)");
     const txHash = txHashLine ? txHashLine.split(/\s+/).pop() : undefined;
     try {
       await ensureDir("./data/fills");
@@ -211,12 +212,18 @@ async function main() {
         writtenAt: nowMs(),
         ok: !!ok,
       });
-    } catch (_) {}
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`Failed to write fill artifact (non-fatal): ${msg}`, e);
+    }
     if (ok) {
       try {
         await ensureDir("./data/orders/completed");
         await Deno.rename(fileArg!, `./data/orders/completed/${order.hashlock}.json`);
-      } catch (_) {}
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn(`Failed to move order file to completed (non-fatal): ${msg}`, e);
+      }
     }
   } catch (e) {
     console.error("Failed to execute cast. Ensure Foundry is installed and `cast` is in PATH.");

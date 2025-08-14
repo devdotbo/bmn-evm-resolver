@@ -10,7 +10,7 @@ declare const Deno: any;
  * - SimplifiedEscrowFactoryV2_3.sol/SimplifiedEscrowFactoryV2_3.json -> abis/SimplifiedEscrowFactoryV2_3.json
  */
 
-const ROOT = new URL("../", import.meta.url).pathname;
+const _ROOT = new URL("../", import.meta.url).pathname; // unused: kept for future relative paths
 const CONTRACTS = new URL("../../bmn-evm-contracts/out/", import.meta.url).pathname;
 const ABIS = new URL("../abis/", import.meta.url).pathname;
 
@@ -39,7 +39,8 @@ for (const { from, to } of sources) {
   try {
     await copyFile(from, to);
   } catch (err) {
-    console.error(`❌ Failed to copy ${from} -> ${to}: ${(err as Error).message}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Failed to copy ${from} -> ${to}: ${msg}`);
   }
 }
 

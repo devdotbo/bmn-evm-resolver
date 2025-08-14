@@ -12,10 +12,10 @@ How to keep this file up-to-date (10 min checklist):
   - `rg -n "UnifiedResolver|resolver-service.ts|bob-service.ts" -- docs archive`
 - Update this file's Status, Services, and Focus Areas accordingly
 
-**Last Updated**: 2025-08-14 (Session Update - Part 2)
+**Last Updated**: 2025-08-14 (Session Update - Part 3)
 **Branch**: `optimism-simplified`
 **Version**: v2.3.2
-**Status**: ✅ ACTIVE — Atomic swap flow fully functional with immutables fix
+**Status**: ✅ ACTIVE — E2E flow functional; linting standardized; error logging improved
 
 ## 🎯 Project Overview
 
@@ -52,7 +52,7 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
     - CLIs are now self-contained under `cli/` and use wagmi-generated actions from `src/generated/contracts.ts`
     - Addresses resolved via env (overrides) with fallbacks to generated addresses; RPC via `cli/cli-config.ts` (uses `ANKR_API_KEY`)
     - ABIs re-exported from generated sources in `cli/abis.ts`
-    - Unified error logging: `cli/logging.ts` logs full error chain and revert selector/data
+     - Unified error logging: `cli/logging.ts` logs full error chain and revert selector/data; catch handlers print full errors
     - Writes use LocalAccount for `writeContract` actions (prevents ConnectorNotConnectedError)
 - Indexer: Railway hosted (INDEXER_URL)
 
@@ -62,7 +62,8 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 - **BMN Token (OP + BASE)**: `0x8287CD2aC7E227D9D927F998EB600a0683a832A1`
 
 ### Test Results / Smoke Tests
-- Type-check: `deno check cli/*` → OK
+- Lint: `deno lint` → OK (generated/indexer files excluded via config)
+- Type-check: `deno check` → OK
 - CLI flow (latest):
   - order:create → ✅ OK (supports --srcCancelSec/--dstWithdrawSec)
   - swap:execute → ✅ OK (fills order + creates dst escrow with correct immutables)
@@ -116,6 +117,7 @@ bmn-evm-resolver/
    - Add retry logic for network failures
    - Gas estimation and optimization
    - Monitoring and alerting
+    - Maintain lint and type-check gates (use `deno lint` / `deno check`)
 
 ### 🟢 Nice to Have
 5. **Documentation Cleanup**
@@ -193,6 +195,7 @@ deno task withdraw:src -- --hashlock 0xHASHLOCK
 1. Run `scripts/test-swap-flow.ts` to verify E2E flow works
 2. Check `## 🚀 Next Tasks` section above for priorities
 3. Main blocker: Offsets header implementation in `cli/postinteraction.ts`
+4. Keep `deno lint`/`deno check` green; avoid silent catches; always log full errors
 
 ### Key Files to Know:
 - `cli/swap-execute.ts` - Contains immutables storage logic (working)

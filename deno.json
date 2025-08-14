@@ -24,6 +24,17 @@
     "@wagmi/cli": "npm:@wagmi/cli@^2.4.0"
   },
   "nodeModulesDir": "auto",
+  "exclude": [
+    "src/generated/",
+    "ponder.schema.ts",
+    "abis/",
+    "logs/",
+    "data/",
+    "completed-orders/",
+    "pending-orders/",
+    "expired-orders/",
+    "alice-orders/"
+  ],
   "test": {
     "include": [
       "tests/**/*.test.ts",
@@ -57,9 +68,29 @@
     "indentWidth": 2,
     "semiColons": true,
     "singleQuote": false,
-    "proseWrap": "preserve"
+    "proseWrap": "preserve",
+    "include": [
+      "cli/",
+      "scripts/",
+      "src/",
+      "wagmi.config.ts"
+    ],
+    "exclude": [
+      "src/generated/",
+      "ponder.schema.ts"
+    ]
   },
   "lint": {
+    "include": [
+      "cli/",
+      "scripts/",
+      "src/",
+      "wagmi.config.ts"
+    ],
+    "exclude": [
+      "src/generated/",
+      "ponder.schema.ts"
+    ],
     "rules": {
       "tags": ["recommended"],
       "exclude": ["no-explicit-any"]
