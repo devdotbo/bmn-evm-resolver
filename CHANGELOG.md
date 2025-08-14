@@ -9,6 +9,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed - 2025-08-14 (Docs & Tasks cleanup)
+
+- **Docs (PostInteraction parsing)**: Unified guidance to remove a 32-byte offsets header, then parse 20-byte factory + ABI payload. Removed legacy 4-byte/28-byte padding language across `README.md`, `STATUS.md`, `CLAUDE.md`, and `docs/IMMUTABLES_AND_TIMELOCKS.md`.
+- **Tasks**: Removed non-existent `alice`/`bob` service tasks from `deno.json`. Added `check:balances` and `approvals:ensure` tasks.
+- **Changelog**: Pruned references to a non-existent comprehensive test suite; clarified current repository state.
+
 ## [2.3.2] - 2025-08-14
 
 ### Fixed - 2025-08-14 (Critical E2E Flow Fixes - Part 2)
