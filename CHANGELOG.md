@@ -9,6 +9,67 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.3.2] - 2025-08-14
+
+### Fixed - 2025-08-14 (Critical E2E Flow Fixes - Part 2)
+
+- **Extension Data Storage** (`cli/swap-execute.ts`)
+  - Fixed missing extension data storage in fill files that prevented withdrawal reconstruction
+  - Added `extensionData` field to fill file JSON structure
+  - Enables proper immutables reconstruction during withdrawal phase
+
+- **PostInteraction Data Parsing** (`src/utils/escrow-creation.ts`)
+  - Fixed parser to handle 28-byte padding after offsets header removal
+  - Correctly skips 56 hex chars (28 bytes) of padding before extracting factory address
+  - Properly decodes 5-tuple payload: hashlock, dstChainId, dstToken, deposits, timelocks
+
+- **Immutables Type Handling** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+  - Fixed addresses being incorrectly converted to BigInt causing InvalidCaller errors
+  - Addresses now kept as Address type, only amounts converted to BigInt
+  - Resolved InvalidCaller() error during withdrawal attempts
+
+- **Timelocks Implementation** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+  - Implemented proper TimelocksLib-compatible offset-based packing
+  - Added deployedAt timestamp (bits 224-255) as base for offset calculations
+  - Fixed DstWithdrawal (bits 128-159) and DstCancellation (bits 192-223) positioning
+  - Resolved InvalidTime() errors during withdrawal window checks
+
+- **Immutables Consistency** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+  - Added storage of exact immutables during escrow creation
+  - Withdrawal now uses stored immutables to prevent InvalidImmutables() errors
+  - Fallback reconstruction logic retained for backward compatibility
+
+- **BMN Token Address References**
+  - Fixed BMN_TOKEN_ADDRESS export issues across multiple CLI files
+  - Updated all references to use `getBMNToken()` function
+  - Resolved import errors in check-balances.ts, check-allowances.ts, preflight-checks.ts
+
+### Added - 2025-08-14 (New Utilities and Scripts)
+
+- **Approval Management** (`scripts/ensure-all-approvals.ts`)
+  - Comprehensive script to ensure all required token approvals
+  - Handles approvals for Alice and Bob on both Base and Optimism chains
+  - Automatically sets infinite approvals for protocol and factory contracts
+
+- **Balance Checking** (`cli/check-balances.ts`)
+  - BMN token balance checking utility for Alice and Bob across chains
+  - JSON output support with --json flag
+  - Detailed balance report with recommendations
+
+- **E2E Test Script Improvements** (`scripts/test-swap-flow.ts`)
+  - Enhanced with proper immutables handling
+  - Added automatic approval management
+  - Improved error reporting and status tracking
+
+### Documentation - 2025-08-14
+
+- **Immutables and Timelocks Architecture** (`docs/IMMUTABLES_AND_TIMELOCKS.md`)
+  - Comprehensive guide explaining immutables structure and validation
+  - Detailed TimelocksLib packing format and offset-based storage
+  - PostInteraction extension data parsing with padding handling
+  - Common errors and debugging techniques
+  - Critical implementation notes for future developers
+
 ### Added - 2025-08-14 (CLI: cast + escrow ops)
 
 - `cli/cast-fill.ts` and task `cast:fill` to submit `fillOrderArgs` via Foundry cast

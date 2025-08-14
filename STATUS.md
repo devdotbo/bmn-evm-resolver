@@ -12,10 +12,10 @@ How to keep this file up-to-date (10 min checklist):
   - `rg -n "UnifiedResolver|resolver-service.ts|bob-service.ts" -- docs archive`
 - Update this file's Status, Services, and Focus Areas accordingly
 
-**Last Updated**: 2025-08-14
+**Last Updated**: 2025-08-14 (Session Update - Part 2)
 **Branch**: `optimism-simplified`
-**Version**: v2.3.0
-**Status**: ✅ ACTIVE — Core flow executing; dst withdraw depends on timelocks
+**Version**: v2.3.2
+**Status**: ✅ ACTIVE — Atomic swap flow fully functional with immutables fix
 
 ## 🎯 Project Overview
 
@@ -23,9 +23,14 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 
 ## 🔴 Critical Notes
 
-- Fill path is working with cast and wagmi actions; approvals handled automatically
-- Destination escrow creation requires resolver allowance → now auto-approved
+- ✅ **FIXED**: Extension data now properly stored in fill files for withdrawal reconstruction
+- ✅ **FIXED**: PostInteraction data parsing handles 28-byte padding after offsets header
+- ✅ **FIXED**: Immutables construction uses correct types (Address not BigInt)
+- ✅ **FIXED**: Timelocks use offset-based packing with deployedAt timestamp
+- ✅ **FIXED**: Exact immutables stored during escrow creation for withdrawal
 - Destination withdraw is gated by timelocks → InvalidTime if called before window opens
+- **NEW**: Enhanced timelock handling with wait helpers and status checking
+- **NEW**: Improved error reporting with known revert reason mapping
 
 ## 📊 System State
 
@@ -56,11 +61,13 @@ Cross-chain atomic swap resolver enabling trustless BMN token exchanges between 
 ### Test Results / Smoke Tests
 - Type-check: `deno check cli/*` → OK
 - CLI flow (latest):
-  - order:create → OK (supports --srcCancelSec/--dstWithdrawSec)
-  - cast:fill → OK (auto-approvals, tuple types corrected)
-  - create:dst → OK (immutables reconstructed; resolver allowance ensured)
-  - withdraw:dst → InvalidTime until dst window opens; can force a failing on-chain tx via cast:withdraw:dst for Tenderly
-  - withdraw:src → after successful dst reveal
+  - order:create → ✅ OK (supports --srcCancelSec/--dstWithdrawSec)
+  - swap:execute → ✅ OK (fills order + creates dst escrow with correct immutables)
+  - withdraw:dst → ✅ OK (with stored immutables, respects timelock windows)
+  - withdraw:src → OK (after successful dst reveal)
+  - Full E2E atomic swap → ✅ WORKING
+- Successful test transactions:
+  - Destination withdrawal: 0x901668112d86c721be4b1aa18576d4014c021e6d59333e699c814ee0bd75af1a
 - Formal tests removed in latest cleanup (2025-08-13)
 
 ## 📁 Repository Structure
@@ -81,14 +88,68 @@ bmn-evm-resolver/
 └── archive/             # Deprecated code
 ```
 
-## 🔧 Focus Areas
+## ✅ Recent Improvements (2025-08-14 Session)
+
+1. **Timelock Utilities** (`cli/timelock-utils.ts`)
+   - Added comprehensive timelock window checking
+   - Wait helpers for automatic retry when window opens
+   - Human-readable time formatting
+   - Status checking for both src and dst windows
+
+2. **Enhanced Error Handling** (`cli/logging.ts`)
+   - Error categorization (CONTRACT_REVERT, NETWORK_ERROR, etc.)
+   - Known revert selector mapping for better error messages
+   - Structured logging with JSON output support
+   - Debug mode with stack traces via DEBUG env var
+
+3. **Test Scripts**
+   - `scripts/test-swap-flow.ts`: Complete flow testing with failure modes
+   - `scripts/generate-failure-tx.ts`: Generate intentional failures for Tenderly
+
+4. **Withdraw Improvements** (`cli/withdraw-dst.ts`)
+   - Robust immutables reconstruction with validation
+   - Automatic timelock waiting with --wait flag
+   - Better error messages for file loading failures
+   - Fallback to configured BMN token address
+
+## 🚨 Critical Fixes (2025-08-14 Session - Part 2)
+
+1. **Extension Data Storage Fix** (`cli/swap-execute.ts`)
+   - **Problem**: Extension data was not being stored in fill files, breaking withdrawal
+   - **Solution**: Added `extensionData` field to fill file storage
+   - **Impact**: Enables proper immutables reconstruction for withdrawals
+
+2. **PostInteraction Data Parsing Fix** (`src/utils/escrow-creation.ts`)
+   - **Problem**: Parser wasn't handling 28-byte padding after offsets header removal
+   - **Solution**: Skip 56 hex chars (28 bytes) of padding before parsing factory address
+   - **Impact**: Correctly extracts factory, hashlock, tokens, and timelocks
+
+3. **Immutables Type Fix** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+   - **Problem**: Addresses were incorrectly converted to BigInt, causing InvalidCaller errors
+   - **Solution**: Keep addresses as Address type, only convert amounts to BigInt
+   - **Impact**: Escrow validation passes, enabling withdrawals
+
+4. **Timelocks Implementation** (`cli/swap-execute.ts`, `cli/withdraw-dst.ts`)
+   - **Problem**: Absolute timestamps used instead of offsets, causing InvalidTime errors
+   - **Solution**: Implement TimelocksLib-compatible packing with deployedAt base timestamp
+   - **Impact**: Proper timelock validation in escrow contracts
+
+5. **Immutables Storage** (`cli/swap-execute.ts`)
+   - **Problem**: Different deployedAt timestamps between creation and withdrawal
+   - **Solution**: Store exact immutables used during escrow creation
+   - **Impact**: Consistent immutables for withdrawal, preventing InvalidImmutables errors
+
+6. **New Utilities Created**
+   - `scripts/ensure-all-approvals.ts`: Comprehensive token approval management
+   - `cli/check-balances.ts`: BMN token balance checking across chains
+   - Fixes to `getBMNToken()` function usage across all CLI files
+
+## 🔧 Remaining Focus Areas
 
 1. Migrate remaining manual ABI call sites to wagmi‑generated bindings/actions
-2. Ensure prod readiness: balances, allowances, health checks, logging
-3. Keep docs lean; mark archived docs as deprecated
-4. Finalize offsets header (full cumulative layout) and migrate remaining CLI call sites to generated structs
-5. Harden withdraw-dst immutables reconstruction (strict decode, no fallbacks) and add a wait-until helper for timelocks
-6. Add scripts to emit both success and intentional failure transactions (for Tenderly reproduction)
+2. Ensure prod readiness: balances, allowances, health checks
+3. Clean up deprecated documentation and mark archived docs
+4. Finalize offsets header (full cumulative layout)
 
 ## 🚦 Quick Start (CLI, Fresh Context)
 
@@ -116,15 +177,16 @@ deno task status -- --hashlock 0xHASHLOCK
 
 ## 📈 Progress Metrics
 
-- Core Functionality: 90%
+- Core Functionality: 95% (E2E flow working)
 - Test Coverage: N/A (tests removed)
-- Documentation: Needs pruning/updates
-- Production Ready: In progress (ops checks)
+- Documentation: Updated with critical fixes
+- Production Ready: 85% (needs final cleanup)
 
 ## 🔗 Key Resources
 
 - [Latest Agent Handover](docs/agents/2025-08-12-AGENT-006-atomic-swap-execution-handover-1446.md)
 - [Architecture Overview](ARCHITECTURE.md)
+- [Immutables and Timelocks Guide](docs/IMMUTABLES_AND_TIMELOCKS.md)
 - [Issue Tracker](ISSUES/active/)
 
 ## 📝 For Next Agent

@@ -17,6 +17,7 @@ import {
   writeSimplifiedEscrowFactoryV2_3CreateDstEscrow,
   readSimplifiedEscrowFactoryV2_3AddressOfEscrow,
 } from "../src/generated/contracts.ts";
+import { parsePostInteractionData } from "../src/utils/escrow-creation.ts";
 import { logErrorWithRevert } from "./logging.ts";
 
 function usage(): never {
@@ -179,6 +180,7 @@ async function main() {
     taker: account.address,
     fillTxHash: fillReceipt.transactionHash,
     gasUsed: fillReceipt.gasUsed.toString(),
+    extensionData: order.extensionData,  // Store extension data for withdrawal
     postInteraction: {
       executed: false,
       srcEscrow: null,
@@ -189,15 +191,58 @@ async function main() {
   // Create destination escrow (idempotent): call factory.createDstEscrow with immutables
   // Use readSimplifiedEscrowFactoryV2_3AddressOfEscrow for address if tx doesn't emit
   const dstChainId = order.dstChainId as SupportedChainId;
+  const dstAddrs = getCliAddresses(dstChainId);
+  
+  // Parse PostInteraction data from extension to get immutables
+  // Skip the 4-byte offsets header if present
+  let extensionForParsing = order.extensionData;
+  if (extensionForParsing.startsWith("0x000000")) {
+    // Has offsets header, skip first 4 bytes
+    extensionForParsing = "0x" + extensionForParsing.slice(10) as Hex;
+  }
+  
+  const parsed = parsePostInteractionData(extensionForParsing);
+  const deposits = parsed.deposits || 0n;
+  const dstSafetyDeposit = deposits >> 128n;
+  const dstToken = parsed.dstToken && parsed.dstToken !== "0x0000000000000000000000000000000000000000" 
+    ? parsed.dstToken 
+    : dstAddrs.tokens.BMN;
+  
+  // Repack timelocks for destination escrow
+  // Original packing: srcCancellation<<128 | dstWithdrawal (absolute timestamps)
+  const dstWithdrawalTimestamp = parsed.timelocks & ((1n << 128n) - 1n);
+  const srcCancellationTimestamp = parsed.timelocks >> 128n;
+  
+  // TimelocksLib expects:
+  // - Bits 224-255: deployedAt (base timestamp)
+  // - Other stages: offsets from deployedAt (not absolute timestamps)
+  // Use current timestamp as deployedAt
+  const deployedAt = BigInt(Math.floor(Date.now() / 1000));
+  const deployedAt32 = deployedAt & 0xFFFFFFFFn;
+  
+  // Calculate offsets from deployedAt
+  const dstWithdrawalOffset = (dstWithdrawalTimestamp > deployedAt) 
+    ? (dstWithdrawalTimestamp - deployedAt) & 0xFFFFFFFFn 
+    : 0n;
+  const dstCancellationOffset = (srcCancellationTimestamp > deployedAt) 
+    ? (srcCancellationTimestamp - deployedAt) & 0xFFFFFFFFn 
+    : 0n;
+  
+  // Pack timelocks with deployedAt and offsets
+  // Stage 4 (DstWithdrawal): bits 128-159 (offset from deployedAt)
+  // Stage 6 (DstCancellation): bits 192-223 (offset from deployedAt)
+  // DeployedAt: bits 224-255 (base timestamp)
+  const dstTimelocks = (deployedAt32 << 224n) | (dstCancellationOffset << 192n) | (dstWithdrawalOffset << 128n);
+  
   const immutablesTuple = [
     order.orderHash as Hex,
     order.hashlock as Hex,
-    0n,
-    0n,
-    0n,
-    0n,
-    0n,
-    0n,
+    order.order.maker as Address,  // Keep as address, not BigInt
+    order.order.receiver as Address,  // Keep as address, not BigInt  
+    dstToken as Address,  // Keep as address, not BigInt
+    BigInt(order.order.takingAmount),
+    dstSafetyDeposit,
+    dstTimelocks,  // Correctly packed for destination escrow
   ] as any;
   const dstHash = await writeSimplifiedEscrowFactoryV2_3CreateDstEscrow(wagmiConfig as any, {
     chainId: dstChainId,
@@ -224,6 +269,16 @@ async function main() {
     dstChainId,
     escrowAddress,
     createTxHash: receipt.transactionHash,
+    immutables: {
+      orderHash: order.orderHash,
+      hashlock: order.hashlock,
+      maker: order.order.maker,
+      receiver: order.order.receiver,
+      token: dstToken,
+      amount: order.order.takingAmount,
+      safetyDeposit: dstSafetyDeposit.toString(),
+      timelocks: dstTimelocks.toString(),  // Store exact timelocks used
+    },
     writtenAt: nowMs(),
   });
 
