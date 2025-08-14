@@ -87,6 +87,172 @@ const dstTimelocks = (deployedAt32 << 224n) |
                      (dstWithdrawalOffset << 128n);
 ```
 
+### Contract Implementation: Timelocks Packing in SimplifiedEscrowFactory
+
+⚠️ **IMPORTANT**: The actual contract implementation differs from the conceptual JavaScript example above. Here's how timelocks are actually managed in the smart contracts:
+
+#### Location: `../bmn-evm-contracts/contracts/SimplifiedEscrowFactory.sol`
+
+The `postInteraction` method (lines 201-276) handles timelocks packing when creating source escrows after a limit order fill:
+
+```solidity
+// SimplifiedEscrowFactory.sol:237-245
+// Build timelocks for source escrow by packing values
+uint256 packedTimelocks = uint256(uint32(block.timestamp)) << 224; // deployedAt
+packedTimelocks |= uint256(uint32(300)) << 0;     // srcWithdrawal: 5 minutes offset (hardcoded)
+packedTimelocks |= uint256(uint32(600)) << 32;    // srcPublicWithdrawal: 10 minutes offset (hardcoded)
+packedTimelocks |= uint256(uint32(srcCancellationTimestamp - block.timestamp)) << 64; // srcCancellation offset (calculated)
+packedTimelocks |= uint256(uint32(srcCancellationTimestamp - block.timestamp + 300)) << 96; // srcPublicCancellation offset
+packedTimelocks |= uint256(uint32(dstWithdrawalTimestamp - block.timestamp)) << 128; // dstWithdrawal offset (calculated)
+packedTimelocks |= uint256(uint32(dstWithdrawalTimestamp - block.timestamp + 300)) << 160; // dstPublicWithdrawal offset
+packedTimelocks |= uint256(uint32(7200)) << 192;  // dstCancellation: 2 hours offset (hardcoded)
+```
+
+#### Key Differences from JavaScript Example:
+
+1. **Hardcoded Offsets**: The contract uses fixed offsets for some stages:
+   - Source withdrawal: 300 seconds (5 minutes)
+   - Source public withdrawal: 600 seconds (10 minutes)  
+   - Destination cancellation: 7200 seconds (2 hours)
+
+2. **Input Parameters Extraction** (lines 215-222):
+   ```solidity
+   // Decode the extraData containing escrow parameters
+   (bytes32 hashlock, uint256 dstChainId, address dstToken, 
+    uint256 deposits, uint256 timelocks) = 
+       abi.decode(extraData, (bytes32, uint256, address, uint256, uint256));
+   ```
+
+3. **Timestamp Extraction** (lines 231-233):
+   ```solidity
+   // Extract timelocks (packed as: srcCancellation << 128 | dstWithdrawal)
+   uint256 dstWithdrawalTimestamp = timelocks & type(uint128).max;
+   uint256 srcCancellationTimestamp = timelocks >> 128;
+   ```
+
+4. **Offset Calculation**: The contract calculates offsets from `block.timestamp` at deployment time:
+   - `srcCancellationTimestamp - block.timestamp` gives the offset for source cancellation
+   - `dstWithdrawalTimestamp - block.timestamp` gives the offset for destination withdrawal
+
+#### TimelocksLib Usage in Escrow Contracts
+
+The packed timelocks are later used by escrow contracts through the `TimelocksLib` library:
+
+**Location: `../bmn-evm-contracts/contracts/libraries/TimelocksLib.sol`**
+
+```solidity
+// TimelocksLib.sol:75-80
+function get(Timelocks timelocks, Stage stage) internal pure returns (uint256) {
+    uint256 data = Timelocks.unwrap(timelocks);
+    uint256 bitShift = uint256(stage) * 32;
+    // Extract deployedAt and add the stage offset
+    return (data >> _DEPLOYED_AT_OFFSET) + uint32(data >> bitShift);
+}
+```
+
+**Usage in EscrowDst.sol** (lines 37-38, 51-52, 79):
+```solidity
+// EscrowDst.sol:37-38 - Withdrawal window check
+onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
+onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
+```
+
+#### Important Implementation Notes:
+
+1. **CREATE2 Salt**: The immutables hash is used as the CREATE2 salt (SimplifiedEscrowFactory.sol:287):
+   ```solidity
+   bytes32 salt = keccak256(abi.encode(srcImmutables));
+   escrow = ESCROW_SRC_IMPLEMENTATION.cloneDeterministic(salt);
+   ```
+
+2. **Duplicate Prevention**: The factory tracks escrows by hashlock to prevent duplicates (SimplifiedEscrowFactory.sol:224):
+   ```solidity
+   require(escrows[hashlock] == address(0), "Escrow already exists");
+   ```
+
+3. **Token Transfer Flow** (SimplifiedEscrowFactory.sol:266):
+   ```solidity
+   // Tokens flow: maker → protocol → resolver → escrow
+   IERC20(order.makerAsset.get()).safeTransferFrom(taker, escrowAddress, makingAmount);
+   ```
+
+#### Complete PostInteraction Timelocks Flow
+
+The `postInteraction` method orchestrates the entire timelocks packing process:
+
+**Step 1: Decode Input Parameters** (SimplifiedEscrowFactory.sol:215-222)
+```solidity
+// extraData contains: hashlock, dstChainId, dstToken, deposits, timelocks
+(bytes32 hashlock, uint256 dstChainId, address dstToken, 
+ uint256 deposits, uint256 timelocks) = abi.decode(extraData, ...);
+```
+
+**Step 2: Extract Safety Deposits** (SimplifiedEscrowFactory.sol:228-229)
+```solidity
+uint256 srcSafetyDeposit = deposits & type(uint128).max;  // Lower 128 bits
+uint256 dstSafetyDeposit = deposits >> 128;               // Upper 128 bits
+```
+
+**Step 3: Extract Critical Timestamps** (SimplifiedEscrowFactory.sol:231-233)
+```solidity
+uint256 dstWithdrawalTimestamp = timelocks & type(uint128).max;  // When dst can withdraw
+uint256 srcCancellationTimestamp = timelocks >> 128;             // When src can cancel
+```
+
+**Step 4: Build Complete Timelocks Structure** (SimplifiedEscrowFactory.sol:237-245)
+- Each stage gets 32 bits in the packed uint256
+- DeployedAt (current block.timestamp) occupies bits 224-255
+- All other stages store offsets from deployedAt
+
+**Step 5: Create Immutables and Deploy Escrow** (SimplifiedEscrowFactory.sol:249-262)
+```solidity
+IBaseEscrow.Immutables memory srcImmutables = IBaseEscrow.Immutables({
+    orderHash: orderHash,
+    hashlock: hashlock,
+    maker: Address.wrap(uint160(order.maker.get())),
+    taker: Address.wrap(uint160(taker)),
+    token: order.makerAsset,
+    amount: makingAmount,
+    safetyDeposit: srcSafetyDeposit,
+    timelocks: srcTimelocks
+});
+```
+
+#### Timelocks Validation in Escrow Contracts
+
+When escrow methods are called, timelocks are validated using modifiers:
+
+**Location: `../bmn-evm-contracts/contracts/BaseEscrow.sol`**
+
+```solidity
+// BaseEscrow.sol:60-68
+modifier onlyAfter(uint256 start) {
+    if (block.timestamp < start) revert InvalidTime();
+    _;
+}
+
+modifier onlyBefore(uint256 stop) {
+    if (block.timestamp >= stop) revert InvalidTime();
+    _;
+}
+```
+
+These modifiers work with `TimelocksLib.get()` to enforce time windows:
+
+**Example from EscrowDst.sol:34-40** (Withdrawal):
+```solidity
+function withdraw(bytes32 secret, Immutables calldata immutables)
+    external
+    onlyTaker(immutables)
+    onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.DstWithdrawal))
+    onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.DstCancellation))
+{
+    _withdraw(secret, immutables);
+}
+```
+
+This ensures withdrawals can only occur within the designated time window.
+
 ## PostInteraction Extension Data
 
 ### Extension Data Structure
